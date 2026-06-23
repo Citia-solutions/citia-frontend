@@ -14,6 +14,7 @@ export function useLogin(onSuccess?: () => void) {
   const session = useSessionStore()
 
   const values = reactive<LoginFormValues>({
+    tenantSlug: '',
     email: '',
     password: '',
     rememberMe: false,
@@ -31,6 +32,7 @@ export function useLogin(onSuccess?: () => void) {
     isSubmitting.value = true
     try {
       const { user, token } = await login({
+        tenantSlug: values.tenantSlug.trim(),
         email: values.email,
         password: values.password,
       })

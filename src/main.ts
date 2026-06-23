@@ -6,3 +6,4 @@ import '@/app/styles/main.css'
 const app = createApp(App)
 registerProviders(app)
 app.mount('#app')
+

@@ -12,6 +12,22 @@ const { values, errors, submitError, isSubmitting, submit } = useLogin(() => emi
 <template>
   <form class="login-form" novalidate @submit.prevent="submit">
     <BaseInput
+      v-model="values.tenantSlug"
+      label="Clínica"
+      placeholder="mi-clinica"
+      autocomplete="organization"
+      :error="errors.tenantSlug"
+    >
+      <template #icon>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 21h18" />
+          <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
+          <path d="M9 7h0M15 7h0M9 11h0M15 11h0M9 15h0M15 15h0" />
+        </svg>
+      </template>
+    </BaseInput>
+
+    <BaseInput
       v-model="values.email"
       label="Correo electrónico"
       type="email"

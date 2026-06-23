@@ -14,6 +14,11 @@ dist-ssr
 coverage
 *.local
 
+# Variables de entorno locales (no versionar; usar .env.example como plantilla)
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

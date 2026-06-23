@@ -2,6 +2,7 @@ import { http } from '@/shared/api/httpClient'
 import type { AuthUser } from '@/entities/session'
 
 export interface LoginCredentials {
+  tenantSlug: string
   email: string
   password: string
 }
@@ -13,7 +14,7 @@ export interface LoginResponse {
 
 /** POST /auth/login con email + contraseña. */
 export function login(credentials: LoginCredentials): Promise<LoginResponse> {
-  return http.post<LoginResponse>('/auth/login', credentials)
+  return http.post<LoginResponse>('/api/auth/login', credentials)
 }
 
 /**
