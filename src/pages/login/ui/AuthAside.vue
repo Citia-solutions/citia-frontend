@@ -72,7 +72,7 @@ const stats = [
   font-size: 2.4rem;
   line-height: 1.1;
   font-weight: 800;
-  margin: 0 0 1.2rem;
+  margin: 0 1 1.2rem;
   max-width: 18ch;
 }
 .aside__subtitle {

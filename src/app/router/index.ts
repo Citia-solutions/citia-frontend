@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useSessionStore } from '@/entities/session'
 import { LoginPage } from '@/pages/login'
-import { HomePage } from '@/pages/home'
+import { DashboardPage } from '@/pages/dashboard'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -13,7 +13,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
-    component: HomePage,
+    component: DashboardPage,
     meta: { requiresAuth: true },
   },
 ]
