@@ -14,7 +14,7 @@ export interface LoginResponse {
 
 /** POST /auth/login con email + contraseña. */
 export function login(credentials: LoginCredentials): Promise<LoginResponse> {
-  return http.post<LoginResponse>('/api/auth/login', credentials)
+  return http.post<LoginResponse>('/auth/login', credentials)
 }
 
 /**
