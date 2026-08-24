@@ -2,9 +2,11 @@
 // Barra superior del contenido. Título + búsqueda + acciones (visual/inerte).
 import BaseInput from '@/shared/ui/BaseInput.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
+import { ModalNuevaCita } from '@/features/crear-cita'
 import { ref } from 'vue'
 
 const search = ref('')
+const modalAbierto = ref(false)
 </script>
 
 <template>
@@ -34,10 +36,12 @@ const search = ref('')
       </button>
 
       <div class="topbar__cta">
-        <BaseButton :block="false">+ Nueva cita</BaseButton>
+        <BaseButton :block="false" @click="modalAbierto = true">+ Nueva cita</BaseButton>
       </div>
     </div>
   </header>
+
+  <ModalNuevaCita :is-open="modalAbierto" @close="modalAbierto = false" />
 </template>
 
 <style scoped>
