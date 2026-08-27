@@ -1,21 +1,26 @@
 <script setup lang="ts">
 // Modal de "Nueva cita". La visibilidad la decide el padre (prop isOpen);
-// este componente solo avisa cuando quiere cerrarse (emit close) y cuando
-// el formulario es válido (emit submit), sin tocar la API todavía.
+// este componente avisa cuando quiere cerrarse (emit close) y cuando el
+// servidor confirmó la cita (emit created, con la cita ya guardada).
 import { watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
+import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
 import { useCrearCita } from '../model/useCrearCita'
-import type { NuevaCitaForm } from '../model/types'
+import type { CitaCreada } from '../model/types'
 
 const props = withDefaults(defineProps<{ isOpen: boolean }>(), { isOpen: false })
 
 const emit = defineEmits<{
   close: []
-  submit: [payload: NuevaCitaForm]
+  created: [cita: CitaCreada]
 }>()
 
-const { form, errors, submitError, isSubmitting, reset, submit } = useCrearCita((payload) => {
-  emit('submit', payload)
+// Duraciones habituales de una consulta. Si más adelante se configuran por
+// organización, este arreglo es el único punto a cambiar.
+const DURACIONES = [15, 30, 45, 60, 90]
+
+const { form, errors, submitError, isSubmitting, reset, submit } = useCrearCita((cita) => {
+  emit('created', cita)
   emit('close')
 })
 
@@ -58,16 +63,34 @@ function handleSubmit(): void {
       </header>
 
       <form class="modal__form" novalidate @submit.prevent="handleSubmit">
-        <div class="modal__field">
-          <label class="modal__label" for="paciente">Nombre del paciente</label>
-          <input
-            id="paciente"
-            v-model="form.pacienteNombre"
-            class="modal__input"
-            type="text"
-            placeholder="Ej: María González"
-          />
-          <span v-if="errors.pacienteNombre" class="modal__error">{{ errors.pacienteNombre }}</span>
+        <div class="modal__row">
+          <div class="modal__field">
+            <label class="modal__label" for="paciente">Nombre del paciente</label>
+            <input
+              id="paciente"
+              v-model="form.pacienteNombre"
+              class="modal__input"
+              type="text"
+              placeholder="Ej: María González"
+            />
+            <span v-if="errors.pacienteNombre" class="modal__error">{{ errors.pacienteNombre }}</span>
+          </div>
+
+          <div class="modal__field">
+            <label class="modal__label" for="rut">RUT</label>
+            <input
+              id="rut"
+              v-model="form.rut"
+              class="modal__input"
+              type="text"
+              inputmode="text"
+              placeholder="12.345.678-5"
+            />
+            <span v-if="errors.rut" class="modal__error">{{ errors.rut }}</span>
+            <span v-else class="modal__hint">
+              Si el paciente ya existe, se reutiliza su ficha en vez de duplicarla.
+            </span>
+          </div>
         </div>
 
         <div class="modal__row">
@@ -122,6 +145,14 @@ function handleSubmit(): void {
         </div>
 
         <div class="modal__field">
+          <label class="modal__label" for="duracion">Duración</label>
+          <select id="duracion" v-model.number="form.duracionMin" class="modal__input">
+            <option v-for="min in DURACIONES" :key="min" :value="min">{{ min }} minutos</option>
+          </select>
+          <span v-if="errors.duracionMin" class="modal__error">{{ errors.duracionMin }}</span>
+        </div>
+
+        <div class="modal__field">
           <label class="modal__label" for="motivo">Motivo de consulta</label>
           <textarea
             id="motivo"
@@ -130,6 +161,17 @@ function handleSubmit(): void {
             placeholder="Describe brevemente el motivo…"
             rows="3"
           />
+          <span v-if="errors.motivo" class="modal__error">{{ errors.motivo }}</span>
+        </div>
+
+        <div class="modal__field">
+          <BaseCheckbox
+            v-model="form.consentimiento"
+            label="El paciente autoriza recibir recordatorios y avisos de sus citas."
+          />
+          <span v-if="errors.consentimiento" class="modal__error">
+            {{ errors.consentimiento }}
+          </span>
         </div>
 
         <p v-if="submitError" class="modal__submit-error" role="alert">{{ submitError }}</p>
@@ -265,6 +307,10 @@ function handleSubmit(): void {
 .modal__error {
   font-size: 0.8rem;
   color: var(--color-danger);
+}
+.modal__hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
 }
 .modal__submit-error {
   font-size: 0.85rem;

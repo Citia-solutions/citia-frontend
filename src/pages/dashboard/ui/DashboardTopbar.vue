@@ -3,10 +3,20 @@
 import BaseInput from '@/shared/ui/BaseInput.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { ModalNuevaCita } from '@/features/crear-cita'
+import type { CitaCreada } from '@/features/crear-cita'
 import { ref } from 'vue'
 
 const search = ref('')
 const modalAbierto = ref(false)
+
+const emit = defineEmits<{
+  /** Se emite cuando el servidor confirmó una cita nueva. */
+  citaCreada: [cita: CitaCreada]
+}>()
+
+function handleCreated(cita: CitaCreada): void {
+  emit('citaCreada', cita)
+}
 </script>
 
 <template>
@@ -41,7 +51,11 @@ const modalAbierto = ref(false)
     </div>
   </header>
 
-  <ModalNuevaCita :is-open="modalAbierto" @close="modalAbierto = false" />
+  <ModalNuevaCita
+    :is-open="modalAbierto"
+    @close="modalAbierto = false"
+    @created="handleCreated"
+  />
 </template>
 
 <style scoped>
