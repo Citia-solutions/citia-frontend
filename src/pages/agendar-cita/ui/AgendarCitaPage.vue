@@ -6,6 +6,10 @@ import { AgendarCitaFlow, StepperCita, StepperCitaHorizontal } from '@/features/
 import { PASOS } from '@/features/crear-cita/model/flujoCitaModel'
 import { ref } from 'vue'
 
+// Organización del enlace público. Llega como parámetro de ruta
+// (/agendar-cita/:tenantSlug) y se pasa al flujo para el envío.
+const props = defineProps<{ tenantSlug: string }>()
+
 // Estado del paso actual compartido con el stepper. El flujo lo cambia
 // internamente; aquí solo lo observamos para reflejarlo en el panel derecho.
 const pasoActual = ref<(typeof PASOS)[number]['id']>('identificacion')
@@ -21,7 +25,11 @@ function navegar(paso: (typeof PASOS)[number]['id']): void {
 <template>
   <div class="agendar">
     <main class="agendar__panel">
-      <AgendarCitaFlow ref="flowRef" @cambio-paso="pasoActual = $event" />
+      <AgendarCitaFlow
+        ref="flowRef"
+        :tenant-slug="props.tenantSlug"
+        @cambio-paso="pasoActual = $event"
+      />
     </main>
 
     <aside class="agendar__aside">

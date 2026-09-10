@@ -11,13 +11,30 @@ import ContactoStep from './steps/ContactoStep.vue'
 import HorarioStep from './steps/HorarioStep.vue'
 import MotivoStep from './steps/MotivoStep.vue'
 
+const props = defineProps<{
+  /** Organización del enlace público, desde la URL. */
+  tenantSlug: string
+}>()
+
 const emit = defineEmits<{
   /** El paso activo cambió (lo usa la página para el stepper derecho). */
   'cambio-paso': [paso: (typeof PASOS)[number]['id']]
 }>()
 
-const { form, errors, pasoActual, pasoIndex, isSubmitting, finalizado, reset, continuar, retroceder, irA, confirmar } =
-  useAgendarCita()
+const {
+  form,
+  errors,
+  pasoActual,
+  pasoIndex,
+  isSubmitting,
+  finalizado,
+  submitError,
+  reset,
+  continuar,
+  retroceder,
+  irA,
+  confirmar,
+} = useAgendarCita(() => props.tenantSlug)
 
 // La página lo usa para que los íconos del stepper naveguen entre secciones.
 defineExpose({ irA })
@@ -58,7 +75,7 @@ const pasoValido = computed(
 const esUltimoPaso = computed(() => pasoIndex.value === PASOS.length - 1)
 
 function handleAvanzar(): void {
-  if (esUltimoPaso.value) confirmar()
+  if (esUltimoPaso.value) void confirmar()
   else continuar()
 }
 
@@ -113,6 +130,14 @@ function handleReiniciar(): void {
                 :errors="errors"
                 :activo="paso.id === 'horario' ? i === pasoIndex : undefined"
               />
+
+              <p
+                v-if="submitError && i === pasoIndex"
+                class="flow__submit-error"
+                role="alert"
+              >
+                {{ submitError }}
+              </p>
 
               <footer class="flow__actions">
                 <BaseButton
@@ -169,6 +194,14 @@ function handleReiniciar(): void {
   padding: 2rem 3rem 2.5rem;
   background: var(--color-primary);
   color: #fff;
+}
+.flow__submit-error {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  color: #fff;
+  background: rgba(220, 38, 38, 0.85);
+  border-radius: var(--radius-md);
 }
 .flow__brand {
   display: flex;

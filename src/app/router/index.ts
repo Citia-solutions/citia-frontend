@@ -12,11 +12,15 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
-    // Vista pública de autoservicio: el paciente agenda sin iniciar sesión.
-    path: '/agendar-cita',
+    // Vista pública de autoservicio: el paciente pide hora sin iniciar sesión.
+    // El slug de la organización va en la URL porque el enlace es lo que
+    // identifica a quién se le está pidiendo: el profesional comparte
+    // /agendar-cita/su-organizacion por WhatsApp o redes.
+    path: '/agendar-cita/:tenantSlug',
     name: 'agendarCita',
     component: AgendarCitaPage,
     meta: { public: true },
+    props: true,
   },
   {
     path: '/',

@@ -1,9 +1,9 @@
 // Modelo del flujo público "Solicita una nueva cita".
 //
-// Es UI-only por ahora: el backend no expone un endpoint de pacientes, así que
-// este formulario NO se envía todavía. El tipo es distinto de `NuevaCitaForm`
-// porque el diseño separa Nombre y Apellidos en dos campos (el modal usa uno
-// solo). Cuando exista el endpoint, `useAgendarCita` mapea esto al contrato.
+// El tipo es distinto de `NuevaCitaForm` porque el diseño separa Nombre y
+// Apellidos en dos campos (el modal del profesional usa uno solo), y porque el
+// paciente elige día y hora como PREFERENCIA en vez de fijar la cita.
+// `toSolicitudRequest` mapea esto al contrato del backend.
 import { esRutValido } from '@/shared/lib/rut'
 
 /** Valores del formulario por secciones. */
@@ -45,7 +45,8 @@ export const PASOS: ReadonlyArray<{
   {
     id: 'horario',
     titulo: 'Horario',
-    subtitulo: 'Elige el día y la hora que más te acomoden.',
+    subtitulo:
+      'Dinos qué día y hora prefieres. Lo confirmamos contigo antes de agendar.',
   },
   {
     id: 'motivo',
@@ -114,10 +115,10 @@ export function validarPaso(values: FlujoCitaForm, paso: FlujoCitaPaso): FlujoCi
 
     case 'horario':
       if (!values.fecha) {
-        errors.fecha = 'Selecciona el día.'
+        errors.fecha = 'Selecciona el día que prefieres.'
       }
       if (!values.hora) {
-        errors.hora = 'Selecciona una hora.'
+        errors.hora = 'Selecciona la hora que prefieres.'
       }
       break
 

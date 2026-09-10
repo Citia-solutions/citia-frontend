@@ -6,6 +6,9 @@ export { default as StepperCitaHorizontal } from './ui/stepper/StepperCitaHorizo
 export { useCrearCita } from './model/useCrearCita'
 export { useAgendarCita } from './model/useAgendarCita'
 export { crearCita } from './api/crearCitaApi'
+export { enviarSolicitud } from './api/agendarCitaApi'
+export { toSolicitudRequest, aPreferenciaHoraria } from './model/toSolicitudRequest'
+export type { SolicitudRequest, SolicitudRecibida } from './model/toSolicitudRequest'
 export { toCrearCitaRequest, aInicioISO } from './model/toCrearCitaRequest'
 export {
   PASOS,

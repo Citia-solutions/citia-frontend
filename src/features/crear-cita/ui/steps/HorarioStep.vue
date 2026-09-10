@@ -1,8 +1,14 @@
 <script setup lang="ts">
 // Sección 3: Horario. Calendario del mes actual + franjas horarias.
-// La disponibilidad es placeholder (no hay endpoint): se ofrecen todos los
-// días desde hoy y las mismas franjas fijas de 09:00 a 18:00. Cuando exista
-// la lógica real, esto se conecta al backend de disponibilidad.
+//
+// IMPORTANTE: esto NO reserva la hora. El paciente expresa su PREFERENCIA
+// —elegir día y hora es la forma más clara de decir cuándo le acomoda— y el
+// profesional fija la hora real al aceptar la solicitud (ADR-09 decisión 2).
+// Por eso las franjas son fijas y no consultan disponibilidad: no hay nada que
+// consultar todavía, y el copy tiene que dejar claro que se confirma después.
+//
+// Si algún día el paciente reserva de verdad, hará falta el modelo de
+// disponibilidad y este paso pasa a consultarlo.
 import { computed, ref, watch } from 'vue'
 import { useErroresVisibles } from '../../model/useErroresVisibles'
 import type { FlujoCitaErrors, FlujoCitaForm } from '../../model/flujoCitaModel'
@@ -87,7 +93,7 @@ function seleccionarDia(iso: string): void {
   <div class="step">
     <div class="step__field">
       <label class="step__label" for="flujo-fecha">
-        Elige el día:<span class="step__required" aria-hidden="true">*</span>
+        ¿Qué día te acomoda?<span class="step__required" aria-hidden="true">*</span>
       </label>
       <div class="step__calendar">
         <header class="step__calendar-head">
@@ -123,7 +129,7 @@ function seleccionarDia(iso: string): void {
 
     <div class="step__field">
       <label class="step__label" for="flujo-hora">
-        Hora disponible:<span class="step__required" aria-hidden="true">*</span>
+        ¿A qué hora?<span class="step__required" aria-hidden="true">*</span>
       </label>
       <div class="step__horas">
         <button
@@ -151,6 +157,10 @@ function seleccionarDia(iso: string): void {
       </button>
       <span v-if="errorHora" class="step__error" role="alert">{{ errorHora }}</span>
       <span v-else-if="errors.hora" class="step__error">{{ errors.hora }}</span>
+      <p class="step__nota">
+        Es tu horario preferido, no una reserva: revisaremos tu solicitud y te
+        contactaremos para confirmar la hora definitiva.
+      </p>
     </div>
 
     <Teleport to="body">
@@ -194,6 +204,12 @@ function seleccionarDia(iso: string): void {
 </template>
 
 <style scoped>
+.step__nota {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
 .step {
   display: flex;
   flex-direction: column;
