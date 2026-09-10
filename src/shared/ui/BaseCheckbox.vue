@@ -1,10 +1,14 @@
 <script setup lang="ts">
 defineProps<{ label?: string }>()
+const emit = defineEmits<{
+  /** Se emite cuando el usuario cambia el checkbox (on/off). */
+  change: []
+}>()
 const model = defineModel<boolean>({ default: false })
 </script>
 
 <template>
-  <label class="check">
+  <label class="check" @change="emit('change')">
     <input v-model="model" type="checkbox" class="check__input" />
     <span class="check__box" aria-hidden="true" />
     <span v-if="label" class="check__label">{{ label }}</span>

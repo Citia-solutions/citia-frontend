@@ -2,12 +2,20 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useSessionStore } from '@/entities/session'
 import { LoginPage } from '@/pages/login'
 import { DashboardPage } from '@/pages/dashboard'
+import { AgendarCitaPage } from '@/pages/agendar-cita'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
     component: LoginPage,
+    meta: { public: true },
+  },
+  {
+    // Vista pública de autoservicio: el paciente agenda sin iniciar sesión.
+    path: '/agendar-cita',
+    name: 'agendarCita',
+    component: AgendarCitaPage,
     meta: { public: true },
   },
   {

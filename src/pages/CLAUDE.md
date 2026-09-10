@@ -8,17 +8,24 @@ src/pages/
 │   └── ui/
 │       ├── LoginPage.vue    # Layout: grid 2 columnas (aside + panel)
 │       └── AuthAside.vue    # Panel izquierdo: logo Citia, headline, estadísticas
-└── home/
+├── home/
+│   └── ui/
+│       └── HomePage.vue     # Dashboard placeholder: saludo con nombre + botón logout
+├── dashboard/
+│   └── ui/
+│       └── DashboardPage.vue  # Resumen: sidebar + topbar + métricas y citas del día
+└── agendar-cita/
     └── ui/
-        └── HomePage.vue     # Dashboard placeholder: saludo con nombre + botón logout
+        └── AgendarCitaPage.vue  # Vista pública por secciones (flujo + stepper)
 ```
 
 ## Rutas
 
-| Ruta     | Componente    | Requiere auth | Notas                                      |
-|----------|---------------|---------------|--------------------------------------------|
-| `/login` | `LoginPage`   | No            | Redirige a `/` si ya está autenticado      |
-| `/`      | `HomePage`    | Sí            | Redirige a `/login?redirect=/` si no auth  |
+| Ruta           | Componente        | Requiere auth | Notas                                    |
+|----------------|-------------------|---------------|------------------------------------------|
+| `/login`       | `LoginPage`       | No            | Redirige a `/` si ya está autenticado    |
+| `/agendar-cita`| `AgendarCitaPage` | No            | Pública, split-screen 78/22, sin layout  |
+| `/`            | `DashboardPage`   | Sí            | Redirige a `/login?redirect=/` si no auth |
 
 ## Convenciones
 
