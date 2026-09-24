@@ -2,8 +2,9 @@
 // Sección 4: Motivo. Descripción de la consulta + consentimiento de contacto.
 // El motivo avisa al salir del campo (blur); el consentimiento al marcarse.
 import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
+import { computed } from 'vue'
 import { useErroresVisibles } from '../../model/useErroresVisibles'
-import type { FlujoCitaErrors, FlujoCitaForm } from '../../model/flujoCitaModel'
+import { LIMITES, type FlujoCitaErrors, type FlujoCitaForm } from '../../model/flujoCitaModel'
 
 const props = defineProps<{
   form: FlujoCitaForm
@@ -14,6 +15,10 @@ const { marcarTocado, errorDe } = useErroresVisibles('motivo', props.form)
 
 const errorMotivo = errorDe('motivo')
 const errorConsentimiento = errorDe('consentimiento')
+
+// El límite es intencional (ADR-09 §10): una caja grande invita a escribir una
+// historia clínica completa. El contador lo hace visible antes de chocar con él.
+const caracteresMotivo = computed(() => props.form.motivo.length)
 </script>
 
 <template>
@@ -29,9 +34,14 @@ const errorConsentimiento = errorDe('consentimiento')
         :class="{ 'step__input--error': errorMotivo }"
         placeholder="Describe brevemente el motivo…"
         rows="4"
+        :maxlength="LIMITES.motivo"
+        aria-describedby="flujo-motivo-contador"
         :aria-invalid="errorMotivo ? 'true' : 'false'"
         @blur="marcarTocado('motivo')"
       />
+      <span id="flujo-motivo-contador" class="step__counter">
+        {{ caracteresMotivo }}/{{ LIMITES.motivo }}
+      </span>
       <span v-if="errorMotivo" class="step__error" role="alert">{{ errorMotivo }}</span>
       <span v-else-if="errors.motivo" class="step__error">{{ errors.motivo }}</span>
     </div>
@@ -94,6 +104,11 @@ const errorConsentimiento = errorDe('consentimiento')
 .step__input--textarea {
   resize: vertical;
   min-height: 96px;
+}
+.step__counter {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.75);
 }
 .step__consent {
   display: flex;

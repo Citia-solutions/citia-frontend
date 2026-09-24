@@ -3,7 +3,7 @@
 // El error de cada campo aparece al salir del campo (blur) y se recalcula en
 // vivo mientras se escribe.
 import { useErroresVisibles } from '../../model/useErroresVisibles'
-import type { FlujoCitaErrors, FlujoCitaForm } from '../../model/flujoCitaModel'
+import { LIMITES, type FlujoCitaErrors, type FlujoCitaForm } from '../../model/flujoCitaModel'
 
 const props = defineProps<{
   form: FlujoCitaForm
@@ -48,6 +48,7 @@ const errorTelefono = errorDe('telefono')
         :class="{ 'step__input--error': errorTelefono }"
         type="tel"
         autocomplete="tel"
+        :maxlength="LIMITES.telefono"
         placeholder="+56 9 1234 5678"
         :aria-invalid="errorTelefono ? 'true' : 'false'"
         @blur="marcarTocado('telefono')"

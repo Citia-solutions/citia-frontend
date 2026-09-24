@@ -71,6 +71,22 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_RE = /^\+?[0-9 ()-]+$/
 
 /**
+ * Largos máximos, espejo de los `@MaxLength` de `CrearSolicitudDto` en el
+ * backend. Sin ellos, pasarse devolvía un 400 genérico y el paciente no sabía
+ * qué campo corregir. Si el DTO cambia, cambiar aquí.
+ *
+ * `nombreCompleto` aplica a `nombre + ' ' + apellidos`, que es lo que viaja
+ * como `nombrePaciente`. Los inputs de nombre y apellidos llevan cada uno
+ * `maxlength` de `nombreParte`; la suma se valida aparte.
+ */
+export const LIMITES = {
+  nombreCompleto: 120,
+  nombreParte: 60,
+  telefono: 30,
+  motivo: 300,
+} as const
+
+/**
  * Mensaje de error del RUT, o `undefined` si está correcto. Vive aquí para que
  * la validación del paso y el aviso "en vivo" del input compartan la misma
  * regla y el mismo texto (UI-first: el backend valida igual con módulo 11).
@@ -97,12 +113,18 @@ export function validarPaso(values: FlujoCitaForm, paso: FlujoCitaPaso): FlujoCi
       }
       if (!values.apellidos.trim()) {
         errors.apellidos = 'Ingresa tus apellidos.'
+      } else if (
+        `${values.nombre.trim()} ${values.apellidos.trim()}`.length > LIMITES.nombreCompleto
+      ) {
+        errors.apellidos = `Tu nombre completo no puede superar los ${LIMITES.nombreCompleto} caracteres.`
       }
       break
 
     case 'contacto':
       if (!values.telefono.trim()) {
         errors.telefono = 'Ingresa tu teléfono.'
+      } else if (values.telefono.trim().length > LIMITES.telefono) {
+        errors.telefono = `El teléfono no puede superar los ${LIMITES.telefono} caracteres.`
       } else if (!PHONE_RE.test(values.telefono.trim())) {
         errors.telefono = 'El teléfono no es válido.'
       }
@@ -125,6 +147,8 @@ export function validarPaso(values: FlujoCitaForm, paso: FlujoCitaPaso): FlujoCi
     case 'motivo':
       if (!values.motivo.trim()) {
         errors.motivo = 'Cuéntanos el motivo de tu consulta.'
+      } else if (values.motivo.trim().length > LIMITES.motivo) {
+        errors.motivo = `El motivo no puede superar los ${LIMITES.motivo} caracteres.`
       }
       if (!values.consentimiento) {
         errors.consentimiento = 'Se necesita tu autorización para contactarte.'

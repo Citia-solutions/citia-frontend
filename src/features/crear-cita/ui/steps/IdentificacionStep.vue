@@ -3,7 +3,7 @@
 // El error de cada campo aparece al salir del campo (blur) y se recalcula en
 // vivo mientras se escribe.
 import { useErroresVisibles } from '../../model/useErroresVisibles'
-import type { FlujoCitaErrors, FlujoCitaForm } from '../../model/flujoCitaModel'
+import { LIMITES, type FlujoCitaErrors, type FlujoCitaForm } from '../../model/flujoCitaModel'
 
 const props = defineProps<{
   form: FlujoCitaForm
@@ -49,6 +49,7 @@ const errorApellidos = errorDe('apellidos')
         :class="{ 'step__input--error': errorNombre }"
         type="text"
         autocomplete="given-name"
+        :maxlength="LIMITES.nombreParte"
         placeholder="Nombre"
         :aria-invalid="errorNombre ? 'true' : 'false'"
         @blur="marcarTocado('nombre')"
@@ -61,6 +62,7 @@ const errorApellidos = errorDe('apellidos')
         :class="{ 'step__input--error': errorApellidos }"
         type="text"
         autocomplete="family-name"
+        :maxlength="LIMITES.nombreParte"
         placeholder="Apellidos"
         :aria-invalid="errorApellidos ? 'true' : 'false'"
         @blur="marcarTocado('apellidos')"
