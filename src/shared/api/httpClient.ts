@@ -17,11 +17,16 @@ export class HttpError extends Error {
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   /** Se serializa a JSON automáticamente. */
   json?: unknown
+  /**
+   * `false` para llamadas anónimas: no adjunta el Bearer aunque haya una
+   * sesión guardada en el navegador. Por defecto `true`.
+   */
+  auth?: boolean
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { json, headers, ...rest } = options
-  const token = getToken()
+  const { json, headers, auth = true, ...rest } = options
+  const token = auth ? getToken() : null
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...rest,

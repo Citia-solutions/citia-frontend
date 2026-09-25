@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useSessionStore } from '@/entities/session'
 import { LoginPage } from '@/pages/login'
 import { DashboardPage } from '@/pages/dashboard'
+import { AgendarCitaPage } from '@/pages/agendar-cita'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -9,6 +10,17 @@ const routes: RouteRecordRaw[] = [
     name: 'login',
     component: LoginPage,
     meta: { public: true },
+  },
+  {
+    // Vista pública de autoservicio: el paciente pide hora sin iniciar sesión.
+    // El slug de la organización va en la URL porque el enlace es lo que
+    // identifica a quién se le está pidiendo: el profesional comparte
+    // /agendar-cita/su-organizacion por WhatsApp o redes.
+    path: '/agendar-cita/:tenantSlug',
+    name: 'agendarCita',
+    component: AgendarCitaPage,
+    meta: { public: true },
+    props: true,
   },
   {
     path: '/',

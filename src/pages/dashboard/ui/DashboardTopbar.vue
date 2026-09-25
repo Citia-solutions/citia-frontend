@@ -1,17 +1,44 @@
 <script setup lang="ts">
-// Barra superior del contenido. Título + búsqueda + acciones (visual/inerte).
+// Barra superior del contenido. Título + búsqueda + acciones.
+// El subtítulo sale del store de citas del día (fecha real y conteos); el
+// botón "+ Nueva cita" solo avisa: el modal lo compone la página, que es quien
+// sabe recargar la lista cuando se guarda una cita.
+import { computed, ref } from 'vue'
 import BaseInput from '@/shared/ui/BaseInput.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
-import { ref } from 'vue'
+import { capitalizar, formatearFechaLarga } from '@/shared/lib/fecha'
+import { useTodayAppointments } from '@/entities/appointment'
+
+const emit = defineEmits<{
+  /** El profesional pidió agendar una cita nueva. */
+  nuevaCita: []
+}>()
 
 const search = ref('')
+const store = useTodayAppointments()
+
+// "Miércoles 23 de septiembre · 7 citas hoy · 2 pendientes de confirmar".
+// La fecha se toma del momento de la última carga, así cambia junto con la
+// lista al cruzar la medianoche con la pestaña abierta.
+const subtitle = computed(() => {
+  const fecha = capitalizar(formatearFechaLarga(store.loadedAt))
+  if (!store.loaded) return fecha
+
+  const citas = store.scheduledCount
+  const pendientes = store.pendingCount
+  const partes = [fecha, `${citas} ${citas === 1 ? 'cita' : 'citas'} hoy`]
+  if (pendientes > 0) {
+    partes.push(`${pendientes} ${pendientes === 1 ? 'pendiente' : 'pendientes'} de confirmar`)
+  }
+  return partes.join(' · ')
+})
 </script>
 
 <template>
   <header class="topbar">
     <div class="topbar__heading">
       <h1 class="topbar__title">Resumen</h1>
-      <p class="topbar__subtitle">Martes 16 de junio · 7 citas hoy · 2 pendientes de confirmar</p>
+      <p class="topbar__subtitle">{{ subtitle }}</p>
     </div>
 
     <div class="topbar__actions">
@@ -34,7 +61,7 @@ const search = ref('')
       </button>
 
       <div class="topbar__cta">
-        <BaseButton :block="false">+ Nueva cita</BaseButton>
+        <BaseButton :block="false" @click="emit('nuevaCita')">+ Nueva cita</BaseButton>
       </div>
     </div>
   </header>

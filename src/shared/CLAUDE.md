@@ -11,7 +11,8 @@ CUALQUIER cambio aquí puede afectar a TODOS los módulos. Avisar al orquestador
 src/shared/
 ├── api/
 │   └── httpClient.ts     # request<T>(), http.get/post/put/patch/delete()
-│                         # Inyecta Bearer token automáticamente
+│                         # Inyecta Bearer token automáticamente;
+│                         # { auth: false } lo omite (rutas públicas)
 │                         # Base URL: import.meta.env.VITE_API_URL ?? '/api'
 │                         # Lanza HttpError con status + body en errores
 ├── lib/
@@ -28,8 +29,11 @@ src/shared/
 - No importar de `features/`, `entities/`, ni `pages/` — shared es la capa más baja
 - `httpClient.ts` es transporte genérico; NO añadir lógica de negocio
 - `authToken.ts` solo maneja el token; NO añadir estado de usuario aquí
+- Toda llamada a una ruta pública/anónima del backend pasa `{ auth: false }`: si el navegador tiene
+  sesión, el token no debe viajar a una ruta que no la pide
 - Cambios en `HttpError` o en la firma de `request<T>()` requieren verificar todos los módulos
 
 ## Variables de Entorno
 
-- `VITE_API_URL`: URL base del backend (default: `/api`)
+- `VITE_API_URL`: URL base del backend **incluido el prefijo `/api`** (default: `/api`).
+  En local: `http://localhost:3000/api`
