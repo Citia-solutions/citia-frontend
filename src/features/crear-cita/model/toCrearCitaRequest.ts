@@ -1,35 +1,10 @@
+import { aInicioISO } from '@/shared/lib/fecha'
 import { normalizarRut } from '@/shared/lib/rut'
 import type { CrearCitaRequest, NuevaCitaForm } from './types'
 
-/**
- * Combina fecha ('YYYY-MM-DD') y hora ('HH:mm') en un instante ISO con zona
- * explícita.
- *
- * Se construye con componentes locales (`new Date(a, m, d, h, min)`) a
- * propósito: si se pasara la cadena `'2026-08-25T14:00'` el navegador la
- * interpretaría como UTC y la cita quedaría corrida varias horas. Al armarla
- * por componentes se usa la zona del navegador —la del profesional— y
- * `toISOString()` la serializa como instante absoluto terminado en `Z`.
- *
- * El backend guarda instantes y proyecta a la zona de la clínica al mostrar,
- * así que mandar el instante explícito es exactamente lo que espera.
- */
-export function aInicioISO(fecha: string, hora: string): string {
-  const partesFecha = fecha.split('-')
-  const partesHora = hora.split(':')
-
-  const anio = Number(partesFecha[0])
-  const mes = Number(partesFecha[1])
-  const dia = Number(partesFecha[2])
-  const horas = Number(partesHora[0])
-  const minutos = Number(partesHora[1])
-
-  if ([anio, mes, dia, horas, minutos].some(Number.isNaN)) {
-    throw new Error(`Fecha u hora con formato inesperado: "${fecha}" "${hora}"`)
-  }
-
-  return new Date(anio, mes - 1, dia, horas, minutos, 0, 0).toISOString()
-}
+// `aInicioISO` vive en `shared/lib/fecha` (la usa también reagendar). Se
+// reexporta para no romper a quien la importaba desde este feature.
+export { aInicioISO }
 
 /**
  * Traduce el formulario al cuerpo que espera `POST /citas`.

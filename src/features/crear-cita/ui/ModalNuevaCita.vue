@@ -5,6 +5,7 @@
 import { watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
+import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
 import { useCrearCita } from '../model/useCrearCita'
 import type { CitaCreada } from '../model/types'
 
@@ -130,15 +131,9 @@ function handleSubmit(): void {
             <label class="modal__label" for="hora">Hora / Bloque</label>
             <select id="hora" v-model="form.hora" class="modal__input">
               <option value="" disabled>Selecciona una hora</option>
-              <option value="09:00">09:00</option>
-              <option value="10:00">10:00</option>
-              <option value="11:00">11:00</option>
-              <option value="12:00">12:00</option>
-              <option value="13:00">13:00</option>
-              <option value="15:00">15:00</option>
-              <option value="16:00">16:00</option>
-              <option value="17:00">17:00</option>
-              <option value="18:00">18:00</option>
+              <option v-for="bloque in BLOQUES_HORARIOS" :key="bloque" :value="bloque">
+                {{ bloque }}
+              </option>
             </select>
             <span v-if="errors.hora" class="modal__error">{{ errors.hora }}</span>
           </div>

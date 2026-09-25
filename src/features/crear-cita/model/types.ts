@@ -1,4 +1,5 @@
 // Tipos del feature `crear-cita`.
+import type { AppointmentStatus } from '@/entities/appointment'
 
 // ---------------------------------------------------------------------------
 // Formulario (lo que ve y llena el profesional)
@@ -51,14 +52,6 @@ export interface CrearCitaRequest {
   paciente: PacienteEnCitaRequest
 }
 
-export type EstadoCita =
-  | 'pendiente'
-  | 'confirmada'
-  | 'cancelada'
-  | 'asistio'
-  | 'no_asistio'
-  | 'ghosting'
-
 export interface PacienteResumen {
   id: string
   rut: string | null
@@ -75,7 +68,8 @@ export interface CitaCreada {
   inicio: string
   duracionMin: number
   tipoConsulta: string
-  estado: EstadoCita
+  /** Estado de la cita: el tipo único vive en `entities/appointment`. */
+  estado: AppointmentStatus
   pacienteId: string
   /**
    * El paciente con el que quedó vinculada la cita: puede ser uno recién

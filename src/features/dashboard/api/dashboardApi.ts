@@ -1,20 +1,10 @@
 // API mock del dashboard. Datos exactos del diseño de US-06.
 // Todas las funciones son async para imitar el contrato del backend real.
-import type { Appointment } from '@/entities/appointment'
+//
+// Las citas del día ya NO están aquí: vienen de `GET /citas/hoy` y viven en
+// `entities/appointment` (US-02.09). Lo que queda son métricas, ausentismo y
+// actividad del motor, que aún no tienen endpoint (DTF-03).
 import type { Metric, WeeklyBar, ActivityEvent } from '../model/types'
-
-// TODO: reemplazar por httpClient cuando el backend exista
-export function getTodayAppointments(): Promise<Appointment[]> {
-  return Promise.resolve([
-    { id: 'a1', time: '09:00', patientName: 'María González', type: 'Terapia individual', durationMin: 50, status: 'confirmada' },
-    { id: 'a2', time: '10:00', patientName: 'Felipe Soto', type: 'Terapia individual', durationMin: 50, status: 'pendiente' },
-    { id: 'a3', time: '11:30', patientName: 'Carla Méndez', type: 'Terapia de pareja', durationMin: 60, status: 'confirmada' },
-    { id: 'a4', time: '13:00', patientName: 'Valentina Rojas', type: 'Cupo recuperado', durationMin: 50, status: 'recuperada' },
-    { id: 'a5', time: '15:00', patientName: 'Jorge Lillo', type: 'Terapia individual', durationMin: 50, status: 'pendiente' },
-    { id: 'a6', time: '16:30', patientName: 'Antonia Pérez', type: 'Evaluación', durationMin: 80, status: 'confirmada' },
-    { id: 'a7', time: '18:00', patientName: 'Roberto Díaz', type: 'Terapia individual', durationMin: 50, status: 'riesgo_alto' },
-  ])
-}
 
 // TODO: reemplazar por httpClient cuando el backend exista
 export function getMetrics(): Promise<Metric[]> {

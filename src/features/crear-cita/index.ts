@@ -27,5 +27,4 @@ export type {
   PacienteEnCitaRequest,
   CitaCreada,
   PacienteResumen,
-  EstadoCita,
 } from './model/types'

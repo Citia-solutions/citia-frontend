@@ -10,6 +10,8 @@
 // Si algún día el paciente reserva de verdad, hará falta el modelo de
 // disponibilidad y este paso pasa a consultarlo.
 import { computed, ref, watch } from 'vue'
+import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
+import { esDiaPasado } from '@/shared/lib/fecha'
 import { useErroresVisibles } from '../../model/useErroresVisibles'
 import type { FlujoCitaErrors, FlujoCitaForm } from '../../model/flujoCitaModel'
 
@@ -41,7 +43,7 @@ watch(
 // lista las franjas en un diálogo centrado, scrolleable si no caben.
 const modalAbierto = ref(false)
 
-const HORAS = ['09:00', '10:00', '11:00', '12:00', '13:00', '15:00', '16:00', '17:00', '18:00']
+const HORAS = BLOQUES_HORARIOS
 
 const hoy = new Date()
 const añoActual = hoy.getFullYear()
@@ -78,8 +80,10 @@ const dias = computed(() => {
   return celdas
 })
 
+// Compara en zona LOCAL: `toISOString()` da la fecha UTC y en Chile, de noche,
+// marcaba el día de hoy como pasado.
 function esPasado(iso: string): boolean {
-  return iso < hoy.toISOString().slice(0, 10)
+  return esDiaPasado(iso, hoy)
 }
 
 function seleccionarDia(iso: string): void {
