@@ -12,23 +12,23 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
 | [DTF-01](DTF-01.md) | `isAuthenticated` acepta una sesión a medias | 🟠 media | abierta | `entities/session/model/store.ts` |
-| [DTF-03](DTF-03.md) | El dashboard muestra datos de prueba | 🟠 media | abierta | `features/dashboard/api/dashboardApi.ts` |
+| [DTF-03](DTF-03.md) | El dashboard muestra datos de prueba (**solo métricas, ausentismo y actividad**; la lista de citas ya es real) | 🟡 baja | abierta (parte citas cerrada) | `features/dashboard/api/dashboardApi.ts` |
 | [DTF-02](DTF-02.md) | `fetchCurrentUser()` apunta a un endpoint que no existe | 🟡 baja | abierta | `entities/session/api/sessionApi.ts` |
 | [DTF-04](DTF-04.md) | El modelo de sesión contempla un rol que el backend no emite | 🟡 baja | abierta | `entities/session/model/types.ts` |
 | [DTF-05](DTF-05.md) | El algoritmo del RUT está duplicado en los dos repos | 🟡 baja | 🔵 aceptada | `shared/lib/rut.ts` |
-| [DTF-06](DTF-06.md) | Los largos máximos del formulario público copian los del DTO | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/flujoCitaModel.ts` |
+| [DTF-06](DTF-06.md) | Los largos máximos del formulario público y del motivo del voucher copian los de los DTO | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/flujoCitaModel.ts`, `features/gestionar-cita/` |
+| [DTF-07](DTF-07.md) | Se asume que la zona del navegador es la de la clínica | 🟡 baja | abierta | `shared/lib/fecha.ts` |
 
 ---
 
 ## Notas
 
-**DTF-03 es la que más confunde al probar.** Una cita se guarda bien en el backend y no aparece en
-la lista del día, porque la lista usa datos fijos. Se ve como un bug del guardado y no lo es.
+**DTF-03 ya no confunde al probar:** desde US-02.09 una cita guardada sí aparece en la lista del
+día. Lo que sigue con datos fijos (métricas, ausentismo, actividad) no tiene endpoint.
 
-**Ninguna de estas seis decide nada.** Registran el estado actual y, donde hay más de un camino,
-lo dejan explícito para la historia de usuario que corresponda. En particular: cómo mapear los
-estados que el diseño del dashboard contempla y el backend no conoce **no está decidido** — ver
-DTF-03.
+**Ninguna de estas siete decide nada.** Registran el estado actual y, donde hay más de un camino,
+lo dejan explícito para la historia de usuario que corresponda. El mapeo de estados del dashboard
+**ya se decidió** en US-02.09: los seis del backend, sin `recuperada` ni `riesgo_alto`.
 
 **Deudas encadenadas al backend:** DTF-03 tiene su contraparte en `DT-29` (funcionalidad
 implementada y no conectada), y DTF-04 depende de `DT-07` y `DT-02`. Ambas en

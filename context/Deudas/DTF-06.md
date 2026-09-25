@@ -9,6 +9,10 @@
 Los `@MaxLength` de `CrearSolicitudDto` (nombre 120, teléfono 30, motivo 300) están repetidos a mano
 en `LIMITES`. Nada comprueba que sigan iguales.
 
+**Segunda copia (US-02.08, 2026-09-24):** el motivo del voucher (reagendar y cancelar) corta en
+**300**, igual que `@MaxLength(300)` en `MotivoCitaDto` y `ReagendarCitaDto` del backend
+(`citia-backend/src/modules/cita/presentation/dto/`). Misma regla: si cambia allá, cambia acá.
+
 ## Por qué existe la copia
 
 Sin ella, pasarse de un largo devolvía un `400` genérico y el paciente no sabía qué campo corregir.
