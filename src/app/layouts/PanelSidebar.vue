@@ -1,7 +1,14 @@
 <script setup lang="ts">
-// Sidebar fijo del dashboard. Navegación principal + tarjeta de IA + perfil.
-// Los items no-activos son visuales (no navegan en este US).
+// Sidebar fijo del panel del profesional (lo pinta `PanelLayout` en todas las
+// vistas autenticadas). Navegación principal + tarjeta de IA + perfil.
+//
+// Resumen, Agenda y Solicitudes navegan; Pacientes y Citas anuladas siguen
+// siendo visuales (sin vista todavía; la píldora "3" es dato fijo, DTF-03).
+// La píldora de Solicitudes es real: cuántas esperan respuesta.
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
+import { useSolicitudesRecibidas } from '@/entities/solicitud'
+
+const recibidas = useSolicitudesRecibidas()
 </script>
 
 <template>
@@ -19,7 +26,7 @@ import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
     <nav class="sidebar__nav">
       <span class="sidebar__label">PRINCIPAL</span>
 
-      <a href="#" class="sidebar__item sidebar__item--active" aria-current="page">
+      <RouterLink :to="{ name: 'home' }" class="sidebar__item" exact-active-class="sidebar__item--active">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="9" rx="1" />
           <rect x="14" y="3" width="7" height="5" rx="1" />
@@ -27,15 +34,30 @@ import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
           <rect x="3" y="16" width="7" height="5" rx="1" />
         </svg>
         <span>Resumen</span>
-      </a>
+      </RouterLink>
 
-      <a href="#" class="sidebar__item">
+      <RouterLink :to="{ name: 'agenda' }" class="sidebar__item" active-class="sidebar__item--active">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="4" width="18" height="18" rx="2" />
           <path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
-        <span>Calendario</span>
-      </a>
+        <span>Agenda</span>
+      </RouterLink>
+
+      <RouterLink :to="{ name: 'solicitudes' }" class="sidebar__item" active-class="sidebar__item--active">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+          <path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z" />
+        </svg>
+        <span>Solicitudes</span>
+        <span
+          v-if="recibidas.etiqueta"
+          class="sidebar__pill sidebar__pill--info"
+          :aria-label="`${recibidas.etiqueta} por responder`"
+        >
+          {{ recibidas.etiqueta }}
+        </span>
+      </RouterLink>
 
       <a href="#" class="sidebar__item">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -229,6 +251,10 @@ import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
   font-size: 0.75rem;
   color: var(--color-sidebar-text-muted);
 }
+/* Contador informativo (solicitudes por responder), no una alerta. */
+.sidebar__pill.sidebar__pill--info {
+  background: var(--color-primary);
+}
 @media (max-width: 860px) {
   .sidebar {
     width: 72px;
@@ -241,7 +267,18 @@ import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
     display: none;
   }
   .sidebar__item {
+    position: relative;
     justify-content: center;
+  }
+  /* Colapsado: la píldora queda como contador en la esquina del ícono. */
+  .sidebar__item .sidebar__pill {
+    display: inline-flex;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
   }
 }
 </style>
