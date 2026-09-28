@@ -19,6 +19,8 @@ const emit = defineEmits<{
   select: [appointment: Appointment]
   /** Pidió agendar una cita desde el estado vacío. */
   schedule: []
+  /** Pidió ver la agenda completa ("Ver calendario"). */
+  calendar: []
 }>()
 
 const store = useTodayAppointments()
@@ -76,7 +78,7 @@ function rowLabel(appt: Appointment): string {
           </h2>
           <p v-if="subtitle" class="appts__subtitle">{{ subtitle }}</p>
         </div>
-        <button type="button" class="appts__head-action">Ver calendario</button>
+        <button type="button" class="appts__head-action" @click="emit('calendar')">Ver agenda</button>
       </div>
     </template>
 
