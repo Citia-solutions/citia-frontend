@@ -23,6 +23,9 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
 - **[`Features/`](Features/README.md)** — una por funcionalidad implementada.
 - **[`Deudas/`](Deudas/README.md)** — deudas técnicas del front, con prefijo `DTF-` para no
   confundirlas con las del backend al hablar de ellas.
+- **Cierre de Fase 1 de US-02** (2026-09-25): [agenda-profesional](Features/agenda-profesional.md)
+  (semana + lista, aviso de solapamiento) y [bandeja-solicitudes](Features/bandeja-solicitudes.md)
+  (aceptar/rechazar solicitudes, enlace de agenda). Contrato del lado del backend.
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
@@ -43,6 +46,10 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
 (`/agendar-cita/:tenantSlug`) · **lista "Citas de hoy"** del dashboard
 ([US-02.09](Features/dashboard-citas-del-dia.md)) · **voucher con reagendar y cancelar**
 ([US-02.08](Features/gestionar-cita.md)). Estas dos últimas, sin prueba manual contra el backend real.
+
+**Construido contra el contrato, sin backend todavía** (cierre de Fase 1, verificado con respuestas
+simuladas): **agenda** `/agenda` · **bandeja de solicitudes** `/solicitudes` · **aviso de
+solapamiento** al crear, reagendar y aceptar · **enlace de agenda** copiable (con advertencia DT-18).
 
 **Con datos de prueba:** métricas, ausentismo semanal y actividad del motor del dashboard (no tienen
 endpoint) — ver [DTF-03](Deudas/DTF-03.md).

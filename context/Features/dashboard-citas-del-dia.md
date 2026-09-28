@@ -89,6 +89,15 @@ Casos que se ven raros y son correctos:
 
 ---
 
+## Cambios del cierre de Fase 1 (2026-09-25)
+
+- El sidebar ya no es parte de `DashboardPage`: lo pone `app/layouts/PanelLayout.vue`, ruta padre de
+  `/`, `/agenda` y `/solicitudes` — ver [agenda-profesional](agenda-profesional.md#layout-del-panel-cambio-transversal).
+- "Ver calendario" pasa a **"Ver agenda"** y navega a `/agenda`.
+- Si la cita creada con "+ Nueva cita" choca con otras, se muestra el aviso de solapamiento (ADR-11)
+  sobre el contenido, descartable.
+- `CitaDashboardDto` gana `fecha` (opcional en `/hoy`; el dashboard no lo usa).
+
 ## Pendientes
 
 | Qué | Nota |
