@@ -45,6 +45,21 @@ export interface Appointment {
   type: string // "Terapia individual"
   durationMin: number // 50
   status: AppointmentStatus
+  /**
+   * Día calendario 'YYYY-MM-DD' en la zona de la clínica, tal como lo manda el
+   * backend (`fecha`, desde el cierre de Fase 1). Opcional porque el detalle
+   * (`GET /citas/:id`) no lo trae y un backend anterior tampoco en `/hoy`.
+   */
+  date?: string
+}
+
+/**
+ * Una cita de la agenda por rango (`GET /citas?desde&hasta`) o de un aviso de
+ * solapamiento: ahí `date` viene siempre y es por lo que se agrupa por día.
+ * El front NO lo deriva de `startsAt` (ADR-07: el backend proyecta).
+ */
+export interface AgendaAppointment extends Appointment {
+  date: string
 }
 
 /** Datos del paciente que trae el detalle de una cita. */

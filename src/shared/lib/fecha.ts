@@ -82,3 +82,65 @@ export function formatearFechaLarga(fecha: Date): string {
 export function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
+
+// ---------------------------------------------------------------------------
+// Días calendario ('YYYY-MM-DD'). Son FECHAS, no instantes: la agenda las recibe
+// ya proyectadas a la zona de la clínica (`fecha` de `CitaDashboardDto`) y aquí
+// solo se cuentan, se suman y se formatean. Nada de esto convierte zonas.
+// ---------------------------------------------------------------------------
+
+/** Descompone 'YYYY-MM-DD'; lanza si el formato no calza. */
+function partesDeFecha(fechaISO: string): [number, number, number] {
+  const partes = fechaISO.split('-').map(Number)
+  const [anio, mes, dia] = partes
+  if (
+    partes.length !== 3 ||
+    anio === undefined ||
+    mes === undefined ||
+    dia === undefined ||
+    partes.some(Number.isNaN)
+  ) {
+    throw new Error(`Fecha con formato inesperado: "${fechaISO}"`)
+  }
+  return [anio, mes, dia]
+}
+
+/**
+ * 'YYYY-MM-DD' → Date a medianoche LOCAL de ese día. Solo para formatearlo
+ * (`formatearFechaLarga`, nombre del día): `new Date('2026-09-22')` lo leería
+ * como UTC y en Chile mostraría el día anterior.
+ */
+export function fechaCalendario(fechaISO: string): Date {
+  const [anio, mes, dia] = partesDeFecha(fechaISO)
+  return new Date(anio, mes - 1, dia)
+}
+
+/**
+ * Suma días a una fecha calendario. La aritmética va en UTC a propósito: un
+ * cambio de horario local no puede hacer que "+1 día" caiga en el mismo día.
+ */
+export function sumarDias(fechaISO: string, dias: number): string {
+  const [anio, mes, dia] = partesDeFecha(fechaISO)
+  const d = new Date(Date.UTC(anio, mes - 1, dia + dias))
+  return `${d.getUTCFullYear()}-${dosDigitos(d.getUTCMonth() + 1)}-${dosDigitos(d.getUTCDate())}`
+}
+
+/** Días de `desde` a `hasta` (negativo si `hasta` es anterior). */
+export function diferenciaDias(desde: string, hasta: string): number {
+  const [a1, m1, d1] = partesDeFecha(desde)
+  const [a2, m2, d2] = partesDeFecha(hasta)
+  return Math.round((Date.UTC(a2, m2 - 1, d2) - Date.UTC(a1, m1 - 1, d1)) / 86_400_000)
+}
+
+/** Día de la semana de una fecha calendario: 0 = domingo … 6 = sábado. */
+export function diaDeLaSemana(fechaISO: string): number {
+  const [anio, mes, dia] = partesDeFecha(fechaISO)
+  return new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()
+}
+
+/** 'HH:mm' → minutos desde la medianoche (NaN si no calza). */
+export function minutosDelDia(hora: string): number {
+  const [h, m] = hora.split(':').map(Number)
+  if (h === undefined || m === undefined) return Number.NaN
+  return h * 60 + m
+}
