@@ -1,11 +1,15 @@
 <script setup lang="ts">
-// Página raíz del dashboard "Resumen": sidebar fijo + contenido principal scrolleable.
+// Página raíz del dashboard "Resumen". El sidebar lo pone `PanelLayout` (app);
+// aquí va el contenido principal scrolleable.
 //
 // La página COMPONE: escucha los eventos que ya emiten los features (cita
 // creada, cita cambiada desde el voucher) y le pide al store de citas del día
 // que recargue. Los features siguen sin saber que el dashboard existe.
+//
+// Si la cita recién creada se cruza con otras (ADR-11), el modal ya se cerró:
+// el aviso se muestra aquí, sobre el contenido, hasta que se descarte.
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import DashboardSidebar from './DashboardSidebar.vue'
+import { useRouter } from 'vue-router'
 import DashboardTopbar from './DashboardTopbar.vue'
 import {
   MetricsRow,
@@ -13,14 +17,21 @@ import {
   WeeklyAbsenteeism,
   EngineActivity,
 } from '@/features/dashboard'
-import { ModalNuevaCita } from '@/features/crear-cita'
+import { ModalNuevaCita, type CitaCreada } from '@/features/crear-cita'
 import { VoucherCita } from '@/features/gestionar-cita'
-import { useTodayAppointments, type Appointment } from '@/entities/appointment'
+import {
+  AvisoSolapamiento,
+  solapamientosDe,
+  useTodayAppointments,
+  type AgendaAppointment,
+  type Appointment,
+} from '@/entities/appointment'
 
 /** Mínimo entre refetches automáticos al volver el foco a la pestaña. */
 const REFETCH_MIN_MS = 30_000
 
 const todayAppointments = useTodayAppointments()
+const router = useRouter()
 
 // Modal "Nueva cita" (lo abren el topbar y el estado vacío de la lista).
 const nuevaCitaAbierta = ref(false)
@@ -29,6 +40,14 @@ const nuevaCitaAbierta = ref(false)
 // cita desaparezca de ella al moverla a otro día) no afecta al voucher abierto.
 const voucherAbierto = ref(false)
 const citaSeleccionada = ref<Appointment | null>(null)
+
+// Aviso de solapamiento de la última cita creada (vacío = no se muestra).
+const solapamientosCreada = ref<AgendaAppointment[]>([])
+
+function alCrearCita(cita: CitaCreada): void {
+  solapamientosCreada.value = solapamientosDe(cita.avisos)
+  void todayAppointments.reload()
+}
 
 function abrirVoucher(appointment: Appointment): void {
   citaSeleccionada.value = { ...appointment }
@@ -55,30 +74,36 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="dashboard">
-    <DashboardSidebar />
+  <main class="dashboard__main">
+    <DashboardTopbar @nueva-cita="nuevaCitaAbierta = true" />
 
-    <main class="dashboard__main">
-      <DashboardTopbar @nueva-cita="nuevaCitaAbierta = true" />
+    <AvisoSolapamiento
+      :solapamientos="solapamientosCreada"
+      dismissible
+      @dismiss="solapamientosCreada = []"
+    />
 
-      <MetricsRow />
+    <MetricsRow />
 
-      <div class="dashboard__grid">
-        <div class="dashboard__col-main">
-          <TodayAppointments @select="abrirVoucher" @schedule="nuevaCitaAbierta = true" />
-        </div>
-        <div class="dashboard__col-side">
-          <WeeklyAbsenteeism />
-          <EngineActivity />
-        </div>
+    <div class="dashboard__grid">
+      <div class="dashboard__col-main">
+        <TodayAppointments
+          @select="abrirVoucher"
+          @schedule="nuevaCitaAbierta = true"
+          @calendar="router.push({ name: 'agenda' })"
+        />
       </div>
-    </main>
-  </div>
+      <div class="dashboard__col-side">
+        <WeeklyAbsenteeism />
+        <EngineActivity />
+      </div>
+    </div>
+  </main>
 
   <ModalNuevaCita
     :is-open="nuevaCitaAbierta"
     @close="nuevaCitaAbierta = false"
-    @created="todayAppointments.reload()"
+    @created="alCrearCita"
   />
 
   <VoucherCita
@@ -90,12 +115,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.dashboard {
-  display: flex;
-  align-items: flex-start;
-  min-height: 100vh;
-  background: var(--color-bg);
-}
 .dashboard__main {
   flex: 1;
   min-width: 0;

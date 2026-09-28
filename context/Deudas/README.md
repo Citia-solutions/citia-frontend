@@ -16,7 +16,7 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 | [DTF-02](DTF-02.md) | `fetchCurrentUser()` apunta a un endpoint que no existe | 🟡 baja | abierta | `entities/session/api/sessionApi.ts` |
 | [DTF-04](DTF-04.md) | El modelo de sesión contempla un rol que el backend no emite | 🟡 baja | abierta | `entities/session/model/types.ts` |
 | [DTF-05](DTF-05.md) | El algoritmo del RUT está duplicado en los dos repos | 🟡 baja | 🔵 aceptada | `shared/lib/rut.ts` |
-| [DTF-06](DTF-06.md) | Los largos máximos del formulario público y del motivo del voucher copian los de los DTO | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/flujoCitaModel.ts`, `features/gestionar-cita/` |
+| [DTF-06](DTF-06.md) | Los límites del formulario público, del motivo del voucher, del rango de la agenda (42 días), de la duración (1440) y de la bandeja (100) copian los del backend | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/flujoCitaModel.ts`, `features/gestionar-cita/`, `entities/appointment/api/`, `features/bandeja-solicitudes/model/` |
 | [DTF-07](DTF-07.md) | Se asume que la zona del navegador es la de la clínica | 🟡 baja | abierta | `shared/lib/fecha.ts` |
 
 ---
@@ -37,3 +37,6 @@ backend.
 
 **Bloqueo que no es del front:** el enlace público `/agendar-cita/:tenantSlug` está conectado pero
 **no debe compartirse** hasta que el backend cierre `DT-18` (límite de tasa en la ruta pública).
+Desde el cierre de Fase 1 el front lo **muestra** ("Copiar enlace de agenda", en `/solicitudes`)
+con una advertencia gobernada por `ENLACE_PUBLICO_LISTO = false`
+(`features/compartir-enlace-agenda/model/enlaceAgenda.ts`); al cerrar DT-18 se cambia a `true`.

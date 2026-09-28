@@ -2,6 +2,7 @@
 // nunca apuntando a archivos internos (model/, api/, ui/).
 export type {
   Appointment,
+  AgendaAppointment,
   AppointmentStatus,
   AppointmentAction,
   AppointmentDetail,
@@ -15,5 +16,16 @@ export {
   type StatusBadgeVariant,
 } from './model/status'
 export { useTodayAppointments } from './model/useTodayAppointments'
-export { getTodayAppointments, getAppointment } from './api/appointmentApi'
+export { useAgendaAppointments } from './model/useAgendaAppointments'
+export {
+  getTodayAppointments,
+  getAppointmentsInRange,
+  getAppointment,
+  solapamientosDe,
+  MAX_DIAS_RANGO,
+  type CitaDashboardDto,
+  type CitaAgendaDto,
+  type AvisosCitaDto,
+} from './api/appointmentApi'
 export { default as AppointmentStatusBadge } from './ui/AppointmentStatusBadge.vue'
+export { default as AvisoSolapamiento } from './ui/AvisoSolapamiento.vue'

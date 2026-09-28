@@ -13,6 +13,17 @@ en `LIMITES`. Nada comprueba que sigan iguales.
 **300**, igual que `@MaxLength(300)` en `MotivoCitaDto` y `ReagendarCitaDto` del backend
 (`citia-backend/src/modules/cita/presentation/dto/`). Misma regla: si cambia allá, cambia acá.
 
+**Cierre de Fase 1 (2026-09-25):** tres copias más, todas del contrato de
+`citia-backend/context/Features/us02-gestion-citas.md` § Cierre de Fase 1:
+
+| Constante (front) | Valor | Espejo de (backend) |
+|-------------------|-------|---------------------|
+| `MAX_DIAS_RANGO` — `entities/appointment/api/appointmentApi.ts` | 42 | `MAX_DIAS_RANGO` de `CitasService.listarEnRango` |
+| `DURACION_MAXIMA_MIN` — `features/bandeja-solicitudes/model/mensajeDeError.ts` | 1440 | `DURACION_MAXIMA_MIN` / `@Max(1440)` (ADR-11 §2) |
+| `TOPE_BANDEJA` — `entities/solicitud/api/solicitudApi.ts` | 100 | tope fijo de `GET /solicitudes` (solo afecta la píldora "100+") |
+
+Mismo criterio: el backend valida siempre; la copia solo evita el 400 genérico.
+
 ## Por qué existe la copia
 
 Sin ella, pasarse de un largo devolvía un `400` genérico y el paciente no sabía qué campo corregir.

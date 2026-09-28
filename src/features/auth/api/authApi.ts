@@ -23,6 +23,8 @@ interface LoginResponseBackend {
     nombreCompleto: string
     rol: string
     tenantId: string
+    /** Aditivo desde el cierre de Fase 1; un backend anterior no lo manda. */
+    tenantSlug?: string
   }
 }
 
@@ -46,6 +48,7 @@ export async function login(credentials: LoginCredentials): Promise<Session> {
       name: res.usuario.nombreCompleto,
       // Ante un rol desconocido se asume el menos privilegiado.
       role: ROLES[res.usuario.rol] ?? 'profesional',
+      ...(res.usuario.tenantSlug ? { tenantSlug: res.usuario.tenantSlug } : {}),
     },
   }
 }

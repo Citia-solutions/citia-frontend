@@ -1,5 +1,5 @@
 // Tipos del feature `gestionar-cita` (voucher: reagendar y cancelar).
-import type { AppointmentStatus } from '@/entities/appointment'
+import type { AppointmentStatus, AvisosCitaDto } from '@/entities/appointment'
 
 /** Cuerpo de `PATCH /citas/:id/reagendar`. */
 export interface ReagendarCitaRequest {
@@ -26,6 +26,11 @@ export interface CitaActualizada {
   tipoConsulta: string
   estado: AppointmentStatus
   pacienteId: string
+  /**
+   * Solapamientos (ADR-11). Viene en reagendar y editar; NO en cancelar ni en
+   * las demás transiciones, que no mueven la ventana. Leer con `solapamientosDe()`.
+   */
+  avisos?: AvisosCitaDto
 }
 
 /** Resultado de ejecutar una acción sobre la cita. */

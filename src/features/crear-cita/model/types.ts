@@ -1,5 +1,5 @@
 // Tipos del feature `crear-cita`.
-import type { AppointmentStatus } from '@/entities/appointment'
+import type { AppointmentStatus, AvisosCitaDto } from '@/entities/appointment'
 
 // ---------------------------------------------------------------------------
 // Formulario (lo que ve y llena el profesional)
@@ -76,4 +76,10 @@ export interface CitaCreada {
    * creado o uno ya existente al que se llegó por RUT. Solo viene al crear.
    */
   paciente?: PacienteResumen
+  /**
+   * Solapamientos con otras citas vigentes del profesional (ADR-11). El
+   * contrato dice que en `POST /citas` viene siempre; se tipa opcional para
+   * tolerar un backend anterior. Leer con `solapamientosDe()`.
+   */
+  avisos?: AvisosCitaDto
 }

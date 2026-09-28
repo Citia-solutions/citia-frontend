@@ -2,7 +2,10 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useSessionStore } from '@/entities/session'
 import { LoginPage } from '@/pages/login'
 import { DashboardPage } from '@/pages/dashboard'
+import { AgendaPage } from '@/pages/agenda'
+import { SolicitudesPage } from '@/pages/solicitudes'
 import { AgendarCitaPage } from '@/pages/agendar-cita'
+import PanelLayout from '@/app/layouts/PanelLayout.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -23,10 +26,17 @@ const routes: RouteRecordRaw[] = [
     props: true,
   },
   {
+    // Panel del profesional: `PanelLayout` pone el sidebar y cada hija su
+    // contenido. `requiresAuth` va en el padre; vue-router lo mezcla en el
+    // `meta` de las hijas, así que el guard las cubre a todas.
     path: '/',
-    name: 'home',
-    component: DashboardPage,
+    component: PanelLayout,
     meta: { requiresAuth: true },
+    children: [
+      { path: '', name: 'home', component: DashboardPage },
+      { path: 'agenda', name: 'agenda', component: AgendaPage },
+      { path: 'solicitudes', name: 'solicitudes', component: SolicitudesPage },
+    ],
   },
 ]
 

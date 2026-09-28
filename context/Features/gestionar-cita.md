@@ -91,8 +91,15 @@ US-02.07, el job de cierre) muestra el mensaje, recarga el detalle y recarga la 
 |-----|------|
 | Historial (`GET /citas/:id/historial`) | Segunda entrega, según el plan. |
 | Confirmar, asistencia, inasistencia, editar | El backend ya los anuncia en `accionesPermitidas`; no se muestran todavía. |
-| Aviso de solapamiento | El backend lo permite (DT-12); mejor no avisar que avisar a medias. |
+| ~~Aviso de solapamiento~~ | ✅ Hecho en el cierre de Fase 1 (ADR-11): tras reagendar, el voucher lista las citas con las que choca — ver [agenda-profesional](agenda-profesional.md#aviso-de-solapamiento-adr-11). |
 | "Generar enlace para el paciente" | Depende de US-02.07 y [ADR-10](../../../citia-backend/context/Decisions/ADR-10.md) (propuesto). |
+
+## Cambios del cierre de Fase 1 (2026-09-25)
+
+- El voucher también se abre desde la **agenda** (`/agenda`). Prop nueva `listaDelDia` (por defecto
+  `true`): en `false` no dice *"Ya no aparece en tu lista de hoy"* ni lo anticipa en el formulario de
+  reagendar.
+- `CitaActualizada` gana `avisos?` (ADR-11); tras reagendar se muestra `AvisoSolapamiento`.
 
 ## Pendientes
 

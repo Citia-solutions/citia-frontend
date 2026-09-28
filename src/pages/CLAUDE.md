@@ -13,7 +13,14 @@ src/pages/
 │       └── HomePage.vue     # Dashboard placeholder: saludo con nombre + botón logout
 ├── dashboard/
 │   └── ui/
-│       └── DashboardPage.vue  # Resumen: sidebar + topbar + métricas y citas del día
+│       ├── DashboardPage.vue    # Resumen: topbar + métricas y citas del día
+│       └── DashboardTopbar.vue
+├── agenda/
+│   └── ui/
+│       └── AgendaPage.vue       # Agenda semanal + lista, modal nueva cita, voucher
+├── solicitudes/
+│   └── ui/
+│       └── SolicitudesPage.vue  # Bandeja de solicitudes + enlace de agenda
 └── agendar-cita/
     └── ui/
         └── AgendarCitaPage.vue  # Vista pública por secciones (flujo + stepper)
@@ -24,8 +31,13 @@ src/pages/
 | Ruta           | Componente        | Requiere auth | Notas                                    |
 |----------------|-------------------|---------------|------------------------------------------|
 | `/login`       | `LoginPage`       | No            | Redirige a `/` si ya está autenticado    |
-| `/agendar-cita`| `AgendarCitaPage` | No            | Pública, split-screen 78/22, sin layout  |
-| `/`            | `DashboardPage`   | Sí            | Redirige a `/login?redirect=/` si no auth |
+| `/agendar-cita/:tenantSlug` | `AgendarCitaPage` | No | Pública, split-screen 78/22, sin layout |
+| `/`            | `DashboardPage`   | Sí            | Hija de `PanelLayout`; redirige a `/login?redirect=/` si no auth |
+| `/agenda`      | `AgendaPage`      | Sí            | Hija de `PanelLayout` |
+| `/solicitudes` | `SolicitudesPage` | Sí            | Hija de `PanelLayout` |
+
+Las vistas autenticadas son hijas de `app/layouts/PanelLayout.vue` (sidebar + `<RouterView />`):
+las páginas no pintan el sidebar.
 
 ## Convenciones
 

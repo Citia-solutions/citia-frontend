@@ -10,7 +10,14 @@ import { MOTIVO_MAX } from '../model/mensajeDeError'
 import { useReagendarCita } from '../model/useReagendarCita'
 import type { ResultadoAccion } from '../model/types'
 
-const props = defineProps<{ appointment: Appointment }>()
+const props = withDefaults(
+  defineProps<{
+    appointment: Appointment
+    /** Abierto desde "Citas de hoy": avisa si la nueva fecha saca la cita del día. */
+    listaDelDia?: boolean
+  }>(),
+  { listaDelDia: true },
+)
 
 const emit = defineEmits<{
   back: []
@@ -108,7 +115,7 @@ async function handleSubmit(): Promise<void> {
         nueva hora.
       </p>
       <p v-else class="accion__notice-text">La cita seguirá pendiente de confirmación.</p>
-      <p v-if="saleDeHoy" class="accion__notice-text">
+      <p v-if="listaDelDia && saleDeHoy" class="accion__notice-text">
         Al moverla a otro día, dejará de aparecer en tu lista de hoy.
       </p>
     </div>

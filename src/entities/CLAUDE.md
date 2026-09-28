@@ -37,8 +37,16 @@ interface AuthUser {
   email: string
   name: string
   role: 'admin' | 'profesional' | 'recepcion'
+  tenantSlug?: string // del login (cierre de Fase 1); arma el enlace /agendar-cita/:tenantSlug
 }
 ```
+
+## Otros slices
+
+- `appointment/` — citas: tipos, estados, `toAppointment`, stores `useTodayAppointments` (`/citas/hoy`)
+  y `useAgendaAppointments` (`/citas?desde&hasta`), `AvisoSolapamiento` (ADR-11).
+- `solicitud/` — solicitudes del enlace público: `toSolicitud`, `getSolicitudes(estado)`, store
+  `useSolicitudesRecibidas` (píldora del sidebar). Nombra en español, como el backend.
 
 ## Reglas
 

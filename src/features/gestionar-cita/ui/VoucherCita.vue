@@ -11,6 +11,9 @@
 // Tras un cambio el voucher se queda abierto mostrando el resultado (si se
 // cerrara y la cita se hubiera movido a otro día, la fila desaparecería sin
 // explicación) y emite `changed` para que la página recargue la lista.
+//
+// Al reagendar, si la respuesta trae `avisos.solapamientos` (ADR-11), se
+// muestra con qué citas choca la nueva hora. No bloquea: el cambio ya se hizo.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
@@ -23,7 +26,10 @@ import {
 } from '@/shared/lib/fecha'
 import {
   AppointmentStatusBadge,
+  AvisoSolapamiento,
   isTerminalStatus,
+  solapamientosDe,
+  type AgendaAppointment,
   type Appointment,
   type AppointmentAction,
   type AppointmentStatus,
@@ -39,8 +45,13 @@ const props = withDefaults(
     isOpen: boolean
     /** La fila desde la que se abrió. Se usa hasta que llega el detalle. */
     appointment: Appointment | null
+    /**
+     * true si se abrió desde "Citas de hoy": avisa cuando reagendar saca la
+     * cita del día. Desde la agenda por rango ese aviso no aplica.
+     */
+    listaDelDia?: boolean
   }>(),
-  { isOpen: false, appointment: null },
+  { isOpen: false, appointment: null, listaDelDia: true },
 )
 
 const emit = defineEmits<{
@@ -58,6 +69,8 @@ interface Aviso {
 const vista = ref<Vista>('detalle')
 const enviando = ref(false)
 const aviso = ref<Aviso | null>(null)
+/** Citas con las que choca la nueva hora tras reagendar (vacío si no hay). */
+const solapamientos = ref<AgendaAppointment[]>([])
 
 const {
   detail,
@@ -131,6 +144,7 @@ async function cargarDetalleInicial(): Promise<void> {
 function irA(destino: Vista): void {
   if (enviando.value) return
   aviso.value = null
+  solapamientos.value = []
   vista.value = destino
   if (destino === 'detalle') void nextTick(() => closeBtn.value?.focus())
 }
@@ -140,7 +154,9 @@ function textosReagendada(actualizada: CitaActualizada): string[] {
   const textos = [
     `Cita movida al ${formatearFechaLarga(inicio)} a las ${horaLocal(inicio)}. Quedó pendiente de confirmación.`,
   ]
-  if (!esMismoDia(inicio, new Date())) textos.push('Ya no aparece en tu lista de hoy.')
+  if (props.listaDelDia && !esMismoDia(inicio, new Date())) {
+    textos.push('Ya no aparece en tu lista de hoy.')
+  }
   return textos
 }
 
@@ -153,6 +169,8 @@ async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'ca
       tipo: 'exito',
       textos: accion === 'cancelar' ? ['Cita cancelada.'] : textosReagendada(resultado.cita),
     }
+    // Cancelar no trae `avisos` (no mueve la ventana): la lista queda vacía.
+    solapamientos.value = solapamientosDe(resultado.cita.avisos)
     emit('changed')
     // Las respuestas de PATCH no traen `accionesPermitidas`: se vuelve a pedir el detalle.
     await cargarDetalle()
@@ -225,6 +243,7 @@ watch(
       focoPrevio = document.activeElement instanceof HTMLElement ? document.activeElement : null
       vista.value = 'detalle'
       aviso.value = null
+      solapamientos.value = []
       enviando.value = false
       resetDetalle()
       document.addEventListener('keydown', onKeydown)
@@ -287,6 +306,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
         <!-- Vista principal -->
         <template v-if="vista === 'detalle'">
+          <AvisoSolapamiento :solapamientos="solapamientos" />
+
           <div class="voucher__patient">
             <BaseAvatar :name="cita.patientName" :size="44" />
             <span class="voucher__patient-name">{{ cita.patientName }}</span>
@@ -374,6 +395,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         <ReagendarCitaForm
           v-else-if="vista === 'reagendar'"
           :appointment="cita"
+          :lista-del-dia="listaDelDia"
           @back="irA('detalle')"
           @submitting="enviando = $event"
           @result="alResultado($event, 'reagendar')"
