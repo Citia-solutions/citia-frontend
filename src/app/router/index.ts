@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/login'
 import { DashboardPage } from '@/pages/dashboard'
 import { AgendaPage } from '@/pages/agenda'
 import { SolicitudesPage } from '@/pages/solicitudes'
+import { RecordatoriosPage } from '@/pages/recordatorios'
 import { AgendarCitaPage } from '@/pages/agendar-cita'
 import PanelLayout from '@/app/layouts/PanelLayout.vue'
 
@@ -36,6 +37,8 @@ const routes: RouteRecordRaw[] = [
       { path: '', name: 'home', component: DashboardPage },
       { path: 'agenda', name: 'agenda', component: AgendaPage },
       { path: 'solicitudes', name: 'solicitudes', component: SolicitudesPage },
+      // Configuración de los recordatorios por correo del profesional (US-03).
+      { path: 'recordatorios', name: 'recordatorios', component: RecordatoriosPage },
     ],
   },
 ]

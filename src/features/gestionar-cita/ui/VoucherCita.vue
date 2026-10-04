@@ -14,6 +14,12 @@
 //
 // Al reagendar, si la respuesta trae `avisos.solapamientos` (ADR-11), se
 // muestra con qué citas choca la nueva hora. No bloquea: el cambio ya se hizo.
+//
+// Fase 2 (US-03): sección "Recordatorios" con el estado de cada correo
+// automático (`GET /citas/:id/recordatorios`), y vista "Contacto" para
+// completar o corregir el correo del paciente (`PATCH /pacientes/:id`). Los
+// recordatorios se programan de forma asíncrona: tras abrir, reagendar o
+// cancelar se reintenta unos segundos hasta que la lista refleje el cambio.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
@@ -36,9 +42,19 @@ import {
 } from '@/entities/appointment'
 import { invalidaVoucher } from '../model/mensajeDeError'
 import { useDetalleCita } from '../model/useDetalleCita'
-import type { CitaActualizada, ResultadoAccion } from '../model/types'
+import {
+  deberiaTenerRecordatorios,
+  hayAlguno,
+  ningunoProgramado,
+  reprogramados,
+  useRecordatoriosCita,
+  type CondicionRecordatorios,
+} from '../model/useRecordatoriosCita'
+import type { CitaActualizada, ResultadoAccion, ResultadoContacto } from '../model/types'
 import ReagendarCitaForm from './ReagendarCitaForm.vue'
 import CancelarCitaConfirm from './CancelarCitaConfirm.vue'
+import EditarContactoForm from './EditarContactoForm.vue'
+import RecordatoriosCita from './RecordatoriosCita.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -60,7 +76,7 @@ const emit = defineEmits<{
   changed: []
 }>()
 
-type Vista = 'detalle' | 'reagendar' | 'cancelar'
+type Vista = 'detalle' | 'reagendar' | 'cancelar' | 'contacto'
 interface Aviso {
   tipo: 'exito' | 'error'
   textos: string[]
@@ -81,8 +97,21 @@ const {
   load: loadDetalle,
 } = useDetalleCita()
 
+const {
+  recordatorios,
+  loading: cargandoRecordatorios,
+  loaded: recordatoriosCargados,
+  error: errorRecordatorios,
+  esperando: esperandoRecordatorios,
+  reset: resetRecordatorios,
+  cargar: cargarRecordatorios,
+} = useRecordatoriosCita()
+
 /** Lo que se muestra: el detalle si ya llegó; si no, la fila. */
 const cita = computed<Appointment | null>(() => detail.value ?? props.appointment)
+
+/** Vigente y con más de 30 min por delante: una lista vacía es "todavía no", no "no hay". */
+const esperables = computed(() => (cita.value ? deberiaTenerRecordatorios(cita.value) : false))
 
 const NOTA_TERMINAL: Partial<Record<AppointmentStatus, string>> = {
   cancelada: 'Esta cita fue cancelada.',
@@ -138,6 +167,31 @@ async function cargarDetalleInicial(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Recordatorios
+// ---------------------------------------------------------------------------
+
+/** Pide los recordatorios de la cita abierta; con `hasta`, reintenta mientras no se cumpla. */
+function refrescarRecordatorios(hasta: CondicionRecordatorios | null = null): void {
+  const id = props.appointment?.id
+  if (id) void cargarRecordatorios(id, hasta)
+}
+
+/**
+ * Al abrir: si la cita debería tener recordatorios y no llegó ninguno, se
+ * reintenta unos segundos (recién creada o reagendada, el backend aún no los
+ * programó).
+ */
+function cargarRecordatoriosIniciales(): void {
+  const fila = props.appointment
+  if (fila) refrescarRecordatorios(deberiaTenerRecordatorios(fila) ? hayAlguno : null)
+}
+
+/** "Actualizar" a mano: si la lista sigue vacía y no debería, vuelve a esperar. */
+function actualizarRecordatorios(): void {
+  refrescarRecordatorios(esperables.value && recordatorios.value.length === 0 ? hayAlguno : null)
+}
+
+// ---------------------------------------------------------------------------
 // Acciones
 // ---------------------------------------------------------------------------
 
@@ -164,6 +218,9 @@ async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'ca
   // Si llegó un resultado, ya no se está enviando (la vista puede desmontarse).
   enviando.value = false
   if (resultado.ok) {
+    // Foto de los recordatorios ANTES del cambio: sirve para saber cuándo el
+    // backend terminó de reprogramarlos (asíncrono, ~5 s).
+    const antes = recordatorios.value
     irA('detalle')
     aviso.value = {
       tipo: 'exito',
@@ -172,6 +229,17 @@ async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'ca
     // Cancelar no trae `avisos` (no mueve la ventana): la lista queda vacía.
     solapamientos.value = solapamientosDe(resultado.cita.avisos)
     emit('changed')
+    refrescarRecordatorios(
+      accion === 'cancelar'
+        ? ningunoProgramado
+        : reprogramados(
+            antes,
+            deberiaTenerRecordatorios({
+              status: resultado.cita.estado,
+              startsAt: resultado.cita.inicio,
+            }),
+          ),
+    )
     // Las respuestas de PATCH no traen `accionesPermitidas`: se vuelve a pedir el detalle.
     await cargarDetalle()
     return
@@ -183,10 +251,28 @@ async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'ca
     irA('detalle')
     aviso.value = { tipo: 'error', textos: [resultado.mensaje] }
     emit('changed')
+    refrescarRecordatorios()
     await cargarDetalle()
   }
   // Los demás fallos (400, 401, red) los muestra la propia vista, que conserva
   // lo escrito para reintentar.
+}
+
+/** Resultado de la vista "Contacto" (éxito o 404; el resto lo muestra la vista). */
+async function alGuardarContacto(resultado: ResultadoContacto): Promise<void> {
+  enviando.value = false
+  irA('detalle')
+  if (resultado.ok) {
+    const textos = ['Contacto del paciente actualizado.']
+    if (resultado.correoCambio) {
+      textos.push('Los recordatorios que aún no salen irán a ese correo.')
+    }
+    aviso.value = { tipo: 'exito', textos }
+  } else {
+    aviso.value = { tipo: 'error', textos: [resultado.mensaje] }
+  }
+  refrescarRecordatorios()
+  await cargarDetalle()
 }
 
 // ---------------------------------------------------------------------------
@@ -246,12 +332,17 @@ watch(
       solapamientos.value = []
       enviando.value = false
       resetDetalle()
+      resetRecordatorios()
       document.addEventListener('keydown', onKeydown)
       await nextTick()
       closeBtn.value?.focus()
+      // En paralelo con el detalle: no dependen uno del otro.
+      cargarRecordatoriosIniciales()
       await cargarDetalleInicial()
     } else {
       document.removeEventListener('keydown', onKeydown)
+      // Cerrado no se sigue preguntando por los recordatorios.
+      resetRecordatorios()
       // Devuelve el foco a la fila desde la que se abrió.
       focoPrevio?.focus()
       focoPrevio = null
@@ -340,7 +431,18 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           <div class="voucher__cut" aria-hidden="true" />
 
           <section class="voucher__contact" aria-labelledby="voucher-contacto">
-            <h3 id="voucher-contacto" class="voucher__section-title">Contacto</h3>
+            <div class="voucher__section-head">
+              <h3 id="voucher-contacto" class="voucher__section-title">Contacto</h3>
+              <button
+                v-if="detail && !notFound"
+                type="button"
+                class="voucher__edit"
+                aria-label="Editar contacto del paciente"
+                @click="irA('contacto')"
+              >
+                Editar
+              </button>
+            </div>
 
             <div v-if="detail" class="voucher__contact-body">
               <a class="voucher__link" :href="hrefTelefono(detail.patient.phone)">
@@ -356,6 +458,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
                 </svg>
                 {{ detail.patient.email }}
               </a>
+              <span v-else class="voucher__missing">Sin correo: no recibe recordatorios</span>
               <span v-if="detail.patient.rut" class="voucher__muted">RUT {{ detail.patient.rut }}</span>
             </div>
             <div v-else-if="cargandoDetalle" class="voucher__skeleton" aria-busy="true" aria-label="Cargando contacto">
@@ -367,6 +470,20 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
               <button type="button" class="voucher__retry" @click="cargarDetalle">Reintentar</button>
             </p>
           </section>
+
+          <RecordatoriosCita
+            v-if="!notFound"
+            :recordatorios="recordatorios"
+            :loading="cargandoRecordatorios"
+            :loaded="recordatoriosCargados"
+            :error="errorRecordatorios"
+            :esperando="esperandoRecordatorios"
+            :esperables="esperables"
+            :puede-editar-contacto="detail !== null"
+            :paciente-sin-correo="detail !== null && !detail.patient.email"
+            @actualizar="actualizarRecordatorios"
+            @editar-contacto="irA('contacto')"
+          />
 
           <p v-if="esTerminal" class="voucher__terminal">{{ notaTerminal }} Ya no admite cambios.</p>
 
@@ -402,11 +519,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         />
 
         <CancelarCitaConfirm
-          v-else
+          v-else-if="vista === 'cancelar'"
           :appointment="cita"
           @back="irA('detalle')"
           @submitting="enviando = $event"
           @result="alResultado($event, 'cancelar')"
+        />
+
+        <EditarContactoForm
+          v-else-if="vista === 'contacto' && detail"
+          :patient="detail.patient"
+          @back="irA('detalle')"
+          @submitting="enviando = $event"
+          @result="alGuardarContacto"
         />
       </div>
     </div>
@@ -547,8 +672,33 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   border-top: 2px dashed var(--color-border);
   margin: 0.25rem -1.5rem;
 }
+.voucher__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.voucher__edit {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.voucher__edit:hover {
+  text-decoration: underline;
+}
+.voucher__missing {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-warning);
+}
 .voucher__section-title {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.04em;

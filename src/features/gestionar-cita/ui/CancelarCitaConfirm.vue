@@ -2,7 +2,8 @@
 // Vista "Cancelar" del voucher: confirmación con motivo opcional. El foco
 // inicial va a "Volver", no al botón destructivo.
 //
-// No se promete ningún aviso al paciente: no hay canal (RF-06) ni alertas (RF-05).
+// No se promete ningún aviso al paciente: los recordatorios (RF-06, Fase 2)
+// solo recuerdan citas vigentes; cancelar anula los pendientes y NO le escribe.
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { capitalizar, formatearFechaLarga } from '@/shared/lib/fecha'
@@ -46,6 +47,9 @@ async function handleSubmit(): Promise<void> {
   <form class="accion" novalidate @submit.prevent="handleSubmit">
     <h3 class="accion__title">¿Cancelar la cita de {{ appointment.patientName }}?</h3>
     <p class="accion__ref">{{ cuando }}. Esta acción no se puede deshacer.</p>
+    <p class="accion__ref">
+      Sus recordatorios pendientes se anulan. Citia no le avisa al paciente de la cancelación.
+    </p>
 
     <div class="accion__field">
       <label class="accion__label" for="cancelar-motivo">Motivo</label>

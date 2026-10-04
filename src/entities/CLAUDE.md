@@ -45,6 +45,10 @@ interface AuthUser {
 
 - `appointment/` — citas: tipos, estados, `toAppointment`, stores `useTodayAppointments` (`/citas/hoy`)
   y `useAgendaAppointments` (`/citas?desde&hasta`), `AvisoSolapamiento` (ADR-11).
+- `recordatorio/` — recordatorios por correo (US-03): tipos (`EstadoRecordatorio`, `MotivoRecordatorio`),
+  `getRecordatoriosDeCita` (`/citas/:id/recordatorios`), presentación (etiqueta y color del estado,
+  motivo en español, `describirAntelacion`, `lineaDeTiempo`) y `RecordatorioEstadoBadge`. Nombra en
+  español. Lo usan el voucher y la pantalla de configuración.
 - `solicitud/` — solicitudes del enlace público: `toSolicitud`, `getSolicitudes(estado)`, store
   `useSolicitudesRecibidas` (píldora del sidebar). Nombra en español, como el backend.
 

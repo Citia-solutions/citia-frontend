@@ -6,6 +6,7 @@ import { watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
 import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
+import { CORREO_MAX } from '../model/crearCitaSchema'
 import { useCrearCita } from '../model/useCrearCita'
 import type { CitaCreada } from '../model/types'
 
@@ -89,7 +90,7 @@ function handleSubmit(): void {
             />
             <span v-if="errors.rut" class="modal__error">{{ errors.rut }}</span>
             <span v-else class="modal__hint">
-              Si el paciente ya existe, se reutiliza su ficha en vez de duplicarla.
+              Si el paciente ya existe, se reutiliza su ficha (y su correo, si ya tenía uno).
             </span>
           </div>
         </div>
@@ -101,10 +102,20 @@ function handleSubmit(): void {
               id="correo"
               v-model="form.correo"
               class="modal__input"
+              :class="{ 'modal__input--error': errors.correo }"
               type="email"
-              placeholder="correo@clinica.cl"
+              inputmode="email"
+              autocomplete="off"
+              :maxlength="CORREO_MAX"
+              placeholder="paciente@correo.cl"
+              aria-required="true"
+              :aria-invalid="errors.correo ? 'true' : 'false'"
+              aria-describedby="correo-ayuda"
             />
-            <span v-if="errors.correo" class="modal__error">{{ errors.correo }}</span>
+            <span v-if="errors.correo" id="correo-ayuda" class="modal__error">{{ errors.correo }}</span>
+            <span v-else id="correo-ayuda" class="modal__hint">
+              Ahí le llegan los recordatorios de la cita.
+            </span>
           </div>
 
           <div class="modal__field">
@@ -293,6 +304,9 @@ function handleSubmit(): void {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+.modal__input--error {
+  border-color: var(--color-danger);
 }
 .modal__input--textarea {
   resize: vertical;

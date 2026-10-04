@@ -1,7 +1,8 @@
 import { reactive, ref } from 'vue'
 import { HttpError } from '@/shared/api/httpClient'
+import { mensajesDeValidacion } from '@/shared/api/erroresValidacion'
 import { crearCita } from '../api/crearCitaApi'
-import { validateNuevaCita } from './crearCitaSchema'
+import { erroresDelServidor, validateNuevaCita } from './crearCitaSchema'
 import { toCrearCitaRequest } from './toCrearCitaRequest'
 import type { CitaCreada, NuevaCitaErrors, NuevaCitaForm } from './types'
 
@@ -72,7 +73,15 @@ export function useCrearCita(onSuccess: (cita: CitaCreada) => void) {
       const cita = await crearCita(toCrearCitaRequest(form))
       onSuccess(cita)
     } catch (e) {
-      submitError.value = mensajeDeError(e)
+      // Un 400 que nombra campos (p. ej. `paciente.correo must be an email`)
+      // se muestra en el campo culpable, no solo como error general.
+      const porCampo = erroresDelServidor(mensajesDeValidacion(e))
+      if (Object.keys(porCampo).length > 0) {
+        errors.value = porCampo
+        submitError.value = 'Revisa los campos marcados: el servidor los rechazó.'
+      } else {
+        submitError.value = mensajeDeError(e)
+      }
     } finally {
       isSubmitting.value = false
     }

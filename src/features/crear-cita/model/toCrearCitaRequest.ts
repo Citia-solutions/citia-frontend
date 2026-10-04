@@ -9,16 +9,16 @@ export { aInicioISO }
 /**
  * Traduce el formulario al cuerpo que espera `POST /citas`.
  *
- * Dos cosas que no son obvias:
+ * Tres cosas que no son obvias:
  *  - el `motivo` del formulario viaja como `tipoConsulta`, que es el campo con
  *    el que el backend describe de qué va la cita;
- *  - los campos vacíos se omiten en vez de enviarse como `''`, porque el
- *    backend valida formato cuando el campo está presente (un correo vacío
- *    sería un correo inválido, no un correo ausente).
+ *  - el `correo` viaja SIEMPRE: es obligatorio desde la Fase 2 (sin él no hay
+ *    recordatorios). Se manda recortado; el backend además lo pasa a minúsculas;
+ *  - el RUT, opcional, se omite si está vacío en vez de enviarse como `''`,
+ *    porque el backend valida formato cuando el campo está presente.
  */
 export function toCrearCitaRequest(form: NuevaCitaForm): CrearCitaRequest {
   const rut = form.rut.trim()
-  const correo = form.correo.trim()
 
   return {
     inicio: aInicioISO(form.fecha, form.hora),
@@ -28,7 +28,7 @@ export function toCrearCitaRequest(form: NuevaCitaForm): CrearCitaRequest {
       ...(rut ? { rut: normalizarRut(rut) } : {}),
       nombre: form.pacienteNombre.trim(),
       telefono: form.telefono.trim(),
-      ...(correo ? { correo } : {}),
+      correo: form.correo.trim(),
       consentimiento: form.consentimiento,
     },
   }
