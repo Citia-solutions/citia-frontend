@@ -1,7 +1,7 @@
 # Recordatorios por correo — configuración y estado en el voucher
 
 **Estado:** ✅ Implementado (2026-10-04) · ⚠️ verificado solo con respuestas simuladas (sin prueba contra el backend real)
-**Rama:** `feature/fase2-recordatorios` (sin commit)
+**Rama:** `feature/fase2-recordatorios` · PR [Citia-solutions/citia-frontend#2](https://github.com/Citia-solutions/citia-frontend/pull/2)
 **Origen:** Fase 2 — **US-03** (RF-06). Diseño en
 [ADR-13](../../../citia-backend/context/Decisions/ADR-13.md) del backend; plan en
 [`US/03-recordatorios.md`](../../../citia-backend/context/US/03-recordatorios.md)
