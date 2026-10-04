@@ -118,6 +118,10 @@ async function handleSubmit(): Promise<void> {
       <p v-if="listaDelDia && saleDeHoy" class="accion__notice-text">
         Al moverla a otro día, dejará de aparecer en tu lista de hoy.
       </p>
+      <p class="accion__notice-text">
+        Sus recordatorios se reprograman para la nueva hora. El paciente no recibe un aviso aparte
+        del cambio.
+      </p>
     </div>
 
     <p v-if="submitError" class="accion__error" role="alert">{{ submitError }}</p>
