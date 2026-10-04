@@ -17,8 +17,8 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
 
 - **Fase 2 — recordatorios (2026-10-04):** [recordatorios](recordatorios.md) (pantalla nueva y estado
   en el voucher) y el **correo obligatorio** del modal ([crear-cita](crear-cita.md)), que **debe salir
-  en el mismo release que el backend** o el modal recibe 400. El despliegue en Cloudflare
-  (`wrangler.jsonc`) está en [stack-tecnologico](../stack-tecnologico.md#despliegue-cloudflare-workers-static-assets).
+  en el mismo release que el backend** o el modal recibe 400. El despliegue en Netlify
+  (`public/_redirects`) está en [stack-tecnologico](../stack-tecnologico.md#despliegue-netlify).
 - **El login** está implementado y conectado, pero todavía sin documento propio; su contrato vive del
   lado del backend en `citia-backend/context/Features/`. El modal "nueva cita" ganó el suyo en la
   Fase 2 ([crear-cita](crear-cita.md)).
