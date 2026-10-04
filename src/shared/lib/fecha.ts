@@ -78,6 +78,20 @@ export function formatearFechaLarga(fecha: Date): string {
   })
 }
 
+/**
+ * 'mar, 14 oct · 10:30' (zona local, español de Chile). Versión compacta de
+ * fecha + hora para listas donde la fecha larga no cabe (p. ej. los
+ * recordatorios del voucher).
+ */
+export function formatearMomentoCorto(fecha: Date): string {
+  const dia = fecha.toLocaleDateString('es-CL', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  return `${dia} · ${horaLocal(fecha)}`
+}
+
 /** Primera letra en mayúscula: 'martes 23…' → 'Martes 23…'. */
 export function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
