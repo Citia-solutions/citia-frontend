@@ -11,6 +11,7 @@ export interface NuevaCitaForm {
    *  paciente existente en vez de duplicarlo. Opcional para personas sin RUT. */
   rut: string
   pacienteNombre: string
+  /** Obligatorio desde la Fase 2: ahí le llegan los recordatorios (ADR-13 §14). */
   correo: string
   telefono: string
   fecha: string // 'YYYY-MM-DD'
@@ -40,7 +41,12 @@ export interface PacienteEnCitaRequest {
   rut?: string
   nombre: string
   telefono: string
-  correo?: string
+  /**
+   * Obligatorio desde la Fase 2 (`@IsEmail`, máx. 254). Si el RUT ya existe
+   * en la organización, el backend lo usa solo para completar un correo
+   * vacío: nunca reemplaza uno distinto.
+   */
+  correo: string
   consentimiento: boolean
 }
 
