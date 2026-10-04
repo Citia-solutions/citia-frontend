@@ -20,6 +20,12 @@ decidir si una cita "es de hoy" para el aviso *"Ya no aparece en tu lista de hoy
 No corrompe nada: el instante viaja con desfase explícito (cumple DT-14). El error es de
 interpretación, no de formato.
 
+**Fase 2 (2026-10-04):** las horas de los recordatorios del voucher (*"Se enviará: mar, 14 oct ·
+10:30"*, `formatearMomentoCorto` en `shared/lib/fecha.ts`) también se formatean en la zona del
+navegador. El backend decide las horas sin envío (21:00–08:00) en la zona de la clínica; con zonas
+distintas, la pantalla mostraría un recordatorio "a las 22:00" que en realidad sale a las 20:59 de
+la clínica.
+
 ## Cómo se cierra
 
 Que el front conozca la zona de la clínica (p. ej. que el backend la exponga en la sesión o en

@@ -24,6 +24,21 @@ en `LIMITES`. Nada comprueba que sigan iguales.
 
 Mismo criterio: el backend valida siempre; la copia solo evita el 400 genérico.
 
+**Fase 2 — recordatorios (2026-10-04):** más copias, de `CrearPacienteDto`, `ActualizarPacienteDto`,
+`GuardarConfiguracionRecordatoriosDto` / `ConfiguracionRecordatorio` y del entorno del backend
+(ADR-13 §3, §5, §14, §18):
+
+| Constante (front) | Valor | Espejo de (backend) |
+|-------------------|-------|---------------------|
+| `CORREO_MAX` — `features/crear-cita/model/crearCitaSchema.ts` y `features/gestionar-cita/model/useEditarContacto.ts` | 254 | `@MaxLength(254)` del correo del paciente |
+| `LIMITES_CONFIGURACION` — `features/configurar-recordatorios/model/configuracionSchema.ts` | 30 / 10.080 min, máx. 3, teléfono 30, correo 254 | `ANTELACION_MINIMA_MIN`, `ANTELACION_MAXIMA_MIN`, `MAX_ANTELACIONES`, `LARGO_MAXIMO_TELEFONO_CONTACTO`, `LARGO_MAXIMO_CORREO_RESPUESTA` |
+| `HORAS_SIN_ENVIO` — mismo archivo | 21:00–08:00 | `RECORDATORIO_SILENCIO_DESDE` / `HASTA` (solo se muestra; no valida nada) |
+| `MARGEN_MINIMO_MS` — `features/gestionar-cita/model/useRecordatoriosCita.ts` | 30 min | `RECORDATORIO_MARGEN_MINIMO_MIN` (solo decide si una lista vacía merece reintentos) |
+
+Las dos últimas son **variables de entorno** del backend, no constantes de código: si se cambian en
+Railway, el front queda diciendo otra cosa hasta que se actualice a mano. Si eso empieza a pasar, que
+`GET /recordatorios/configuracion` las devuelva.
+
 ## Por qué existe la copia
 
 Sin ella, pasarse de un largo devolvía un `400` genérico y el paciente no sabía qué campo corregir.

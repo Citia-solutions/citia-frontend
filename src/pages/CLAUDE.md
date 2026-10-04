@@ -21,6 +21,9 @@ src/pages/
 ├── solicitudes/
 │   └── ui/
 │       └── SolicitudesPage.vue  # Bandeja de solicitudes + enlace de agenda
+├── recordatorios/
+│   └── ui/
+│       └── RecordatoriosPage.vue # Configuración de recordatorios por correo (US-03)
 └── agendar-cita/
     └── ui/
         └── AgendarCitaPage.vue  # Vista pública por secciones (flujo + stepper)
@@ -35,6 +38,7 @@ src/pages/
 | `/`            | `DashboardPage`   | Sí            | Hija de `PanelLayout`; redirige a `/login?redirect=/` si no auth |
 | `/agenda`      | `AgendaPage`      | Sí            | Hija de `PanelLayout` |
 | `/solicitudes` | `SolicitudesPage` | Sí            | Hija de `PanelLayout` |
+| `/recordatorios` | `RecordatoriosPage` | Sí          | Hija de `PanelLayout`; compone `features/configurar-recordatorios` |
 
 Las vistas autenticadas son hijas de `app/layouts/PanelLayout.vue` (sidebar + `<RouterView />`):
 las páginas no pintan el sidebar.

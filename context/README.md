@@ -26,6 +26,10 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
 - **Cierre de Fase 1 de US-02** (2026-09-25): [agenda-profesional](Features/agenda-profesional.md)
   (semana + lista, aviso de solapamiento) y [bandeja-solicitudes](Features/bandeja-solicitudes.md)
   (aceptar/rechazar solicitudes, enlace de agenda). Contrato del lado del backend.
+- **Fase 2 — US-03 recordatorios** (2026-10-04): [recordatorios](Features/recordatorios.md)
+  (configuración `/recordatorios` + estado en el voucher), correo obligatorio en
+  [crear-cita](Features/crear-cita.md) y despliegue en Cloudflare
+  ([stack-tecnologico](stack-tecnologico.md#despliegue-cloudflare-workers-static-assets)).
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
@@ -50,6 +54,10 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
 **Construido contra el contrato, sin backend todavía** (cierre de Fase 1, verificado con respuestas
 simuladas): **agenda** `/agenda` · **bandeja de solicitudes** `/solicitudes` · **aviso de
 solapamiento** al crear, reagendar y aceptar · **enlace de agenda** copiable (con advertencia DT-18).
+
+**Fase 2, verificado solo con respuestas simuladas:** pantalla **Recordatorios** `/recordatorios` ·
+**estado de los recordatorios** y **editar contacto** en el voucher · **correo obligatorio** en el
+modal "nueva cita" (sale en el mismo release que el backend) · `wrangler.jsonc` para Cloudflare.
 
 **Con datos de prueba:** métricas, ausentismo semanal y actividad del motor del dashboard (no tienen
 endpoint) — ver [DTF-03](Deudas/DTF-03.md).

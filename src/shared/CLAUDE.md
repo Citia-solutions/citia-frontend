@@ -15,13 +15,16 @@ src/shared/
 │                         # { auth: false } lo omite (rutas públicas)
 │                         # Base URL: import.meta.env.VITE_API_URL ?? '/api'
 │                         # Lanza HttpError con status + body en errores
+│   └── erroresValidacion.ts # mensajesDeValidacion(e): string[] de un 400 de NestJS
+│                            # ({ message: string[] | string }); no traduce nada
 ├── lib/
 │   └── authToken.ts      # getToken(), setToken(token, persistent), removeToken()
 │                         # persistent=true → localStorage; false → sessionStorage
 └── ui/
     ├── BaseButton.vue    # Props: variant('primary'|'outline'), loading, block
     ├── BaseInput.vue     # Props: modelValue, type, icon, error; slot: icon
-    └── BaseCheckbox.vue  # Props: modelValue, label
+    ├── BaseCheckbox.vue  # Props: modelValue, label
+    └── BaseSwitch.vue    # Interruptor (role="switch"). Props: modelValue, label, description?, disabled
 ```
 
 ## Reglas Críticas

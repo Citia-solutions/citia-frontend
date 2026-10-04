@@ -16,8 +16,8 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 | [DTF-02](DTF-02.md) | `fetchCurrentUser()` apunta a un endpoint que no existe | 🟡 baja | abierta | `entities/session/api/sessionApi.ts` |
 | [DTF-04](DTF-04.md) | El modelo de sesión contempla un rol que el backend no emite | 🟡 baja | abierta | `entities/session/model/types.ts` |
 | [DTF-05](DTF-05.md) | El algoritmo del RUT está duplicado en los dos repos | 🟡 baja | 🔵 aceptada | `shared/lib/rut.ts` |
-| [DTF-06](DTF-06.md) | Los límites del formulario público, del motivo del voucher, del rango de la agenda (42 días), de la duración (1440) y de la bandeja (100) copian los del backend | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/flujoCitaModel.ts`, `features/gestionar-cita/`, `entities/appointment/api/`, `features/bandeja-solicitudes/model/` |
-| [DTF-07](DTF-07.md) | Se asume que la zona del navegador es la de la clínica | 🟡 baja | abierta | `shared/lib/fecha.ts` |
+| [DTF-06](DTF-06.md) | Los límites del formulario público, del motivo del voucher, del rango de la agenda (42 días), de la duración (1440), de la bandeja (100), del correo del paciente (254) y de la configuración de recordatorios copian los del backend | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/`, `features/gestionar-cita/`, `entities/appointment/api/`, `features/bandeja-solicitudes/model/`, `features/configurar-recordatorios/model/` |
+| [DTF-07](DTF-07.md) | Se asume que la zona del navegador es la de la clínica (también para las horas de los recordatorios) | 🟡 baja | abierta | `shared/lib/fecha.ts` |
 
 ---
 
