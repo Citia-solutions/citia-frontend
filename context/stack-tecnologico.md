@@ -6,26 +6,25 @@ Conexión a api: Fetch
 
 ---
 
-## Despliegue: Cloudflare Workers (Static Assets)
+## Despliegue: Netlify
 
-*Fase 2, 2026-10-04.* Decisión del backend: SPA en **Cloudflare** (Workers Static Assets o Pages),
-backend + Postgres en Railway; Netlify descartado — ver `citia-backend/context/stack-tecnologico.md`.
+*Decisión del usuario, 2026-10-04:* el frontend se queda en **Netlify** (revierte la propuesta de
+Cloudflare Workers del 2026-09-30). Cloudflare sigue solo como **DNS** de `citiahealth.cl`; el backend +
+Postgres están en Railway — ver `citia-backend/context/stack-tecnologico.md`.
 
 | Pieza | Valor |
 |-------|-------|
-| Configuración | `wrangler.jsonc` en la raíz: `name: "citia-frontend"`, `compatibility_date`, `assets.directory: "./dist"` |
-| Rutas de la SPA | `assets.not_found_handling: "single-page-application"`: cualquier ruta que no sea un archivo (`/agenda`, `/recordatorios`, `/agendar-cita/<slug>`) devuelve `index.html` y la resuelve vue-router. Sin esto, recargar una ruta que no sea `/` da 404 |
-| Build | `npm run build` (incluye `vue-tsc`) → `dist/` |
-| Deploy | `npx wrangler deploy` o Cloudflare Workers Builds conectado al repo. **`wrangler` no es dependencia** del proyecto |
-| Backend en producción | `VITE_API_URL=https://api.citiahealth.cl/api` |
+| Rutas de la SPA | `public/_redirects` con `/*  /index.html  200`: cualquier ruta que no sea un archivo (`/agenda`, `/recordatorios`, `/agendar-cita/<slug>`) devuelve `index.html` y la resuelve vue-router. Sin esto, recargar una ruta que no sea `/` da 404 |
+| Build | `npm run build` (incluye `vue-tsc`) → publish directory `dist/` |
+| Sitios | Uno por entorno: **staging** ← rama `develop` (`staging.citiahealth.cl`) y **producción** ← rama `main` (`app.citiahealth.cl`). Dominio propio con un CNAME en Cloudflare hacia `<sitio>.netlify.app`, en modo *DNS only* |
+| Backend | `VITE_API_URL` = backend de Railway de **ese** entorno, con su prefijo `/api` |
+| Plan | Free: ~300 créditos/mes (~15 deploys); **al agotarse, el sitio se pausa**. Plan Personal US$9/mes si hace falta |
 
 **`VITE_API_URL` se incrusta al compilar.** Vite reemplaza `import.meta.env.VITE_API_URL` en el
-bundle; en Cloudflare va como **variable de build** (Workers Builds → *Build variables*), no como
-`vars` del Worker ni en `.env` (que no se versiona). Sin ella, el front cae al default `/api` del
-mismo dominio, que no existe en Cloudflare.
+bundle; en Netlify va como variable de entorno del sitio (disponible en el build), no en `.env` (que no
+se versiona). Sin ella, el front cae al default `/api` del mismo dominio, que en Netlify no existe.
 
-**CORS:** el backend acepta `FRONTEND_URL` + `CORS_ORIGENES_EXTRA` (lista con comodín para vistas
-previas). El dominio final del front y el de las vistas previas de Cloudflare tienen que estar ahí.
-
-**Local:** `npx wrangler dev` sirve `dist/` como lo haría Cloudflare (útil para probar el *fallback*
-de SPA); deja estado en `.wrangler/`, que está en `.gitignore`.
+**CORS:** el backend acepta `FRONTEND_URL` + `CORS_ORIGENES_EXTRA`. El dominio de cada sitio tiene
+que estar ahí (staging en el backend de staging, producción en el de producción). El único comodín
+que admite hoy el backend es el de Cloudflare Pages (`*.<proyecto>.pages.dev`): las *deploy previews*
+de Netlify (`deploy-preview-N--<sitio>.netlify.app`) van como orígenes exactos si se quieren usar.
