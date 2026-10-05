@@ -68,12 +68,23 @@ interface AuthUser {
 
 - `appointment/` — citas: tipos, estados, `toAppointment`, stores `useTodayAppointments` (`/citas/hoy`)
   y `useAgendaAppointments` (`/citas?desde&hasta`), `AvisoSolapamiento` (ADR-11).
+  - `status.ts`: etiqueta y color de cada estado (los usan lista, agenda y voucher), `isTerminalStatus`,
+    `isActiveStatus` (vigente = `pendiente`/`confirmada`), `hasStarted` (`inicio <= ahora`) e
+    `isPastAppointment`. **Solo presentación**: qué acciones se ofrecen lo decide `accionesPermitidas`.
+  - `useTodayAppointments`: sus conteos (`scheduledCount` = no canceladas, `pendingCount`, …) los leen el
+    topbar y la tarjeta "Citas hoy"; no dupliques esos cálculos.
+  - `useAgendaAppointments.setRange(desde, hasta, { forzar })`: sin `forzar` no repite un rango ya
+    cargado; la agenda pasa `forzar: true` al montarse (2026-10-05).
 - `recordatorio/` — recordatorios por correo (US-03): tipos (`EstadoRecordatorio`, `MotivoRecordatorio`),
-  `getRecordatoriosDeCita` (`/citas/:id/recordatorios`), presentación (etiqueta y color del estado,
-  motivo en español, `describirAntelacion`, `lineaDeTiempo`) y `RecordatorioEstadoBadge`. Nombra en
-  español. Lo usan el voucher y la pantalla de configuración.
+  `getRecordatoriosDeCita` (`/citas/:id/recordatorios`), `getConfiguracionRecordatorios` +
+  `ConfiguracionRecordatoriosDto` (`GET /recordatorios/configuracion`, aquí desde el 2026-10-05 porque lo
+  leen la pantalla de configuración y el dashboard), presentación (etiqueta y color del estado, motivo en
+  español, `describirAntelacion`, `describirAntelaciones` → "24 h y 2 h antes", `lineaDeTiempo`) y
+  `RecordatorioEstadoBadge`. Nombra en español.
 - `solicitud/` — solicitudes del enlace público: `toSolicitud`, `getSolicitudes(estado)`, store
-  `useSolicitudesRecibidas` (píldora del sidebar). Nombra en español, como el backend.
+  `useSolicitudesRecibidas` (píldora del sidebar y tarjeta "Solicitudes por responder" del dashboard:
+  `total`, `loading`, `error`; un `refresh()` con otro en curso espera ese en vez de pedir de nuevo).
+  Nombra en español, como el backend.
 
 ## Reglas
 

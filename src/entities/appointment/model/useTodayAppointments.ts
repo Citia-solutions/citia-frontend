@@ -75,6 +75,9 @@ export const useTodayAppointments = defineStore('todayAppointments', () => {
   // "Agendadas" excluye las canceladas: una cancelada ya no es una cita a la
   // que haya que ir. asistio/no_asistio/ghosting cuentan como agendadas, pero
   // no como confirmadas ni pendientes.
+  // Los mismos computed alimentan el subtítulo del topbar ("N citas hoy · N
+  // pendientes de confirmar") y la tarjeta "Citas hoy" del dashboard: las dos
+  // cifras salen de aquí para que nunca se contradigan.
   const scheduledCount = computed(
     () => appointments.value.filter((a) => a.status !== 'cancelada').length,
   )

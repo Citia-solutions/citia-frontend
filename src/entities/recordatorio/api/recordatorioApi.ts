@@ -27,6 +27,24 @@ export interface RecordatorioCitaDto {
   entregadoEn: string | null
 }
 
+/**
+ * Respuesta de `GET` y `PUT /recordatorios/configuracion`
+ * (`ConfiguracionRecordatoriosDto`). Vive en la entidad (y no en el feature
+ * `configurar-recordatorios`) porque la leen dos features: la pantalla de
+ * configuración y la tarjeta "Recordatorios" del dashboard.
+ */
+export interface ConfiguracionRecordatoriosDto {
+  activo: boolean
+  canal: CanalRecordatorio
+  /** Minutos antes del inicio, de mayor a menor (p. ej. `[1440, 120]`). */
+  antelacionesMin: number[]
+  telefonoContacto: string | null
+  /** `Reply-To`; null = el correo dice que no recibe respuestas. */
+  correoRespuesta: string | null
+  /** true mientras el profesional nunca guardó una: se aplica la del entorno (24 h y 2 h, activa). */
+  predeterminada: boolean
+}
+
 // ---------------------------------------------------------------------------
 // Traducción DTO → modelo. Hoy casi identidad; si el backend renombra un
 // campo, se toca solo aquí.
@@ -63,4 +81,13 @@ export async function getRecordatoriosDeCita(citaId: string): Promise<Recordator
     `/citas/${encodeURIComponent(citaId)}/recordatorios`,
   )
   return dtos.map(toRecordatorio)
+}
+
+/**
+ * GET /recordatorios/configuracion — la configuración del profesional del
+ * token, o la predeterminada (`predeterminada: true`) si nunca guardó una. No
+ * viaja `tenantId` ni `usuarioId`.
+ */
+export function getConfiguracionRecordatorios(): Promise<ConfiguracionRecordatoriosDto> {
+  return http.get<ConfiguracionRecordatoriosDto>('/recordatorios/configuracion')
 }

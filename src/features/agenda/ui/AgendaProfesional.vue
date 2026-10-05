@@ -15,6 +15,7 @@ import {
   diasDeSemana,
   etiquetaRango,
   inicioDeSemana,
+  notaOcultas,
   OPCIONES_FILTRO,
   validarRango,
 } from '../model/agenda'
@@ -38,15 +39,22 @@ const errorRango = computed(() => validarRango(desdeLista.value, hastaLista.valu
 const esSemanaActual = computed(() => lunes.value === inicioDeSemana(hoy))
 
 const visibles = computed(() => aplicarFiltro(store.appointments, filtro.value))
+/** "2 canceladas ocultas por el filtro." para el estado vacío; null si no hay ocultas. */
+const ocultas = computed(() => notaOcultas(store.appointments, visibles.value, filtro.value))
 
 const firstLoad = computed(() => store.loading && !store.loaded)
 const refreshing = computed(() => store.loading && store.loaded)
 
-function pedirRango(): void {
+/**
+ * Pide el rango de la vista actual. `forzar` vuelve a pedirlo aunque sea el
+ * mismo que ya está cargado (al montar: las citas pudieron cambiar mientras se
+ * estaba en otra sección).
+ */
+function pedirRango(forzar = false): void {
   if (vista.value === 'semana') {
-    void store.setRange(lunes.value, sumarDias(lunes.value, 6))
+    void store.setRange(lunes.value, sumarDias(lunes.value, 6), { forzar })
   } else if (!errorRango.value) {
-    void store.setRange(desdeLista.value, hastaLista.value)
+    void store.setRange(desdeLista.value, hastaLista.value, { forzar })
   }
 }
 
@@ -80,7 +88,10 @@ function proximosDias(n: number): void {
   pedirRango()
 }
 
-onMounted(pedirRango)
+// Siempre recarga al entrar: con el rango ya cargado, `setRange` sin `forzar`
+// no pediría nada y se verían citas viejas (creadas, canceladas o confirmadas
+// desde el dashboard). Con datos previos se ve "Actualizando…", no el esqueleto.
+onMounted(() => pedirRango(true))
 </script>
 
 <template>
@@ -128,11 +139,11 @@ onMounted(pedirRango)
         <div v-else class="agenda__nav agenda__nav--wrap">
           <label class="agenda__field">
             <span class="agenda__field-label">Desde</span>
-            <input v-model="desdeLista" class="agenda__input" type="date" @change="pedirRango" />
+            <input v-model="desdeLista" class="agenda__input" type="date" @change="pedirRango()" />
           </label>
           <label class="agenda__field">
             <span class="agenda__field-label">Hasta</span>
-            <input v-model="hastaLista" class="agenda__input" type="date" :min="desdeLista" @change="pedirRango" />
+            <input v-model="hastaLista" class="agenda__input" type="date" :min="desdeLista" @change="pedirRango()" />
           </label>
           <button type="button" class="agenda__btn" @click="proximosDias(7)">Próximos 7 días</button>
           <button type="button" class="agenda__btn" @click="proximosDias(30)">Próximos 30 días</button>
@@ -182,6 +193,7 @@ onMounted(pedirRango)
         :appointments="visibles"
         :hoy="hoy"
         :loaded-at="store.loadedAt"
+        :nota-ocultas="ocultas"
         @select="emit('select', $event)"
       />
       <AgendaLista
@@ -189,6 +201,7 @@ onMounted(pedirRango)
         :appointments="visibles"
         :hoy="hoy"
         :loaded-at="store.loadedAt"
+        :nota-ocultas="ocultas"
         @select="emit('select', $event)"
       />
     </template>

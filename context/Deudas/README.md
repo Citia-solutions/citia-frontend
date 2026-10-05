@@ -12,7 +12,7 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 | ID | Deuda | Severidad | Estado | Origen |
 |----|-------|-----------|--------|--------|
 | [DTF-01](DTF-01.md) | `isAuthenticated` acepta una sesión a medias | 🟠 media | cerrada (2026-10-05) | `entities/session/model/store.ts` |
-| [DTF-03](DTF-03.md) | El dashboard muestra datos de prueba (**solo métricas, ausentismo y actividad**; la lista de citas ya es real) | 🟡 baja | abierta (parte citas cerrada) | `features/dashboard/api/dashboardApi.ts` |
+| [DTF-03](DTF-03.md) | El dashboard muestra datos de prueba | 🟡 baja | cerrada (2026-10-05) | `features/dashboard/api/dashboardApi.ts` (borrado) |
 | [DTF-02](DTF-02.md) | `fetchCurrentUser()` apunta a un endpoint que no existe | 🟡 baja | cerrada (2026-10-05) | `entities/session/api/sessionApi.ts` (borrado) |
 | [DTF-04](DTF-04.md) | El modelo de sesión contempla un rol que el backend no emite | 🟡 baja | cerrada (2026-10-05) | `entities/session/model/types.ts` |
 | [DTF-05](DTF-05.md) | El algoritmo del RUT está duplicado en los dos repos | 🟡 baja | 🔵 aceptada | `shared/lib/rut.ts` |
@@ -23,18 +23,22 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 
 ## Notas
 
-**DTF-03 ya no confunde al probar:** desde US-02.09 una cita guardada sí aparece en la lista del
-día. Lo que sigue con datos fijos (métricas, ausentismo, actividad) no tiene endpoint.
+**DTF-03 cerrada (2026-10-05):** el dashboard ya no tiene datos fijos. Las métricas sin endpoint
+(ausentismo, horas e ingresos recuperados, riesgo, actividad del motor) se quitaron y en su lugar hay
+cuatro tarjetas, un gráfico de citas por semana y la tarjeta de Recordatorios, todo con endpoints que ya
+existen — ver [dashboard-citas-del-dia](../Features/dashboard-citas-del-dia.md).
 
 **Ninguna de las abiertas decide nada.** Registran el estado actual y, donde hay más de un camino,
 lo dejan explícito para la historia de usuario que corresponda. El mapeo de estados del dashboard
 **ya se decidió** en US-02.09: los seis del backend, sin `recuperada` ni `riesgo_alto`.
 
-**Cerradas por la limpieza previa al release (2026-10-05):** DTF-01, DTF-02 y DTF-04, con la
-sesión persistente y el 401 global — ver [login-sesion](../Features/login-sesion.md).
+**Cerradas por la limpieza previa al release (2026-10-05):** DTF-01, DTF-02 y DTF-04 (lote 1, con la
+sesión persistente y el 401 global — ver [login-sesion](../Features/login-sesion.md)) y DTF-03 (lote 2,
+dashboard real).
 
-**Deudas encadenadas al backend:** DTF-03 tiene su contraparte en `DT-29` (funcionalidad
-implementada y no conectada). Un rol nuevo (ver DTF-04, cerrada) depende de `DT-07` y `DT-02`.
+**Deudas encadenadas al backend:** DTF-03 (cerrada) tenía su contraparte en `DT-29` (funcionalidad
+implementada y no conectada): desde el lote 2 el front consume además `confirmar`, `asistencia` e
+`inasistencia`. Un rol nuevo (ver DTF-04, cerrada) depende de `DT-07` y `DT-02`.
 Todas en `citia-backend/context/Deudas/`. DTF-06 se rompe si cambia el DTO provisional de
 solicitudes del backend.
 

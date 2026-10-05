@@ -3,8 +3,13 @@
 // aquí va el contenido principal scrolleable.
 //
 // La página COMPONE: escucha los eventos que ya emiten los features (cita
-// creada, cita cambiada desde el voucher) y le pide al store de citas del día
-// que recargue. Los features siguen sin saber que el dashboard existe.
+// creada, cita cambiada desde el voucher) y les pide a los stores de citas que
+// recarguen: los de hoy (lista, tarjetas 1 y 2, topbar), próximos 7 días
+// (tarjeta 3) y últimas 6 semanas (gráfico). Los features siguen sin saber que
+// el dashboard existe. Mismo mecanismo que "Citas de hoy" (US-02.09).
+//
+// Todo lo que muestra es real (lote 2 de la limpieza previa al release): no
+// queda ninguna cifra de prueba.
 //
 // Si la cita recién creada se cruza con otras (ADR-11), el modal ya se cerró:
 // el aviso se muestra aquí, sobre el contenido, hasta que se descarte.
@@ -12,10 +17,12 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardTopbar from './DashboardTopbar.vue'
 import {
-  MetricsRow,
+  CitasPorSemana,
+  RecordatoriosResumen,
+  ResumenTarjetas,
   TodayAppointments,
-  WeeklyAbsenteeism,
-  EngineActivity,
+  useHistorialCitas,
+  useProximasCitas,
 } from '@/features/dashboard'
 import { ModalNuevaCita, type CitaCreada } from '@/features/crear-cita'
 import { VoucherCita } from '@/features/gestionar-cita'
@@ -26,12 +33,23 @@ import {
   type AgendaAppointment,
   type Appointment,
 } from '@/entities/appointment'
+import { useSolicitudesRecibidas } from '@/entities/solicitud'
 
 /** Mínimo entre refetches automáticos al volver el foco a la pestaña. */
 const REFETCH_MIN_MS = 30_000
 
 const todayAppointments = useTodayAppointments()
+const proximasCitas = useProximasCitas()
+const historialCitas = useHistorialCitas()
+const solicitudesRecibidas = useSolicitudesRecibidas()
 const router = useRouter()
+
+/** Las citas cambiaron (o pudieron cambiar): se vuelven a pedir los tres rangos. */
+function recargarCitas(): void {
+  void todayAppointments.reload()
+  void proximasCitas.reload()
+  void historialCitas.reload()
+}
 
 // Modal "Nueva cita" (lo abren el topbar y el estado vacío de la lista).
 const nuevaCitaAbierta = ref(false)
@@ -46,7 +64,7 @@ const solapamientosCreada = ref<AgendaAppointment[]>([])
 
 function alCrearCita(cita: CitaCreada): void {
   solapamientosCreada.value = solapamientosDe(cita.avisos)
-  void todayAppointments.reload()
+  recargarCitas()
 }
 
 function abrirVoucher(appointment: Appointment): void {
@@ -60,11 +78,17 @@ function abrirVoucher(appointment: Appointment): void {
 function alCambiarVisibilidad(): void {
   if (document.visibilityState === 'visible') {
     void todayAppointments.reloadIfStale(REFETCH_MIN_MS)
+    void proximasCitas.reloadIfStale(REFETCH_MIN_MS)
+    void historialCitas.reloadIfStale(REFETCH_MIN_MS)
+    // El conteo de solicitudes lo refresca `PanelLayout` al volver el foco.
   }
 }
 
 onMounted(() => {
-  void todayAppointments.reload()
+  recargarCitas()
+  // `PanelLayout` cuenta las solicitudes al entrar al panel; al volver al
+  // dashboard desde otra sección, se recuenta si el dato tiene más de 30 s.
+  void solicitudesRecibidas.refreshIfStale(REFETCH_MIN_MS)
   document.addEventListener('visibilitychange', alCambiarVisibilidad)
 })
 
@@ -83,7 +107,7 @@ onBeforeUnmount(() => {
       @dismiss="solapamientosCreada = []"
     />
 
-    <MetricsRow />
+    <ResumenTarjetas @select="abrirVoucher" />
 
     <div class="dashboard__grid">
       <div class="dashboard__col-main">
@@ -94,8 +118,8 @@ onBeforeUnmount(() => {
         />
       </div>
       <div class="dashboard__col-side">
-        <WeeklyAbsenteeism />
-        <EngineActivity />
+        <CitasPorSemana />
+        <RecordatoriosResumen />
       </div>
     </div>
   </main>
@@ -110,7 +134,7 @@ onBeforeUnmount(() => {
     :is-open="voucherAbierto"
     :appointment="citaSeleccionada"
     @close="voucherAbierto = false"
-    @changed="todayAppointments.reload()"
+    @changed="recargarCitas"
   />
 </template>
 

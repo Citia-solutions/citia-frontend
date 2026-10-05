@@ -156,6 +156,14 @@ reagendar) se esconden tras *"Ver reemplazados (N)"* para no ensuciar la lista.
 
 ---
 
+## Cambio del lote 2 de la limpieza (2026-10-05)
+
+`GET /recordatorios/configuracion` y su DTO (`ConfiguracionRecordatoriosDto`) pasaron a
+`entities/recordatorio` porque también los lee la tarjeta **Recordatorios** del dashboard
+([dashboard-citas-del-dia](dashboard-citas-del-dia.md)). `features/configurar-recordatorios` los
+reexporta: la pantalla no cambió. Nuevo en la entidad: `describirAntelaciones([1440, 120])` →
+*"24 h y 2 h antes"*.
+
 ## Pendientes
 
 | Qué | Nota |

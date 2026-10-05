@@ -6,6 +6,7 @@ export {
   diasDeSemana,
   validarRango,
   aplicarFiltro,
+  FILTRO_POR_DEFECTO,
   agruparPorFecha,
   distribuirEnCarriles,
   type FiltroEstado,

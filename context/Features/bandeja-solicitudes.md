@@ -49,7 +49,7 @@ Modal (mismo patrón y estilo que "Nueva cita") que pide:
 
 | Campo | Regla en el front | Espejo de |
 |-------|-------------------|-----------|
-| Fecha + hora | Obligatorias, **futuras** (el backend aceptaría el pasado, DT-13). Bloques de `BLOQUES_HORARIOS`. | — |
+| Fecha + hora | Obligatorias, **futuras** (el backend aceptaría el pasado, DT-13). Bloques de `BLOQUES_HORARIOS` (07:00–21:00 desde el 2026-10-05). Con la duración elegida, la cita debe terminar a más tardar a las **22:00** (`FIN_DE_JORNADA`). | — |
 | `inicio` | `aInicioISO()` → instante con zona explícita, igual que crear y reagendar. | `@Matches(/(Z\|[+-]hh:mm)$/)` |
 | `duracionMin` | Entero **1..1440**, por defecto 30. | `@IsInt @IsPositive @Max(1440)` — `DURACION_MAXIMA_MIN`, copia a mano ([DTF-06](../Deudas/DTF-06.md)) |
 | `tipoConsulta` | Obligatorio, **precargado con el `motivo`** (ADR-09 §10). | `@IsNotEmpty` |

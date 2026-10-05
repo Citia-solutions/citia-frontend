@@ -6,17 +6,18 @@
 // zonas (ADR-07: el backend proyecta, el cliente muestra). La única referencia
 // al navegador es "hoy", para elegir la semana inicial y resaltar el día
 // (mismo supuesto que DTF-07).
+import { HORAS_JORNADA } from '@/shared/config/bloquesHorarios'
 import {
   capitalizar,
-  diaDeLaSemana,
   diferenciaDias,
   fechaCalendario,
+  inicioDeSemana,
   minutosDelDia,
   sumarDias,
 } from '@/shared/lib/fecha'
 import {
+  isActiveStatus,
   MAX_DIAS_RANGO,
-  STATUS_LABEL,
   type AgendaAppointment,
   type AppointmentStatus,
 } from '@/entities/appointment'
@@ -25,11 +26,11 @@ import {
 // Semanas y rangos
 // ---------------------------------------------------------------------------
 
-/** Lunes de la semana que contiene `fecha` (semana lunes–domingo, como en Chile). */
-export function inicioDeSemana(fecha: string): string {
-  const desdeLunes = (diaDeLaSemana(fecha) + 6) % 7
-  return sumarDias(fecha, -desdeLunes)
-}
+/**
+ * Lunes de la semana que contiene `fecha`. Vive en `shared/lib/fecha` (también
+ * lo usa el dashboard); se reexporta para no romper a quien lo importaba de aquí.
+ */
+export { inicioDeSemana }
 
 /** Los 7 días de la semana que empieza en `lunes`. */
 export function diasDeSemana(lunes: string): string[] {
@@ -82,17 +83,29 @@ export function validarRango(desde: string, hasta: string): string | null {
 // Filtro por estado (en el cliente: el endpoint trae todos los estados)
 // ---------------------------------------------------------------------------
 
-export type FiltroEstado = 'todos' | 'vigentes' | AppointmentStatus
+/**
+ * `sin_canceladas` (todo menos `cancelada`) es el filtro POR DEFECTO desde el
+ * 2026-10-05 (decisión del usuario): las canceladas se consultan con
+ * "Canceladas" o "Todos los estados".
+ */
+export type FiltroEstado = 'sin_canceladas' | 'todos' | 'vigentes' | AppointmentStatus
 
-const VIGENTES: ReadonlySet<AppointmentStatus> = new Set(['pendiente', 'confirmada'])
+export const FILTRO_POR_DEFECTO: FiltroEstado = 'sin_canceladas'
 
+/**
+ * Opciones del selector. `ghosting` ("Sin respuesta") no se ofrece: ningún
+ * flujo produce ese estado (el job de cierre no existe, DT-11). Si alguna vez
+ * llega una, se ve con "Sin canceladas" y "Todos los estados".
+ */
 export const OPCIONES_FILTRO: { valor: FiltroEstado; etiqueta: string }[] = [
+  { valor: 'sin_canceladas', etiqueta: 'Sin canceladas' },
   { valor: 'todos', etiqueta: 'Todos los estados' },
   { valor: 'vigentes', etiqueta: 'Vigentes (pendientes y confirmadas)' },
-  ...(Object.keys(STATUS_LABEL) as AppointmentStatus[]).map((estado) => ({
-    valor: estado as FiltroEstado,
-    etiqueta: STATUS_LABEL[estado],
-  })),
+  { valor: 'pendiente', etiqueta: 'Pendientes' },
+  { valor: 'confirmada', etiqueta: 'Confirmadas' },
+  { valor: 'asistio', etiqueta: 'Asistieron' },
+  { valor: 'no_asistio', etiqueta: 'No asistieron' },
+  { valor: 'cancelada', etiqueta: 'Canceladas' },
 ]
 
 export function aplicarFiltro(
@@ -100,8 +113,41 @@ export function aplicarFiltro(
   filtro: FiltroEstado,
 ): AgendaAppointment[] {
   if (filtro === 'todos') return citas
-  if (filtro === 'vigentes') return citas.filter((c) => VIGENTES.has(c.status))
+  if (filtro === 'sin_canceladas') return citas.filter((c) => c.status !== 'cancelada')
+  if (filtro === 'vigentes') return citas.filter((c) => isActiveStatus(c.status))
   return citas.filter((c) => c.status === filtro)
+}
+
+/**
+ * Conteo de un día: "3 citas", "3 citas · 1 cancelada" o "2 canceladas". Las
+ * canceladas se cuentan aparte (no son citas a las que haya que ir) y solo si
+ * están a la vista: las que oculta el filtro no llegan a esta función.
+ */
+export function conteoDeCitas(citas: AgendaAppointment[]): string {
+  const canceladas = citas.filter((c) => c.status === 'cancelada').length
+  const agendadas = citas.length - canceladas
+  const partes: string[] = []
+  if (agendadas > 0 || canceladas === 0) partes.push(`${agendadas} ${agendadas === 1 ? 'cita' : 'citas'}`)
+  if (canceladas > 0) partes.push(`${canceladas} ${canceladas === 1 ? 'cancelada' : 'canceladas'}`)
+  return partes.join(' · ')
+}
+
+/**
+ * Nota para el estado vacío cuando el filtro esconde citas del rango cargado:
+ * "2 canceladas ocultas por el filtro." · "3 citas ocultas por el filtro.".
+ * null si no hay nada oculto.
+ */
+export function notaOcultas(
+  total: AgendaAppointment[],
+  visibles: AgendaAppointment[],
+  filtro: FiltroEstado,
+): string | null {
+  const n = total.length - visibles.length
+  if (n <= 0) return null
+  if (filtro === 'sin_canceladas') {
+    return `${n} ${n === 1 ? 'cancelada oculta' : 'canceladas ocultas'} por el filtro.`
+  }
+  return `${n} ${n === 1 ? 'cita oculta' : 'citas ocultas'} por el filtro.`
 }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +184,11 @@ export interface BloqueAgenda {
   /** Carril que ocupa dentro de su grupo de citas que se cruzan (0..carriles-1). */
   carril: number
   carriles: number
+  /**
+   * true si es una cancelada: va en la capa de FONDO, con carriles propios
+   * (solo entre canceladas), y nunca le quita ancho a una cita no cancelada.
+   */
+  fondo: boolean
 }
 
 /**
@@ -145,8 +196,21 @@ export interface BloqueAgenda {
  * lado a lado en vez de encimadas (con ADR-11 los cruces están permitidos).
  * Mismo criterio de cruce que el backend: intervalos semiabiertos, así que dos
  * citas pegadas (10:00–10:50 y 10:50–11:40) no comparten grupo.
+ *
+ * Las canceladas NO ocupan carril entre las demás (2026-10-05): una hora
+ * cancelada y vuelta a agendar no debe partir la columna en dos. Si el filtro
+ * las muestra, se reparten aparte y se dibujan detrás (`fondo: true`); una
+ * cancelada tapada por completo se consulta con el filtro "Canceladas" o en la
+ * vista lista.
  */
 export function distribuirEnCarriles(citas: AgendaAppointment[]): BloqueAgenda[] {
+  const canceladas = citas.filter((c) => c.status === 'cancelada')
+  const resto = citas.filter((c) => c.status !== 'cancelada')
+  // Primero el fondo: así, en el DOM, las no canceladas quedan encima.
+  return [...repartir(canceladas, true), ...repartir(resto, false)]
+}
+
+function repartir(citas: AgendaAppointment[], fondo: boolean): BloqueAgenda[] {
   const items = citas
     .map((cita) => {
       const inicioMin = minutosDelDia(cita.time)
@@ -180,7 +244,7 @@ export function distribuirEnCarriles(citas: AgendaAppointment[]): BloqueAgenda[]
     } else {
       finDeCarril[carril] = item.finMin
     }
-    const bloque: BloqueAgenda = { ...item, carril, carriles: 1 }
+    const bloque: BloqueAgenda = { ...item, carril, carriles: 1, fondo }
     grupo.push(bloque)
     bloques.push(bloque)
     finDelGrupo = Math.max(finDelGrupo, item.finMin)
@@ -190,10 +254,13 @@ export function distribuirEnCarriles(citas: AgendaAppointment[]): BloqueAgenda[]
   return bloques
 }
 
-/** Horas que muestra la grilla: 08–20 por defecto, ampliadas si alguna cita cae fuera. */
+/**
+ * Horas que muestra la grilla: la jornada de `shared/config/bloquesHorarios`
+ * (07–22 desde el 2026-10-05) por defecto, ampliadas si alguna cita cae fuera.
+ */
 export function rangoDeHoras(
   bloques: BloqueAgenda[],
-  porDefecto: { desde: number; hasta: number } = { desde: 8, hasta: 20 },
+  porDefecto: { desde: number; hasta: number } = HORAS_JORNADA,
 ): { desde: number; hasta: number } {
   let desde = porDefecto.desde
   let hasta = porDefecto.hasta

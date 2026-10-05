@@ -5,6 +5,7 @@ import type {
   CitaActualizada,
   PacienteActualizado,
   ReagendarCitaRequest,
+  TransicionEstado,
 } from '../model/types'
 
 // Las rutas van SIN `/api`: ya viene en `VITE_API_URL`.
@@ -20,6 +21,28 @@ export function reagendarCita(id: string, payload: ReagendarCitaRequest): Promis
 /** PATCH /citas/:id/cancelar — terminal: no hay "descancelar". 409 si ya no se puede. */
 export function cancelarCita(id: string, payload: CancelarCitaRequest): Promise<CitaActualizada> {
   return http.patch<CitaActualizada>(`/citas/${encodeURIComponent(id)}/cancelar`, payload)
+}
+
+/**
+ * Ruta de cada transición de estado sin cuerpo (ADR-09 §4). Mismo vocabulario
+ * que `accionesPermitidas`: el voucher solo ofrece las que el backend declara.
+ */
+const RUTA_TRANSICION: Record<TransicionEstado, string> = {
+  confirmar: 'confirmar', // pendiente → confirmada
+  asistencia: 'asistencia', // confirmada → asistio (terminal)
+  inasistencia: 'inasistencia', // confirmada → no_asistio (terminal)
+}
+
+/**
+ * PATCH /citas/:id/{confirmar | asistencia | inasistencia} — sin cuerpo. 409 si
+ * la cita ya no está en el estado de origen (la regla vive en el backend).
+ * Responde `CitaResponseDto` sin `accionesPermitidas`: tras cada una se vuelve
+ * a pedir el detalle.
+ */
+export function cambiarEstadoCita(id: string, transicion: TransicionEstado): Promise<CitaActualizada> {
+  return http.patch<CitaActualizada>(
+    `/citas/${encodeURIComponent(id)}/${RUTA_TRANSICION[transicion]}`,
+  )
 }
 
 /**

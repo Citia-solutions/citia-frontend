@@ -19,11 +19,20 @@ src/shared/
 │                         # autenticada (lo registra app/providers; ver abajo)
 │   └── erroresValidacion.ts # mensajesDeValidacion(e): string[] de un 400 de NestJS
 │                            # ({ message: string[] | string }); no traduce nada
+├── config/
+│   └── bloquesHorarios.ts # Horario de atención: PRIMER_BLOQUE ('07:00'), ULTIMO_BLOQUE ('21:00'),
+│                          # DURACION_BLOQUE_MIN (60) → BLOQUES_HORARIOS, FIN_DE_JORNADA ('22:00'),
+│                          # HORAS_JORNADA (grilla de la agenda) y errorFinDeJornada(hora, duración).
+│                          # Única fuente: modal "Nueva cita", reagendar, aceptar solicitud, flujo
+│                          # público y agenda. Para cambiar el horario se tocan solo las 3 constantes
 ├── lib/
 │   └── authToken.ts      # getToken(), setToken(token, persistent), removeToken()
 │                         # persistent=true → localStorage; false → sessionStorage
 │                         # readTokenClaims(token) → { sub, exp } | null (sin verificar firma)
 │                         # isTokenExpired(claims)
+│   └── fecha.ts          # Fechas sin librerías, en zona del NAVEGADOR (DTF-07): aInicioISO,
+│                         # fechaLocalISO, sumarDias, diferenciaDias, inicioDeSemana (lunes), …
+│   └── rut.ts            # Validación y formato del RUT (DTF-05)
 └── ui/
     ├── BaseButton.vue    # Props: variant('primary'|'outline'), loading, block
     ├── BaseInput.vue     # Props: modelValue, label, type, error, hint?; slot: icon

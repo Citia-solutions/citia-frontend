@@ -1,3 +1,4 @@
+import { errorFinDeJornada } from '@/shared/config/bloquesHorarios'
 import { esRutValido } from '@/shared/lib/rut'
 import type { NuevaCitaErrors, NuevaCitaField, NuevaCitaForm } from './types'
 
@@ -67,6 +68,14 @@ export function validateNuevaCita(values: NuevaCitaForm): NuevaCitaErrors {
 
   if (!values.duracionMin || values.duracionMin <= 0) {
     errors.duracionMin = 'Selecciona la duración.'
+  }
+
+  // La última cita termina a las 22:00 (`FIN_DE_JORNADA`, decisión del
+  // 2026-10-05): con el bloque de las 21:00, una cita de 90 min no cabe. El
+  // backend no lo impide; es una regla de la interfaz, igual que no agendar al pasado.
+  if (values.hora && !errors.hora && !errors.duracionMin) {
+    const finDeJornada = errorFinDeJornada(values.hora, values.duracionMin)
+    if (finDeJornada) errors.hora = finDeJornada
   }
 
   // El backend lo recibe como `tipoConsulta` y no acepta vacío.

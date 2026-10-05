@@ -7,6 +7,9 @@ cierre de Fase 1 se implementa en paralelo
 [ADR-11](../../../citia-backend/context/Decisions/ADR-11.md) (*solapamiento: avisar y permitir*)
 **Backend:** [`us02-gestion-citas.md` § Cierre de Fase 1 (a) y (b)](../../../citia-backend/context/Features/us02-gestion-citas.md#cierre-de-fase-1--contrato-2026-09-25)
 **Feature:** `src/features/agenda/` · **Ruta:** `/agenda`
+**Lote 2 de la limpieza previa al release (2026-10-05):** filtro "Sin canceladas" por defecto, las
+canceladas no ocupan carril, recarga al entrar y horas 07–22 — ver
+[Cambios del lote 2](#cambios-del-lote-2-de-la-limpieza-2026-10-05).
 
 ---
 
@@ -20,8 +23,10 @@ mismo endpoint:
 | **Semana** (por defecto) | Grilla lunes–domingo con una fila por hora; cada cita es un bloque del alto de su duración. Hoy resaltado. | ‹ semana anterior · **Hoy** · semana siguiente › |
 | **Lista** | Citas del rango agrupadas por día, con la misma fila que "Citas de hoy". | Desde / Hasta (máx. 42 días) · atajos *Próximos 7 / 30 días* |
 
-- **Filtro por estado** (las dos vistas): todos · vigentes (pendientes y confirmadas) · cada uno de
-  los seis estados. Es del cliente: el endpoint trae todos.
+- **Filtro por estado** (las dos vistas): **Sin canceladas (por defecto)** · Todos los estados · Vigentes
+  (pendientes y confirmadas) · Pendientes · Confirmadas · Asistieron · No asistieron · Canceladas. Es del
+  cliente: el endpoint trae todos. `ghosting` ("Sin respuesta") **no se ofrece**: ningún flujo lo produce
+  (no existe el job de cierre, DT-11); si llegara una, se ve con "Sin canceladas" y "Todos los estados".
 - **Clic en una cita → el voucher de siempre** ([gestionar-cita](gestionar-cita.md)), con reagendar y
   cancelar. Desde la agenda se abre con `listaDelDia = false`: no dice "ya no aparece en tu lista de
   hoy".
@@ -56,9 +61,10 @@ guarda el rango pedido y **refrescar = volver a pedir el rango**. Mismas reglas 
 
 | Disparador | Qué hace |
 |------------|----------|
-| Entrar a `/agenda`, cambiar de semana o de rango | `setRange()` (pide solo si el rango cambió) |
+| Entrar a `/agenda` | `setRange(…, { forzar: true })`: **pide siempre**, aunque el rango ya esté cargado (con datos previos se ve "Actualizando…") |
+| Cambiar de semana o de rango | `setRange()` (pide solo si el rango cambió) |
 | Crear una cita desde "+ Nueva cita" | `reload()` |
-| Reagendar o cancelar desde el voucher | `reload()` al recibir `changed` |
+| Reagendar, cancelar, confirmar o registrar asistencia desde el voucher | `reload()` al recibir `changed` |
 | Volver a la pestaña | `reloadIfStale(30 s)` |
 
 - Una respuesta fuera de orden se descarta (gana el último pedido).
@@ -71,10 +77,16 @@ guarda el rango pedido y **refrescar = volver a pedir el rango**. Mismas reglas 
 
 - **Sin librería de calendario** (no había ninguna): grilla CSS + posiciones calculadas en
   `features/agenda/model/agenda.ts`. 56 px por hora; bloque mínimo de 22 px.
-- **Horas visibles:** 08:00–20:00, ampliadas automáticamente si alguna cita cae fuera.
+- **Horas visibles:** la jornada de `shared/config/bloquesHorarios.ts` (`HORAS_JORNADA`, **07:00–22:00**
+  desde el 2026-10-05; antes 08–20), ampliadas automáticamente si alguna cita cae fuera.
 - **Citas que se cruzan, lado a lado** (`distribuirEnCarriles`): con ADR-11 los cruces existen. Mismo
   criterio de cruce que el backend: intervalo semiabierto, así que **dos citas pegadas no comparten
-  grupo** y cada una usa el ancho completo. Las canceladas también ocupan carril (se ven tachadas).
+  grupo** y cada una usa el ancho completo.
+- **Las canceladas no ocupan carril** (2026-10-05): una hora cancelada y vuelta a agendar ya no parte la
+  columna en dos. Si el filtro las muestra ("Todos los estados", "Canceladas"), se reparten solo entre
+  ellas y se dibujan **detrás** (`fondo: true`, borde punteado, tachadas): nunca angostan ni desplazan a
+  las demás. Una cancelada tapada por completo por otra cita se consulta con el filtro "Canceladas" o en
+  la vista lista.
 - Una cita que pasa la medianoche se dibuja **recortada** a su día (entra en la agenda por su `inicio`,
   igual que en el backend).
 - Colores por estado = los del badge (`STATUS_BADGE_VARIANT`); tachado = cancelada, atenuado = pasada
@@ -121,6 +133,21 @@ Con tres vistas autenticadas, el sidebar dejó de ser parte de `DashboardPage`:
 - Cada página sigue componiendo sus propios features (modal, voucher) y decide cuándo recargar.
 
 ---
+
+## Cambios del lote 2 de la limpieza (2026-10-05)
+
+Decisiones del usuario del 2026-10-05; **revierten la recomendación de US-02.09 §4** ("canceladas
+visibles y tachadas") también en la agenda.
+
+| Qué | Dónde |
+|-----|-------|
+| Filtro **"Sin canceladas"** (todo menos `cancelada`) y por defecto (`FILTRO_POR_DEFECTO`); se conservan "Canceladas" y "Todos los estados"; fuera "Sin respuesta" | `model/agenda.ts`, `model/useVistaAgenda.ts` |
+| Canceladas fuera del reparto de carriles, en una capa de fondo | `distribuirEnCarriles` (`model/agenda.ts`), `ui/AgendaSemanal.vue` |
+| Conteo por día de la lista: "3 citas", "3 citas · 1 cancelada" o "2 canceladas" (las ocultas por el filtro no cuentan) | `conteoDeCitas`, `ui/AgendaLista.vue` |
+| Vacío con nota: *"No hay citas en esta semana. 2 canceladas ocultas por el filtro."* (o "N citas ocultas" con otro filtro) | `notaOcultas`, `ui/AgendaSemanal.vue`, `ui/AgendaLista.vue` |
+| **Recarga siempre al entrar**: antes, volver a `/agenda` con el mismo rango no pedía nada y se veían citas viejas (p. ej. confirmadas desde el dashboard) | `setRange(desde, hasta, { forzar })` en `entities/appointment/model/useAgendaAppointments.ts`; `AgendaProfesional.vue` |
+| Grilla de 07:00 a 22:00 (bloques de 1 h con inicios 07–21) | `HORAS_JORNADA` de `shared/config/bloquesHorarios.ts` |
+| `inicioDeSemana` pasó a `shared/lib/fecha.ts` (lo usa también el dashboard); `model/agenda.ts` lo reexporta | |
 
 ## Pendientes
 

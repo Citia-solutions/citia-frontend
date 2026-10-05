@@ -5,6 +5,9 @@
 //
 // Sin librería de calendario: una grilla CSS y posiciones calculadas en
 // `model/agenda.ts`. Las citas se asignan al día por su `fecha` del backend.
+//
+// Las canceladas (si el filtro las muestra) no ocupan carril: van en una capa
+// de fondo y nunca angostan a las demás (2026-10-05).
 import { computed } from 'vue'
 import {
   isPastAppointment,
@@ -29,6 +32,8 @@ const props = defineProps<{
   hoy: string
   /** Referencia para "cita pasada" (momento de la última carga). */
   loadedAt: Date
+  /** "2 canceladas ocultas por el filtro." si el filtro esconde citas de la semana. */
+  notaOcultas?: string | null
 }>()
 
 const emit = defineEmits<{ select: [appointment: AgendaAppointment] }>()
@@ -77,6 +82,7 @@ function clasesBloque(b: BloqueAgenda): Record<string, boolean> {
   return {
     [`agenda-sem__block--${STATUS_BADGE_VARIANT[b.cita.status]}`]: true,
     'agenda-sem__block--cancelled': cancelada,
+    'agenda-sem__block--fondo': b.fondo,
     'agenda-sem__block--muted':
       !cancelada && (isTerminalStatus(b.cita.status) || isPastAppointment(b.cita, props.loadedAt)),
     'agenda-sem__block--compact': (b.finMin - b.inicioMin) / 60 * PX_POR_HORA < 40,
@@ -148,7 +154,10 @@ const totalSemana = computed(() => columnas.value.reduce((n, c) => n + c.bloques
       </div>
     </div>
 
-    <p v-if="totalSemana === 0" class="agenda-sem__empty">No hay citas en esta semana.</p>
+    <p v-if="totalSemana === 0" class="agenda-sem__empty">
+      No hay citas en esta semana.
+      <span v-if="notaOcultas" class="agenda-sem__empty-note">{{ notaOcultas }}</span>
+    </p>
   </div>
 </template>
 
@@ -282,6 +291,11 @@ const totalSemana = computed(() => columnas.value.reduce((n, c) => n + c.bloques
 .agenda-sem__block--cancelled {
   opacity: 0.55;
 }
+/* Capa de fondo (canceladas): detrás de las demás, sin quitarles ancho. */
+.agenda-sem__block--fondo {
+  z-index: 0;
+  border-left-style: dashed;
+}
 .agenda-sem__block--cancelled .agenda-sem__block-time,
 .agenda-sem__block--cancelled .agenda-sem__block-name {
   text-decoration: line-through;
@@ -318,8 +332,14 @@ const totalSemana = computed(() => columnas.value.reduce((n, c) => n + c.bloques
 .agenda-sem__block--compact .agenda-sem__block-type {
   display: none;
 }
+.agenda-sem__empty-note {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+}
 .agenda-sem__empty {
   position: absolute;
+  text-align: center;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

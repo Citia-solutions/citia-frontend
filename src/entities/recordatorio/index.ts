@@ -11,6 +11,7 @@ export {
   ESTADO_RECORDATORIO_VARIANT,
   MOTIVO_RECORDATORIO_TEXTO,
   describirAntelacion,
+  describirAntelaciones,
   etiquetaEstado,
   lineaDeTiempo,
   textoMotivo,
@@ -19,7 +20,9 @@ export {
 } from './model/presentacion'
 export {
   getRecordatoriosDeCita,
+  getConfiguracionRecordatorios,
   toRecordatorio,
   type RecordatorioCitaDto,
+  type ConfiguracionRecordatoriosDto,
 } from './api/recordatorioApi'
 export { default as RecordatorioEstadoBadge } from './ui/RecordatorioEstadoBadge.vue'

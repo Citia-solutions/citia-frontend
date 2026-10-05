@@ -3,7 +3,11 @@
 // y cuándo se recarga lo decide la página. Cada fila es clicable y emite
 // `select` para abrir el voucher de la cita: este widget no sabe que el voucher
 // existe (la página compone).
-import { computed } from 'vue'
+//
+// Canceladas ocultas por defecto (decisión del usuario, 2026-10-05; revierte
+// la recomendación de US-02.09 §4): al final de la lista, "Mostrar N
+// canceladas" las despliega, todavía tachadas. El conteo viene del mismo store.
+import { computed, ref } from 'vue'
 import BaseCard from '@/shared/ui/BaseCard.vue'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import {
@@ -30,17 +34,32 @@ function plural(n: number, singular: string): string {
   return `${n} ${n === 1 ? singular : `${singular}s`}`
 }
 
-// "N agendadas · N confirmadas · N pendientes [· N canceladas]", calculado.
+// "N agendadas · N confirmadas · N pendientes", calculado. Las canceladas no
+// van aquí: las cuenta el enlace "Mostrar N canceladas" del final.
 const subtitle = computed(() => {
-  if (store.appointments.length === 0) return ''
-  const partes = [
+  if (store.scheduledCount === 0) return ''
+  return [
     plural(store.scheduledCount, 'agendada'),
     plural(store.confirmedCount, 'confirmada'),
     plural(store.pendingCount, 'pendiente'),
-  ]
-  if (store.cancelledCount > 0) partes.push(plural(store.cancelledCount, 'cancelada'))
-  return partes.join(' · ')
+  ].join(' · ')
 })
+
+/** El profesional pidió ver las canceladas. Se olvida al salir del dashboard. */
+const mostrarCanceladas = ref(false)
+
+/** Filas a la vista: sin canceladas, salvo que se pidan. Orden del backend. */
+const filas = computed(() =>
+  mostrarCanceladas.value
+    ? store.appointments
+    : store.appointments.filter((a) => a.status !== 'cancelada'),
+)
+
+const textoCanceladas = computed(() =>
+  mostrarCanceladas.value
+    ? 'Ocultar canceladas'
+    : `Mostrar ${plural(store.cancelledCount, 'cancelada')}`,
+)
 
 /** Primera carga: todavía no hay nada que mostrar. */
 const firstLoad = computed(() => store.loading && !store.loaded)
@@ -110,15 +129,15 @@ function rowLabel(appt: Appointment): string {
         </button>
       </div>
 
-      <div v-if="store.appointments.length === 0" class="appts__state">
-        <p class="appts__state-text">No tienes citas para hoy.</p>
+      <div v-if="store.scheduledCount === 0" class="appts__state">
+        <p class="appts__state-text">No tienes citas vigentes hoy.</p>
         <button type="button" class="appts__state-action" @click="emit('schedule')">
           Agendar una cita
         </button>
       </div>
 
-      <ul v-else class="appts__list">
-        <li v-for="appt in store.appointments" :key="appt.id">
+      <ul v-if="filas.length > 0" id="citas-de-hoy-lista" class="appts__list">
+        <li v-for="appt in filas" :key="appt.id">
           <button
             type="button"
             class="appts__row"
@@ -139,6 +158,17 @@ function rowLabel(appt: Appointment): string {
           </button>
         </li>
       </ul>
+
+      <button
+        v-if="store.cancelledCount > 0"
+        type="button"
+        class="appts__toggle"
+        :aria-expanded="mostrarCanceladas"
+        :aria-controls="filas.length > 0 ? 'citas-de-hoy-lista' : undefined"
+        @click="mostrarCanceladas = !mostrarCanceladas"
+      >
+        {{ textoCanceladas }}
+      </button>
     </template>
   </BaseCard>
 </template>
@@ -275,6 +305,29 @@ function rowLabel(appt: Appointment): string {
 }
 .appts__row:hover .appts__row-action {
   text-decoration: underline;
+}
+
+/* Enlace discreto para ver u ocultar las canceladas */
+.appts__toggle {
+  display: block;
+  margin: 0.6rem auto 0;
+  padding: 0.2rem 0.4rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.appts__toggle:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+.appts__toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 /* Estados vacío / error */

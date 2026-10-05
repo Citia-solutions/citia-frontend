@@ -99,6 +99,22 @@ export function describirAntelacion(min: number): string {
   return `${min} min`
 }
 
+/**
+ * Los momentos de envío en una frase, en el orden en que vienen (el backend
+ * los manda de mayor a menor):
+ *
+ *   [1440, 120] → '24 h y 2 h antes' · [10080, 1440, 120] → '1 semana, 24 h y 2 h antes'
+ *
+ * Lista vacía → ''.
+ */
+export function describirAntelaciones(antelacionesMin: readonly number[]): string {
+  const partes = antelacionesMin.map(describirAntelacion)
+  const ultima = partes.pop()
+  if (ultima === undefined) return ''
+  const frase = partes.length === 0 ? ultima : `${partes.join(', ')} y ${ultima}`
+  return `${frase} antes`
+}
+
 /** Instante ISO → 'mar, 14 oct · 10:30', o '' si no es una fecha. */
 function momento(iso: string | null): string {
   if (!iso) return ''

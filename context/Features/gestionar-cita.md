@@ -1,4 +1,4 @@
-# Gestionar cita — voucher con reagendar y cancelar
+# Gestionar cita — voucher con reagendar, cancelar, confirmar y asistencia
 
 **Estado:** ✅ Implementado y conectado (2026-09-24) · ⚠️ sin prueba manual contra el backend real
 **Rama:** `feature/us02-voucher-dashboard` (sin commit)
@@ -7,6 +7,8 @@
 **Backend:** [`us02-gestion-citas.md` § Detalle](../../../citia-backend/context/Features/us02-gestion-citas.md#detalle-de-la-cita-us-0208) ·
 [plan backend](../../../citia-backend/context/US/02.08-voucher-cita.md)
 **Feature:** `src/features/gestionar-cita/`
+**Lote 2 de la limpieza previa al release (2026-10-05):** botones **Confirmar**, **Asistió** y **No
+asistió** — ver [Confirmación y asistencia](#confirmación-y-asistencia-2026-10-05).
 
 ---
 
@@ -18,6 +20,8 @@ Desde "Citas de hoy", **"Ver cita"** abre un modal tipo voucher con:
 - **Paciente:** nombre, RUT (formateado), teléfono y correo — con **Editar** (Fase 2).
 - **Recordatorios por correo** (Fase 2): estado de cada recordatorio — ver
   [recordatorios](recordatorios.md#estado-en-el-voucher).
+- **Confirmación / Asistencia** (2026-10-05): **Confirmar cita**, **Asistió** y **No asistió**, según
+  `accionesPermitidas`.
 - **Acciones:** **Reagendar** y **Cancelar**, cada una con su vista de confirmación y motivo opcional.
 
 Se abre **al instante** con los datos de la fila y se completa con `GET /citas/:id`; mientras carga
@@ -32,13 +36,17 @@ Se abre **al instante** con los datos de la fila y se completa con `GET /citas/:
 | `GET /citas/:id` → `{ id, estado, inicio, hora, duracionMin, tipoConsulta, paciente: { id, nombre, rut, telefono, correo }, accionesPermitidas }` | pintar el voucher |
 | `PATCH /citas/:id/reagendar` — `{ inicio, motivo? }` | reagendar |
 | `PATCH /citas/:id/cancelar` — `{ motivo? }` | cancelar |
+| `PATCH /citas/:id/confirmar` (sin cuerpo) | pendiente → confirmada (2026-10-05) |
+| `PATCH /citas/:id/asistencia` (sin cuerpo) | confirmada → asistio, terminal (2026-10-05) |
+| `PATCH /citas/:id/inasistencia` (sin cuerpo) | confirmada → no_asistio, terminal (2026-10-05) |
 
 `toAppointmentDetail()` en `entities/appointment/api/appointmentApi.ts` traduce el detalle al modelo
 del front. `motivo` **se omite** del cuerpo cuando va vacío.
 
 ### Los botones los decide el backend
 
-**Reagendar** y **Cancelar** se habilitan solo si están en `accionesPermitidas`. El front **no
+**Reagendar** y **Cancelar** se habilitan solo si están en `accionesPermitidas`; **Confirmar**,
+**Asistió** y **No asistió** solo **aparecen** si están ahí. El front **no
 deriva** qué es legal a partir del `estado`: esa regla vive en la entidad `Cita` del backend
 (ADR-04) y copiarla aquí era la forma de que un botón habilitado terminara en 409. Un botón
 deshabilitado explica por qué: *"No disponible en el estado actual de la cita"*.
@@ -50,7 +58,8 @@ no hay acciones), nunca para habilitar.
 
 1. Se **vuelve a pedir el detalle** (`GET /citas/:id`): las respuestas de las transiciones no traen
    `accionesPermitidas` a propósito.
-2. Se emite `changed` → el dashboard hace `reload()` ([dashboard-citas-del-dia](dashboard-citas-del-dia.md)).
+2. Se emite `changed` → el dashboard recarga hoy, próximos 7 días y 6 semanas
+   ([dashboard-citas-del-dia](dashboard-citas-del-dia.md)); la agenda recarga su rango.
 3. El voucher **queda abierto** mostrando el resultado.
 
 **Un 409** (la cita cambió entre que se abrió y se actuó: otro profesional, el paciente vía
@@ -77,8 +86,11 @@ US-02.07, el job de cierre) muestra el mensaje, recarga el detalle y recarga la 
   desfase explícito.
 - **No se puede reagendar al pasado** desde la UI. El backend lo acepta en silencio (DT-13); la
   validación se repite al enviar por si el formulario quedó abierto hasta pasada esa hora.
-- **Selector de hora** del modal de creación (bloques en `shared/config/bloquesHorarios.ts`),
-  prellenado con la hora actual; si esa hora no es un bloque, se agrega como opción.
+- **Selector de hora** del modal de creación (bloques en `shared/config/bloquesHorarios.ts`: 1 h, de
+  07:00 a 21:00 desde el 2026-10-05), prellenado con la hora actual; si esa hora no es un bloque, se
+  agrega como opción.
+- **La cita debe terminar a más tardar a las 22:00** (`FIN_DE_JORNADA`, 2026-10-05): como reagendar
+  conserva la duración, una de 90 min no se puede mover a las 21:00 (*"…Elige una hora más temprana."*).
 - **Motivo:** opcional, máximo **300** caracteres con contador. El backend aplica el mismo límite
   (`@MaxLength(300)` en `MotivoCitaDto` y `ReagendarCitaDto`) — copia a mano, ver
   [DTF-06](../Deudas/DTF-06.md).
@@ -92,7 +104,8 @@ US-02.07, el job de cierre) muestra el mensaje, recarga el detalle y recarga la 
 | Qué | Nota |
 |-----|------|
 | Historial (`GET /citas/:id/historial`) | Segunda entrega, según el plan. |
-| Confirmar, asistencia, inasistencia, editar | El backend ya los anuncia en `accionesPermitidas`; no se muestran todavía. |
+| ~~Confirmar, asistencia, inasistencia~~ | ✅ Hechos el 2026-10-05 (ver abajo). |
+| Editar (duración, tipo) | El backend lo anuncia en `accionesPermitidas`; no se muestra todavía. |
 | ~~Aviso de solapamiento~~ | ✅ Hecho en el cierre de Fase 1 (ADR-11): tras reagendar, el voucher lista las citas con las que choca — ver [agenda-profesional](agenda-profesional.md#aviso-de-solapamiento-adr-11). |
 | "Generar enlace para el paciente" | Depende de US-02.07 y [ADR-10](../../../citia-backend/context/Decisions/ADR-10.md) (propuesto). |
 
@@ -125,11 +138,45 @@ Rama `feature/fase2-recordatorios`. Detalle completo en [recordatorios](recordat
 edita un paciente (no hay ficha de pacientes todavía). Si aparece una, la llamada pasa a una entidad
 `paciente`.
 
+## Confirmación y asistencia (2026-10-05)
+
+Lote 2 de la limpieza previa al release. Sección nueva entre *Recordatorios* y las acciones:
+
+| La cita está… | `accionesPermitidas` trae | La sección muestra |
+|---------------|---------------------------|--------------------|
+| `pendiente`, todavía no empieza | `confirmar` | **Confirmación** — *"¿El paciente confirmó que vendrá? Márcala como confirmada."* + **Confirmar cita** |
+| `pendiente` y **ya empezó** | `confirmar` (no `asistencia`) | *"Esta cita ya empezó y sigue pendiente. Para registrar si el paciente asistió, primero confírmala."* + **Confirmar cita** |
+| `confirmada`, ya empezó | `asistencia`, `inasistencia` | **Asistencia** — *"¿El paciente vino a la cita?"* + **Asistió** / **No asistió** |
+| `confirmada`, todavía no empieza | `asistencia`, `inasistencia` | *"La cita aún no empieza: registra la asistencia después de la hora."* + los dos botones |
+| `asistio` / `no_asistio` / `cancelada` | nada | Badge del estado y *"El paciente asistió a esta cita. Ya no admite cambios."* (solo lectura) |
+
+- **Sin inventar transiciones:** la sección aparece solo cuando llega el detalle y con los botones que
+  declara el backend. El front **no** ofrece marcar asistencia de una cita pendiente (ensuciaría el dato
+  del futuro scoring, RF-08): primero hay que confirmarla, que es lo que dice el dominio (ADR-04).
+- **Confirmación con un paso** (`ui/CambiarEstadoConfirm.vue`, mismo patrón que cancelar): foco inicial en
+  "Volver", botón con spinner, el voucher no se cierra mientras se envía. Copy:
+
+  | Acción | Texto |
+  |--------|-------|
+  | Confirmar | *"Úsalo cuando el paciente te confirme que vendrá (por teléfono, en persona o por correo). Citia no le envía ningún aviso."* · *"Sus recordatorios siguen programados igual."* |
+  | Asistió / No asistió | *"La cita queda cerrada como «Asistió» / «No asistió» y ya no admite cambios. Esta acción no se puede deshacer."* · *"Sus recordatorios pendientes se anulan."* |
+  | Asistencia de una cita que no empieza | Aviso ámbar: *"Esta cita todavía no empieza. Normalmente la asistencia se registra después de la hora de la cita."* (el backend lo permite; no se bloquea) |
+
+- **Después:** mensaje de éxito (*"Cita confirmada."*, *"Asistencia registrada: el paciente asistió."*,
+  *"Inasistencia registrada: el paciente no asistió."*), se emite `changed` (dashboard y agenda recargan) y
+  se vuelve a pedir el detalle. Tras Asistió / No asistió los recordatorios se vuelven a pedir hasta que
+  ninguno quede `programado` (el backend los anula, `cita_terminal`).
+- **409** (la cita cambió entretanto): *"Esta cita cambió mientras la tenías abierta y ya no admite esta
+  acción."*, vuelta al detalle y recarga de detalle y listas, igual que reagendar y cancelar.
+- Código: `cambiarEstadoCita(id, transicion)` en `api/gestionarCitaApi.ts`, `TransicionEstado` en
+  `model/types.ts`, `model/useCambiarEstadoCita.ts`, `ui/CambiarEstadoConfirm.vue`, `ui/VoucherCita.vue`.
+
 ## Pendientes
 
 - **Prueba manual contra el backend real** (crear, cancelar, reagendar dentro de hoy y a otro día,
   forzar un 409 con dos pestañas; en la Fase 2, además: recordatorios tras crear/reagendar/cancelar y
-  agregar el correo a un paciente que no lo tiene).
+  agregar el correo a un paciente que no lo tiene; en el lote 2: confirmar → asistió / no asistió,
+  una pendiente ya pasada, y un 409 confirmando la misma cita desde dos pestañas).
 
 ## Deudas técnicas asociadas
 

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { fechaLocalISO, sumarDias } from '@/shared/lib/fecha'
-import { inicioDeSemana, type FiltroEstado } from './agenda'
+import { FILTRO_POR_DEFECTO, inicioDeSemana, type FiltroEstado } from './agenda'
 
 export type VistaAgenda = 'semana' | 'lista'
 
@@ -20,7 +20,8 @@ function crear() {
     lunes: ref(lunes),
     desdeLista: ref(lunes),
     hastaLista: ref(sumarDias(lunes, 6)),
-    filtro: ref<FiltroEstado>('todos'),
+    // "Sin canceladas" por defecto (decisión del usuario, 2026-10-05).
+    filtro: ref<FiltroEstado>(FILTRO_POR_DEFECTO),
   }
 }
 

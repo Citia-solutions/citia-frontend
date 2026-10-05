@@ -11,7 +11,9 @@ export type {
 export {
   STATUS_LABEL,
   STATUS_BADGE_VARIANT,
+  isActiveStatus,
   isTerminalStatus,
+  hasStarted,
   isPastAppointment,
   type StatusBadgeVariant,
 } from './model/status'

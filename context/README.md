@@ -34,6 +34,11 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   sesión persistente, 401 global, "Cerrar sesión", sidebar con usuario/rol/clínica reales, y fuera
   del login, sidebar y topbar todo lo que no funcionaba o mostraba datos inventados. Cerró DTF-01,
   DTF-02 y DTF-04.
+- **Limpieza previa al release, lote 2** (2026-10-05): dashboard sin datos de prueba
+  ([dashboard-citas-del-dia](Features/dashboard-citas-del-dia.md)), canceladas ocultas por defecto y
+  carriles sin canceladas ([agenda-profesional](Features/agenda-profesional.md)), Confirmar / Asistió / No
+  asistió en el voucher ([gestionar-cita](Features/gestionar-cita.md)) y bloques horarios 07:00–21:00
+  ([crear-cita](Features/crear-cita.md)). Cerró DTF-03.
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
@@ -67,8 +72,13 @@ solapamiento** al crear, reagendar y aceptar · **enlace de agenda** copiable (c
 **estado de los recordatorios** y **editar contacto** en el voucher · **correo obligatorio** en el
 modal "nueva cita" (sale en el mismo release que el backend) · `public/_redirects` para Netlify.
 
-**Con datos de prueba:** métricas, ausentismo semanal y actividad del motor del dashboard (no tienen
-endpoint) — ver [DTF-03](Deudas/DTF-03.md). El sidebar y el topbar ya no tienen datos fijos.
+**Lote 2 de la limpieza, verificado solo con respuestas simuladas:** dashboard con cuatro tarjetas
+reales, "Citas por semana" y tarjeta de Recordatorios · canceladas ocultas por defecto (dashboard y
+agenda) · **Confirmar / Asistió / No asistió** en el voucher · agenda que recarga al entrar · bloques
+horarios 07:00–21:00 (la cita termina a más tardar a las 22:00).
+
+**Con datos de prueba:** nada. Ni el dashboard, ni el sidebar, ni el topbar tienen datos fijos
+([DTF-03](Deudas/DTF-03.md), cerrada).
 
 **Planificado:** la vista del paciente ([US-02.07](us/02.07-paciente-reagenda-cancela.md)), bloqueada
 hasta que se acepte `ADR-10` (propuesto) en el backend y se responda cómo le llega el enlace al

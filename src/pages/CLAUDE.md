@@ -10,7 +10,7 @@ src/pages/
 │       └── AuthAside.vue    # Panel izquierdo: logo Citia, headline y lo que Citia hace hoy
 ├── dashboard/
 │   └── ui/
-│       ├── DashboardPage.vue    # Resumen: topbar + métricas y citas del día
+│       ├── DashboardPage.vue    # Resumen: topbar, 4 tarjetas, citas de hoy, citas por semana, recordatorios
 │       └── DashboardTopbar.vue  # Título, subtítulo con conteos y "+ Nueva cita" (sin buscador ni campana)
 ├── agenda/
 │   └── ui/
@@ -40,6 +40,13 @@ src/pages/
 Las vistas autenticadas son hijas de `app/layouts/PanelLayout.vue` (sidebar + `<RouterView />`):
 las páginas no pintan el sidebar. El sidebar (`app/layouts/PanelSidebar.vue`) muestra la clínica, el
 usuario, su rol y el botón **Cerrar sesión**.
+
+## Recargas del dashboard
+
+`DashboardPage` recarga los tres rangos de citas (`useTodayAppointments`, `useProximasCitas`,
+`useHistorialCitas`) al montar, al crear una cita, cuando el voucher emite `changed` (reagendar,
+cancelar, confirmar, asistió, no asistió) y al volver a la pestaña (cada 30 s como mucho). El conteo de
+solicitudes lo refresca `PanelLayout`; el dashboard solo pide `refreshIfStale(30 s)` al montarse.
 
 ## Convenciones
 

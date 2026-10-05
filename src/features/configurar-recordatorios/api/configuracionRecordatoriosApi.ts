@@ -4,12 +4,11 @@ import type { ConfiguracionRecordatoriosDto, GuardarConfiguracionRequest } from 
 // Las rutas van SIN `/api`: ya viene en `VITE_API_URL`.
 
 /**
- * GET /recordatorios/configuracion — la configuración del profesional del
- * token, o la predeterminada (`predeterminada: true`) si nunca guardó una.
+ * GET /recordatorios/configuracion — vive en `entities/recordatorio` (la lee
+ * también la tarjeta "Recordatorios" del dashboard). Se reexporta para que
+ * este feature siga teniendo su API completa en un solo lugar.
  */
-export function getConfiguracionRecordatorios(): Promise<ConfiguracionRecordatoriosDto> {
-  return http.get<ConfiguracionRecordatoriosDto>('/recordatorios/configuracion')
-}
+export { getConfiguracionRecordatorios } from '@/entities/recordatorio'
 
 /**
  * PUT /recordatorios/configuracion — la reemplaza completa y devuelve la
