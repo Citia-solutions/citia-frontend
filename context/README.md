@@ -30,6 +30,10 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   (configuración `/recordatorios` + estado en el voucher), correo obligatorio en
   [crear-cita](Features/crear-cita.md) y despliegue en Netlify
   ([stack-tecnologico](stack-tecnologico.md#despliegue-netlify)).
+- **Limpieza previa al release, lote 1** (2026-10-05): [login-sesion](Features/login-sesion.md) —
+  sesión persistente, 401 global, "Cerrar sesión", sidebar con usuario/rol/clínica reales, y fuera
+  del login, sidebar y topbar todo lo que no funcionaba o mostraba datos inventados. Cerró DTF-01,
+  DTF-02 y DTF-04.
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
@@ -46,6 +50,10 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
 
 ## Estado, de un vistazo
 
+**Sesión (limpieza previa al release, verificado con respuestas simuladas):** la sesión sobrevive a
+un F5 (y a otra pestaña con "Mantener sesión iniciada"), un token vencido o un 401 llevan al login con
+`?redirect=`, y el sidebar tiene "Cerrar sesión" — ver [login-sesion](Features/login-sesion.md).
+
 **Conectado al backend:** login · modal "nueva cita" del profesional · flujo público del paciente
 (`/agendar-cita/:tenantSlug`) · **lista "Citas de hoy"** del dashboard
 ([US-02.09](Features/dashboard-citas-del-dia.md)) · **voucher con reagendar y cancelar**
@@ -60,7 +68,7 @@ solapamiento** al crear, reagendar y aceptar · **enlace de agenda** copiable (c
 modal "nueva cita" (sale en el mismo release que el backend) · `public/_redirects` para Netlify.
 
 **Con datos de prueba:** métricas, ausentismo semanal y actividad del motor del dashboard (no tienen
-endpoint) — ver [DTF-03](Deudas/DTF-03.md).
+endpoint) — ver [DTF-03](Deudas/DTF-03.md). El sidebar y el topbar ya no tienen datos fijos.
 
 **Planificado:** la vista del paciente ([US-02.07](us/02.07-paciente-reagenda-cancela.md)), bloqueada
 hasta que se acepte `ADR-10` (propuesto) en el backend y se responda cómo le llega el enlace al

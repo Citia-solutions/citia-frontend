@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -8,6 +8,8 @@ const props = withDefaults(
     placeholder?: string
     autocomplete?: string
     error?: string
+    /** Texto de ayuda bajo el campo. Se oculta mientras hay un error (el error ya orienta). */
+    hint?: string
   }>(),
   { type: 'text' },
 )
@@ -20,20 +22,28 @@ const revealed = ref(false)
 const currentType = computed(() =>
   isPassword.value ? (revealed.value ? 'text' : 'password') : props.type,
 )
+
+// Ids para asociar la etiqueta y el texto bajo el campo (ayuda o error) al input.
+const inputId = useId()
+const descriptionId = `${inputId}-desc`
+const description = computed(() => props.error || props.hint || '')
 </script>
 
 <template>
   <div class="field">
-    <label v-if="label" class="field__label">{{ label }}</label>
+    <label v-if="label" class="field__label" :for="inputId">{{ label }}</label>
     <div class="field__control" :class="{ 'field__control--error': error }">
       <span v-if="$slots.icon" class="field__icon">
         <slot name="icon" />
       </span>
       <input
+        :id="inputId"
         v-model="model"
         :type="currentType"
         :placeholder="placeholder"
         :autocomplete="autocomplete"
+        :aria-invalid="error ? 'true' : undefined"
+        :aria-describedby="description ? descriptionId : undefined"
         class="field__input"
       />
       <button
@@ -50,7 +60,8 @@ const currentType = computed(() =>
         </svg>
       </button>
     </div>
-    <p v-if="error" class="field__error">{{ error }}</p>
+    <p v-if="error" :id="descriptionId" class="field__error">{{ error }}</p>
+    <p v-else-if="hint" :id="descriptionId" class="field__hint">{{ hint }}</p>
   </div>
 </template>
 
@@ -106,5 +117,10 @@ const currentType = computed(() =>
 .field__error {
   font-size: 0.8rem;
   color: var(--color-danger);
+}
+.field__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 </style>

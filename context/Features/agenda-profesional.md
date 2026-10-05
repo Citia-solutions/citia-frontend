@@ -115,7 +115,9 @@ Con tres vistas autenticadas, el sidebar dejó de ser parte de `DashboardPage`:
 - `src/app/layouts/PanelLayout.vue` (sidebar + `<RouterView />`) es la **ruta padre** de `/`,
   `/agenda` y `/solicitudes`. `requiresAuth` va en el padre (vue-router lo mezcla en las hijas).
 - `DashboardSidebar.vue` se movió a `src/app/layouts/PanelSidebar.vue`: Resumen, Agenda y Solicitudes
-  son `RouterLink`; Pacientes y Citas anuladas siguen siendo visuales.
+  son `RouterLink`; Pacientes y Citas anuladas siguen siendo visuales. *(2026-10-05: Pacientes,
+  Citas anuladas y la tarjeta "Citia IA" se quitaron; el sidebar ganó usuario, rol, clínica y
+  "Cerrar sesión" — ver [login-sesion](login-sesion.md).)*
 - Cada página sigue componiendo sus propios features (modal, voucher) y decide cuándo recargar.
 
 ---

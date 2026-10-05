@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// Barra superior del contenido. Título + búsqueda + acciones.
+// Barra superior del contenido. Título + acción "+ Nueva cita".
 // El subtítulo sale del store de citas del día (fecha real y conteos); el
 // botón "+ Nueva cita" solo avisa: el modal lo compone la página, que es quien
 // sabe recargar la lista cuando se guarda una cita.
-import { computed, ref } from 'vue'
-import BaseInput from '@/shared/ui/BaseInput.vue'
+// Sin buscador ni campana: no hay `GET /pacientes` ni notificaciones que mostrar.
+import { computed } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { capitalizar, formatearFechaLarga } from '@/shared/lib/fecha'
 import { useTodayAppointments } from '@/entities/appointment'
@@ -14,7 +14,6 @@ const emit = defineEmits<{
   nuevaCita: []
 }>()
 
-const search = ref('')
 const store = useTodayAppointments()
 
 // "Miércoles 23 de septiembre · 7 citas hoy · 2 pendientes de confirmar".
@@ -42,24 +41,6 @@ const subtitle = computed(() => {
     </div>
 
     <div class="topbar__actions">
-      <div class="topbar__search">
-        <BaseInput v-model="search" placeholder="Buscar paciente…">
-          <template #icon>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-          </template>
-        </BaseInput>
-      </div>
-
-      <button type="button" class="topbar__icon-btn" aria-label="Notificaciones">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-        </svg>
-      </button>
-
       <div class="topbar__cta">
         <BaseButton :block="false" @click="emit('nuevaCita')">+ Nueva cita</BaseButton>
       </div>
@@ -90,34 +71,5 @@ const subtitle = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-}
-.topbar__search {
-  width: 240px;
-}
-.topbar__icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.topbar__icon-btn:hover {
-  background: var(--color-surface-muted);
-  color: var(--color-text);
-}
-@media (max-width: 560px) {
-  .topbar__search {
-    width: 100%;
-    order: 3;
-  }
-  .topbar__actions {
-    flex-wrap: wrap;
-  }
 }
 </style>

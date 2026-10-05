@@ -1,15 +1,29 @@
 <script setup lang="ts">
 // Sidebar fijo del panel del profesional (lo pinta `PanelLayout` en todas las
-// vistas autenticadas). Navegación principal + tarjeta de IA + perfil.
+// vistas autenticadas). Marca + nombre de la clínica, navegación y perfil con
+// "Cerrar sesión".
 //
-// Resumen, Agenda, Solicitudes y Recordatorios (Fase 2) navegan; Pacientes y
-// Citas anuladas siguen siendo visuales (sin vista todavía; la píldora "3" es
-// dato fijo, DTF-03).
-// La píldora de Solicitudes es real: cuántas esperan respuesta.
+// Solo muestra lo que funciona: Resumen, Agenda, Solicitudes y Recordatorios.
+// La píldora de Solicitudes es real: cuántas esperan respuesta. Usuario, rol y
+// clínica salen de la sesión (respuesta del login, restaurada al recargar).
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
+import { roleLabel, useSessionStore } from '@/entities/session'
 import { useSolicitudesRecibidas } from '@/entities/solicitud'
+import { cerrarSesion } from '@/app/router/cerrarSesion'
 
+const router = useRouter()
+const session = useSessionStore()
 const recibidas = useSolicitudesRecibidas()
+
+const user = computed(() => session.currentUser)
+/** Nombre para el perfil; si el backend no mandó nombre, el correo. */
+const displayName = computed(() => user.value?.name.trim() || user.value?.email || '')
+
+function salir(): void {
+  cerrarSesion(router)
+}
 </script>
 
 <template>
@@ -19,7 +33,9 @@ const recibidas = useSolicitudesRecibidas()
       <span class="sidebar__logo" aria-hidden="true">C</span>
       <div class="sidebar__brand-text">
         <span class="sidebar__brand-name">Citia</span>
-        <span class="sidebar__brand-sub">SaludX · Centro Clínico</span>
+        <span v-if="user?.tenantNombre" class="sidebar__brand-sub" :title="user.tenantNombre">
+          {{ user.tenantNombre }}
+        </span>
       </div>
     </div>
 
@@ -53,7 +69,7 @@ const recibidas = useSolicitudesRecibidas()
         <span>Solicitudes</span>
         <span
           v-if="recibidas.etiqueta"
-          class="sidebar__pill sidebar__pill--info"
+          class="sidebar__pill"
           :aria-label="`${recibidas.etiqueta} por responder`"
         >
           {{ recibidas.etiqueta }}
@@ -67,51 +83,28 @@ const recibidas = useSolicitudesRecibidas()
         </svg>
         <span>Recordatorios</span>
       </RouterLink>
-
-      <a href="#" class="sidebar__item">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-        <span>Pacientes</span>
-      </a>
-
-      <a href="#" class="sidebar__item">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="9" />
-          <path d="m15 9-6 6M9 9l6 6" />
-        </svg>
-        <span>Citas anuladas</span>
-        <span class="sidebar__pill">3</span>
-      </a>
     </nav>
 
-    <!-- Inteligencia -->
-    <div class="sidebar__intel">
-      <span class="sidebar__label">INTELIGENCIA</span>
-      <div class="sidebar__ai">
-        <div class="sidebar__ai-head">
-          <span class="sidebar__ai-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 3l2.2 5.5L20 10l-5.8 1.5L12 17l-2.2-5.5L4 10l5.8-1.5L12 3Z" />
-            </svg>
-          </span>
-          <span class="sidebar__ai-title">Citia IA</span>
-        </div>
-        <p class="sidebar__ai-text">
-          31 pacientes en riesgo de ausentismo esta semana. Revisa las recomendaciones.
-        </p>
-      </div>
-    </div>
-
-    <!-- Perfil -->
-    <div class="sidebar__profile">
-      <BaseAvatar name="Matías Rivera" :size="38" />
+    <!-- Perfil + cerrar sesión -->
+    <div v-if="user" class="sidebar__profile">
+      <BaseAvatar :name="displayName" :size="38" />
       <div class="sidebar__profile-text">
-        <span class="sidebar__profile-name">Dr. Matías Rivera</span>
-        <span class="sidebar__profile-role">Psicólogo clínico</span>
+        <span class="sidebar__profile-name" :title="displayName">{{ displayName }}</span>
+        <span class="sidebar__profile-role">{{ roleLabel(user.role) }}</span>
       </div>
+      <button
+        type="button"
+        class="sidebar__logout"
+        aria-label="Cerrar sesión"
+        title="Cerrar sesión"
+        @click="salir"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <path d="m16 17 5-5-5-5" />
+          <path d="M21 12H9" />
+        </svg>
+      </button>
     </div>
   </aside>
 </template>
@@ -152,6 +145,7 @@ const recibidas = useSolicitudesRecibidas()
 .sidebar__brand-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .sidebar__brand-name {
   font-weight: 700;
@@ -161,6 +155,9 @@ const recibidas = useSolicitudesRecibidas()
 .sidebar__brand-sub {
   font-size: 0.75rem;
   color: var(--color-sidebar-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sidebar__nav {
   display: flex;
@@ -197,6 +194,7 @@ const recibidas = useSolicitudesRecibidas()
 .sidebar__item span:first-of-type {
   flex: 1;
 }
+/* Contador informativo (solicitudes por responder), no una alerta. */
 .sidebar__pill {
   display: inline-flex;
   align-items: center;
@@ -205,40 +203,10 @@ const recibidas = useSolicitudesRecibidas()
   height: 20px;
   padding: 0 0.35rem;
   border-radius: var(--radius-full);
-  background: var(--color-danger);
+  background: var(--color-primary);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
-}
-.sidebar__intel {
-  display: flex;
-  flex-direction: column;
-}
-.sidebar__ai {
-  background: var(--color-sidebar-surface);
-  border-radius: var(--radius-md);
-  padding: 0.85rem;
-}
-.sidebar__ai-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.sidebar__ai-icon {
-  display: flex;
-  color: var(--color-primary);
-}
-.sidebar__ai-title {
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: var(--color-sidebar-text);
-}
-.sidebar__ai-text {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--color-sidebar-text-muted);
 }
 .sidebar__profile {
   margin-top: auto;
@@ -250,19 +218,43 @@ const recibidas = useSolicitudesRecibidas()
 .sidebar__profile-text {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 .sidebar__profile-name {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-sidebar-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sidebar__profile-role {
   font-size: 0.75rem;
   color: var(--color-sidebar-text-muted);
 }
-/* Contador informativo (solicitudes por responder), no una alerta. */
-.sidebar__pill.sidebar__pill--info {
-  background: var(--color-primary);
+.sidebar__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-sidebar-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar__logout:hover {
+  background: var(--color-sidebar-surface);
+  color: var(--color-sidebar-text);
+}
+.sidebar__logout:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 @media (max-width: 860px) {
   .sidebar {
@@ -271,7 +263,6 @@ const recibidas = useSolicitudesRecibidas()
   }
   .sidebar__brand-text,
   .sidebar__item span,
-  .sidebar__intel,
   .sidebar__profile-text {
     display: none;
   }
@@ -288,6 +279,10 @@ const recibidas = useSolicitudesRecibidas()
     min-width: 16px;
     height: 16px;
     font-size: 0.6rem;
+  }
+  /* Colapsado: avatar arriba y "Cerrar sesión" debajo, centrados. */
+  .sidebar__profile {
+    flex-direction: column;
   }
 }
 </style>

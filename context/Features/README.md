@@ -12,6 +12,7 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
 | [bandeja-solicitudes](bandeja-solicitudes.md) — cierre de Fase 1 US-02: bandeja (listar, aceptar, rechazar) + enlace de agenda | ✅ Implementado · ⚠️ solo con respuestas simuladas (backend en paralelo) | `feature/us02-cierre-fase1` · sin commit |
 | [recordatorios](recordatorios.md) — Fase 2, US-03: configuración `/recordatorios` + estado de los recordatorios en el voucher | ✅ Implementado · ⚠️ solo con respuestas simuladas | `feature/fase2-recordatorios` · sin commit |
 | [crear-cita](crear-cita.md) — modal "Nueva cita" del profesional; Fase 2: correo obligatorio | ✅ Implementado y conectado · ⚠️ el cambio de Fase 2 sin prueba contra el backend | `feature/fase2-recordatorios` · sin commit |
+| [login-sesion](login-sesion.md) — login, sesión persistente (F5 / otra pestaña), 401 global, cerrar sesión y sidebar con datos reales | ✅ Implementado · ⚠️ lo nuevo verificado solo con respuestas simuladas | `feature/frontend-prerelease` · sin commit |
 
 ## Notas
 
@@ -19,9 +20,10 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
   en el voucher) y el **correo obligatorio** del modal ([crear-cita](crear-cita.md)), que **debe salir
   en el mismo release que el backend** o el modal recibe 400. El despliegue en Netlify
   (`public/_redirects`) está en [stack-tecnologico](../stack-tecnologico.md#despliegue-netlify).
-- **El login** está implementado y conectado, pero todavía sin documento propio; su contrato vive del
-  lado del backend en `citia-backend/context/Features/`. El modal "nueva cita" ganó el suyo en la
-  Fase 2 ([crear-cita](crear-cita.md)).
+- **Limpieza previa al release, lote 1 (2026-10-05):** [login-sesion](login-sesion.md). La sesión
+  sobrevive a un F5, un 401 lleva al login, hay "Cerrar sesión", y se quitó del login, del sidebar y
+  del topbar todo lo que no funcionaba o mostraba datos inventados. Cerró DTF-01, DTF-02 y DTF-04.
+  El contrato del login vive del lado del backend (`us00b-login.md`).
 - **Cierre de Fase 1 (2026-09-25):** agenda y bandeja se construyeron contra el **contrato**
   (`citia-backend/context/Features/us02-gestion-citas.md` § Cierre de Fase 1) mientras el backend
   se implementaba en paralelo. Todo campo nuevo (`fecha`, `avisos`, `tenantSlug`, `resueltaEn`) se

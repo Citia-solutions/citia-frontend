@@ -52,15 +52,21 @@ export const router = createRouter({
  * Guard global: protege las rutas con `requiresAuth` y evita que un usuario ya
  * autenticado vuelva al login. Vive en `app` porque es la única capa que puede
  * importar de `entities`.
+ *
+ * Antes de decidir, rehidrata la sesión desde el almacenamiento. En la primera
+ * navegación (F5, pestaña nueva) es lo que restaura `currentUser`; en las
+ * siguientes, recoge un token que venció con la pestaña abierta o un cambio
+ * hecho en otra pestaña. Una sesión inválida se limpia y va al login.
  */
 router.beforeEach((to) => {
   const session = useSessionStore()
+  const authenticated = session.restoreSession()
 
-  if (to.meta.requiresAuth && !session.isAuthenticated) {
+  if (to.meta.requiresAuth && !authenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  if (to.name === 'login' && session.isAuthenticated) {
+  if (to.name === 'login' && authenticated) {
     return { name: 'home' }
   }
 })

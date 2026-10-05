@@ -15,8 +15,9 @@ La tarjeta **"Citas de hoy"** de `/` deja de mostrar datos de prueba y lista las
 profesional logueado. Cada fila tiene un botón **"Ver cita"** que abre el voucher
 ([gestionar-cita](gestionar-cita.md)).
 
-**Lo que sigue con datos de prueba:** métricas, ausentismo semanal, actividad del motor y la píldora
-"Citas anuladas" del sidebar. No tienen endpoint en el backend — ver [DTF-03](../Deudas/DTF-03.md).
+**Lo que sigue con datos de prueba:** métricas, ausentismo semanal y actividad del motor. No tienen
+endpoint en el backend — ver [DTF-03](../Deudas/DTF-03.md). (La píldora "Citas anuladas" del sidebar
+se quitó el 2026-10-05, igual que el buscador y la campana del topbar: ver [login-sesion](login-sesion.md).)
 
 ---
 
@@ -103,7 +104,7 @@ Casos que se ven raros y son correctos:
 | Qué | Nota |
 |-----|------|
 | **Prueba manual contra el backend real** | Crear hoy/mañana, cancelar, reagendar dentro de hoy y a otro día, volver el foco. Solo se verificó con respuestas simuladas. |
-| Métricas, ausentismo, actividad, "Citas anuladas" | Sin endpoint — [DTF-03](../Deudas/DTF-03.md). |
+| Métricas, ausentismo, actividad | Sin endpoint — [DTF-03](../Deudas/DTF-03.md). |
 | Móvil | El dashboard ya se desbordaba antes (sidebar de 72 px + relleno de tarjetas); no se arregló aquí. |
 | Zona horaria | Se asume que la del navegador es la de la clínica — [DTF-07](../Deudas/DTF-07.md). |
 

@@ -1,7 +1,19 @@
 # DTF-01 · `isAuthenticated` acepta una sesión a medias
 
 **Origen:** `src/entities/session/model/store.ts`
-**Severidad:** 🟠 media · **Estado:** abierta · **Barata de cerrar**
+**Severidad:** 🟠 media · **Estado:** cerrada (2026-10-05, limpieza previa al release, `feature/frontend-prerelease`)
+
+> **Cierre.** Se tomaron los dos caminos que proponía abajo:
+>
+> - `isAuthenticated` compara con `!= null`: un `undefined` colado ya no cuenta como sesión.
+> - `setSession` **lanza** si falta el usuario (o su `id`) o el token: una respuesta del login con
+>   otra forma revienta en `useLogin` ("No pudimos iniciar sesión…") en vez de dejar entrar.
+> - **La sesión exige token.** El guard llama a `restoreSession()` en cada navegación, que solo
+>   acepta la sesión si hay token y usuario guardados, el JWT se puede leer, no venció y su `sub` es
+>   el `id` del usuario. Si no, limpia todo y manda al login. Y un 401 de una petición autenticada
+>   cierra la sesión (`onUnauthorized`, en `app/providers`).
+>
+> Ver [login-sesion](../Features/login-sesion.md). Lo de abajo es el registro original.
 
 ## Qué pasa
 

@@ -1,7 +1,19 @@
 # DTF-02 · `fetchCurrentUser()` apunta a un endpoint que no existe
 
-**Origen:** `src/entities/session/api/sessionApi.ts`
-**Severidad:** 🟡 baja hoy (nadie la llama) · **Estado:** abierta
+**Origen:** `src/entities/session/api/sessionApi.ts` (borrado)
+**Severidad:** 🟡 baja · **Estado:** cerrada (2026-10-05, limpieza previa al release, `feature/frontend-prerelease`)
+
+> **Cierre: se quitó.** `fetchCurrentUser()` y `entities/session/api/` ya no existen. La sesión se
+> rehidrata **sin `GET /me`**: al iniciar sesión el `AuthUser` se guarda junto al token y en el mismo
+> almacenamiento (`citia.user`, `entities/session/model/storedUser.ts`), y `restoreSession()` lo
+> vuelve a leer al recargar — ver [login-sesion](../Features/login-sesion.md).
+>
+> **Lo que queda sin `/me`, aceptado:** los datos guardados (nombre, rol, clínica) son los del
+> momento del login. Si cambian en el servidor, el front los ve recién al volver a iniciar sesión
+> (como mucho, al vencer el token: 1 día). Si algún día hace falta refrescarlos, se pide `GET /me`
+> al backend y `restoreSession` lo usa; no hay nada que deshacer en el front.
+>
+> Lo de abajo es el registro original.
 
 ## Qué pasa
 

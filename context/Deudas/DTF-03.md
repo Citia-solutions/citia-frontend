@@ -6,8 +6,12 @@
 > **Actualización:** la lista "Citas de hoy" ya consume `GET /api/citas/hoy` y los estados son los seis
 > del backend (`recuperada`/`riesgo_alto` salieron del código) — ver
 > [dashboard-citas-del-dia](../Features/dashboard-citas-del-dia.md). **Quedan con datos de prueba:**
-> métricas, ausentismo semanal, actividad del motor y la píldora "Citas anuladas" del sidebar, que
-> no tienen endpoint. Lo de abajo es el registro original.
+> métricas, ausentismo semanal y actividad del motor, que no tienen endpoint. Lo de abajo es el
+> registro original.
+>
+> **Actualización (2026-10-05, limpieza previa al release):** el ítem "Citas anuladas" del sidebar,
+> con su píldora fija "3", **se quitó** junto con "Pacientes" y la tarjeta "Citia IA": el sidebar
+> solo muestra lo que funciona. Ya no forma parte de esta deuda.
 
 ## Qué pasa
 
