@@ -8,7 +8,8 @@
 [plan backend](../../../citia-backend/context/US/02.08-voucher-cita.md)
 **Feature:** `src/features/gestionar-cita/`
 **Lote 2 de la limpieza previa al release (2026-10-05):** botones **Confirmar**, **Asistió** y **No
-asistió** — ver [Confirmación y asistencia](#confirmación-y-asistencia-2026-10-05).
+asistió** — ver [Confirmación y asistencia](#confirmación-y-asistencia-2026-10-05). Asistió / No asistió
+solo desde la hora de inicio (bloqueo del front, mismo día).
 
 ---
 
@@ -147,7 +148,7 @@ Lote 2 de la limpieza previa al release. Sección nueva entre *Recordatorios* y 
 | `pendiente`, todavía no empieza | `confirmar` | **Confirmación** — *"¿El paciente confirmó que vendrá? Márcala como confirmada."* + **Confirmar cita** |
 | `pendiente` y **ya empezó** | `confirmar` (no `asistencia`) | *"Esta cita ya empezó y sigue pendiente. Para registrar si el paciente asistió, primero confírmala."* + **Confirmar cita** |
 | `confirmada`, ya empezó | `asistencia`, `inasistencia` | **Asistencia** — *"¿El paciente vino a la cita?"* + **Asistió** / **No asistió** |
-| `confirmada`, todavía no empieza | `asistencia`, `inasistencia` | *"La cita aún no empieza: registra la asistencia después de la hora."* + los dos botones |
+| `confirmada`, todavía no empieza | `asistencia`, `inasistencia` | **Asistencia** — *"Podrás registrar la asistencia cuando llegue la hora de la cita (HH:mm)."*, **sin botones** (bloqueo del front, ver [abajo](#bloqueo-de-la-asistencia-antes-de-la-hora-2026-10-05)) |
 | `asistio` / `no_asistio` / `cancelada` | nada | Badge del estado y *"El paciente asistió a esta cita. Ya no admite cambios."* (solo lectura) |
 
 - **Sin inventar transiciones:** la sección aparece solo cuando llega el detalle y con los botones que
@@ -160,7 +161,9 @@ Lote 2 de la limpieza previa al release. Sección nueva entre *Recordatorios* y 
   |--------|-------|
   | Confirmar | *"Úsalo cuando el paciente te confirme que vendrá (por teléfono, en persona o por correo). Citia no le envía ningún aviso."* · *"Sus recordatorios siguen programados igual."* |
   | Asistió / No asistió | *"La cita queda cerrada como «Asistió» / «No asistió» y ya no admite cambios. Esta acción no se puede deshacer."* · *"Sus recordatorios pendientes se anulan."* |
-  | Asistencia de una cita que no empieza | Aviso ámbar: *"Esta cita todavía no empieza. Normalmente la asistencia se registra después de la hora de la cita."* (el backend lo permite; no se bloquea) |
+
+  El aviso ámbar *"Esta cita todavía no empieza…"* que tuvo esta vista se quitó el mismo día: ahora a
+  Asistió / No asistió solo se llega desde la hora de inicio.
 
 - **Después:** mensaje de éxito (*"Cita confirmada."*, *"Asistencia registrada: el paciente asistió."*,
   *"Inasistencia registrada: el paciente no asistió."*), se emite `changed` (dashboard y agenda recargan) y
@@ -169,14 +172,39 @@ Lote 2 de la limpieza previa al release. Sección nueva entre *Recordatorios* y 
 - **409** (la cita cambió entretanto): *"Esta cita cambió mientras la tenías abierta y ya no admite esta
   acción."*, vuelta al detalle y recarga de detalle y listas, igual que reagendar y cancelar.
 - Código: `cambiarEstadoCita(id, transicion)` en `api/gestionarCitaApi.ts`, `TransicionEstado` en
-  `model/types.ts`, `model/useCambiarEstadoCita.ts`, `ui/CambiarEstadoConfirm.vue`, `ui/VoucherCita.vue`.
+  `model/types.ts`, `model/useCambiarEstadoCita.ts`, `model/useYaEmpezo.ts`, `ui/CambiarEstadoConfirm.vue`,
+  `ui/VoucherCita.vue`.
+
+### Bloqueo de la asistencia antes de la hora (2026-10-05)
+
+Decisión del usuario: **no se puede marcar Asistió ni No asistió antes de la hora de inicio**.
+
+- Una cita `confirmada` cuyo `inicio` es posterior a ahora muestra la sección **Asistencia** solo con
+  *"Podrás registrar la asistencia cuando llegue la hora de la cita (HH:mm)."* (la hora es `hora` del
+  detalle, la misma que muestra el voucher). No hay botones, ni siquiera deshabilitados.
+- **Al llegar la hora, con el voucher abierto, los botones aparecen solos** y el texto pasa a *"¿El
+  paciente vino a la cita?"*. Lo hace `model/useYaEmpezo.ts`: un único `setTimeout` programado para
+  `inicio` (no un intervalo) mientras el voucher está abierto; al volver a la pestaña también se
+  recalcula. Usa `hasStarted` de `entities/appointment` (`inicio <= ahora`). No reutiliza `useAhora` del
+  dashboard: es de otro feature (FSD) y avanza por minuto.
+- **Confirmar** (pendiente → confirmada) sigue disponible en cualquier momento.
+- Qué botones existen lo sigue decidiendo `accionesPermitidas`; el front solo agrega **cuándo**
+  (`disponible()` en `VoucherCita.vue`). `abrirTransicion` repite la comprobación.
+- ⚠️ **Es un bloqueo solo del frontend.** El backend acepta `PATCH /citas/:id/asistencia` e
+  `/inasistencia` antes de la hora (las guardas de `Cita` solo miran el estado) y `accionesPermitidas`
+  las declara igual. Otro cliente, o una llamada directa a la API, puede marcarlas antes.
+- El desbloqueo ocurre en el instante `inicio` según el reloj del navegador; el texto muestra `hora`
+  (zona de la clínica). Coinciden mientras la zona del navegador sea la de la clínica
+  ([DTF-07](../Deudas/DTF-07.md)).
 
 ## Pendientes
 
 - **Prueba manual contra el backend real** (crear, cancelar, reagendar dentro de hoy y a otro día,
   forzar un 409 con dos pestañas; en la Fase 2, además: recordatorios tras crear/reagendar/cancelar y
   agregar el correo a un paciente que no lo tiene; en el lote 2: confirmar → asistió / no asistió,
-  una pendiente ya pasada, y un 409 confirmando la misma cita desde dos pestañas).
+  una pendiente ya pasada, y un 409 confirmando la misma cita desde dos pestañas; con el bloqueo por
+  hora: dejar abierto el voucher de una confirmada que empieza en un par de minutos y ver aparecer los
+  botones contra el backend real).
 
 ## Deudas técnicas asociadas
 

@@ -4,10 +4,13 @@
 // asistio / no_asistio, terminales). Mismo patrón que `CancelarCitaConfirm`:
 // foco inicial en "Volver", el voucher no se cierra mientras se envía y el
 // resultado se le pasa al voucher.
+//
+// Asistió / No asistió solo se llega aquí desde la hora de inicio: el voucher
+// no los ofrece antes (2026-10-05), así que ya no hay aviso de "aún no empieza".
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { capitalizar, formatearFechaLarga } from '@/shared/lib/fecha'
-import { hasStarted, type Appointment } from '@/entities/appointment'
+import type { Appointment } from '@/entities/appointment'
 import { useCambiarEstadoCita } from '../model/useCambiarEstadoCita'
 import type { ResultadoAccion, TransicionEstado } from '../model/types'
 
@@ -75,11 +78,6 @@ const cuando = computed(() => {
   return `${fecha} a las ${props.appointment.time}.`
 })
 
-/** Asistencia de una cita que todavía no empieza: el backend lo permite; se advierte. */
-const aunNoEmpieza = computed(
-  () => props.transicion !== 'confirmar' && !hasStarted(props.appointment),
-)
-
 async function handleSubmit(): Promise<void> {
   emit('result', await submit())
 }
@@ -90,10 +88,6 @@ async function handleSubmit(): Promise<void> {
     <h3 class="accion__title">{{ textos.titulo }}</h3>
     <p class="accion__ref">{{ cuando }}</p>
     <p v-for="linea in textos.detalle" :key="linea" class="accion__ref">{{ linea }}</p>
-
-    <p v-if="aunNoEmpieza" class="accion__aviso" role="note">
-      Esta cita todavía no empieza. Normalmente la asistencia se registra después de la hora de la cita.
-    </p>
 
     <p v-if="submitError" class="accion__error" role="alert">{{ submitError }}</p>
 
@@ -132,15 +126,6 @@ async function handleSubmit(): Promise<void> {
   margin: -0.6rem 0 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
-}
-.accion__aviso {
-  margin: 0;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.85rem;
-  color: var(--color-text);
-  background: var(--color-warning-soft);
-  border-left: 3px solid var(--color-warning);
-  border-radius: var(--radius-md);
 }
 .accion__error {
   margin: 0;

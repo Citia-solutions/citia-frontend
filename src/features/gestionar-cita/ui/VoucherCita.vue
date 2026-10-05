@@ -27,7 +27,11 @@
 // reagendar y cancelar, cada botón aparece SOLO si viene en
 // `accionesPermitidas`: una cita pendiente que ya pasó solo ofrece Confirmar
 // (se explica que para registrar la asistencia primero hay que confirmarla).
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+//
+// Asistió / No asistió además esperan la hora de inicio (decisión del usuario,
+// 2026-10-05; el backend no lo exige): antes solo se explica desde qué hora se
+// podrá, y los botones aparecen solos al llegar esa hora (`useYaEmpezo`).
+import { computed, nextTick, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import {
@@ -40,7 +44,6 @@ import {
 import {
   AppointmentStatusBadge,
   AvisoSolapamiento,
-  hasStarted,
   isTerminalStatus,
   solapamientosDe,
   type AgendaAppointment,
@@ -50,6 +53,7 @@ import {
 } from '@/entities/appointment'
 import { invalidaVoucher } from '../model/mensajeDeError'
 import { useDetalleCita } from '../model/useDetalleCita'
+import { useYaEmpezo } from '../model/useYaEmpezo'
 import {
   deberiaTenerRecordatorios,
   hayAlguno,
@@ -164,23 +168,38 @@ function motivoDeshabilitado(accion: AppointmentAction): string | undefined {
 // Confirmación y asistencia: solo lo que declara `accionesPermitidas`
 // ---------------------------------------------------------------------------
 
-/** Momento de referencia para "ya empezó"; se renueva al abrir y tras cada carga del detalle. */
-const ahora = ref(new Date())
+/**
+ * "Ya empezó" con reloj propio: se renueva al abrir, tras cada carga del
+ * detalle y, mientras el voucher está abierto, justo a la hora de inicio.
+ */
+const { yaEmpezo, refrescar: refrescarAhora } = useYaEmpezo(cita, toRef(props, 'isOpen'))
 
 const TRANSICIONES: readonly TransicionEstado[] = ['confirmar', 'asistencia', 'inasistencia']
 
 /** Transiciones de estado que el backend ofrece para esta cita (vacío hasta que llega el detalle). */
 const transicionesPermitidas = computed(() => TRANSICIONES.filter((t) => permitida(t)))
 
-const yaEmpezo = computed(() => (detail.value ? hasStarted(detail.value, ahora.value) : false))
+/**
+ * Lo que se puede hacer AHORA: lo que declara el backend, salvo Asistió / No
+ * asistió antes de la hora de inicio. Ese bloqueo es solo del front (decisión
+ * del usuario, 2026-10-05): el backend sí lo acepta. Confirmar no espera.
+ */
+function disponible(t: TransicionEstado): boolean {
+  return permitida(t) && (t === 'confirmar' || yaEmpezo.value)
+}
+
+/** false en una confirmada que aún no empieza: la sección queda solo con el texto. */
+const hayBotonesEstado = computed(() => TRANSICIONES.some((t) => disponible(t)))
 
 /** Título de la sección: "Confirmación" si se puede confirmar; si no, "Asistencia". */
 const tituloEstado = computed(() => (permitida('confirmar') ? 'Confirmación' : 'Asistencia'))
 
 /**
- * Texto de la sección. Es presentación: qué botones hay lo decide el backend.
+ * Texto de la sección. Es presentación: qué botones hay lo decide el backend
+ * (más el bloqueo por hora de `disponible`).
  * Una pendiente que ya empezó solo admite Confirmar (ADR-04): se explica por
  * qué no hay Asistió / No asistió, sin ofrecer un atajo que ensuciaría el dato.
+ * Una confirmada que aún no empieza no muestra botones: solo desde qué hora.
  */
 const textoEstado = computed(() => {
   if (permitida('confirmar')) {
@@ -190,11 +209,11 @@ const textoEstado = computed(() => {
   }
   return yaEmpezo.value
     ? '¿El paciente vino a la cita?'
-    : 'La cita aún no empieza: registra la asistencia después de la hora.'
+    : `Podrás registrar la asistencia cuando llegue la hora de la cita (${cita.value?.time ?? ''}).`
 })
 
 function abrirTransicion(t: TransicionEstado): void {
-  if (enviando.value || !permitida(t)) return
+  if (enviando.value || !disponible(t)) return
   transicion.value = t
   irA('estado')
 }
@@ -210,7 +229,7 @@ function hrefTelefono(telefono: string): string {
 
 async function cargarDetalle(): Promise<void> {
   const id = props.appointment?.id
-  ahora.value = new Date()
+  refrescarAhora()
   if (id) await loadDetalle(id)
 }
 
@@ -218,7 +237,7 @@ async function cargarDetalle(): Promise<void> {
 async function cargarDetalleInicial(): Promise<void> {
   const fila = props.appointment
   if (!fila) return
-  ahora.value = new Date()
+  refrescarAhora()
   const nuevo = await loadDetalle(fila.id)
   if (notFound.value || (nuevo && nuevo.status !== fila.status)) emit('changed')
 }
@@ -581,9 +600,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           >
             <h3 id="voucher-estado" class="voucher__section-title">{{ tituloEstado }}</h3>
             <p class="voucher__estado-text">{{ textoEstado }}</p>
-            <div class="voucher__estado-actions">
+            <div v-if="hayBotonesEstado" class="voucher__estado-actions">
               <BaseButton
-                v-if="permitida('confirmar')"
+                v-if="disponible('confirmar')"
                 variant="outline"
                 class="voucher__ok"
                 :block="false"
@@ -592,7 +611,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
                 Confirmar cita
               </BaseButton>
               <BaseButton
-                v-if="permitida('asistencia')"
+                v-if="disponible('asistencia')"
                 variant="outline"
                 class="voucher__ok"
                 :block="false"
@@ -601,7 +620,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
                 Asistió
               </BaseButton>
               <BaseButton
-                v-if="permitida('inasistencia')"
+                v-if="disponible('inasistencia')"
                 variant="outline"
                 class="voucher__danger"
                 :block="false"
