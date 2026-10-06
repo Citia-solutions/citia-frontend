@@ -1,6 +1,7 @@
 import { reactive, ref } from 'vue'
 import { HttpError } from '@/shared/api/httpClient'
 import { mensajesDeValidacion } from '@/shared/api/erroresValidacion'
+import { fechaEnClinicaISO } from '@/shared/lib/fecha'
 import { crearCita } from '../api/crearCitaApi'
 import { erroresDelServidor, validateNuevaCita } from './crearCitaSchema'
 import { toCrearCitaRequest } from './toCrearCitaRequest'
@@ -56,11 +57,15 @@ export function useCrearCita(onSuccess: (cita: CitaCreada) => void) {
   const submitError = ref<string | null>(null)
   const isSubmitting = ref(false)
 
+  /** Hoy en la zona de la clínica: `min` del selector de fecha. Se renueva al abrir. */
+  const hoyISO = ref(fechaEnClinicaISO(new Date()))
+
   /** Limpia el formulario (se llama al abrir el modal). */
   function reset(): void {
     Object.assign(form, FORM_VACIO)
     errors.value = {}
     submitError.value = null
+    hoyISO.value = fechaEnClinicaISO(new Date())
   }
 
   async function submit(): Promise<void> {
@@ -87,5 +92,5 @@ export function useCrearCita(onSuccess: (cita: CitaCreada) => void) {
     }
   }
 
-  return { form, errors, submitError, isSubmitting, reset, submit }
+  return { form, errors, submitError, isSubmitting, hoyISO, reset, submit }
 }

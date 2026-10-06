@@ -47,8 +47,8 @@ datos ya cargados, se conservan y se avisa (mismo patrón que "Citas de hoy").
   semana lunes–domingo, y las dos cifras serían distintas.
 - Los dos rangos (`useProximasCitas`, `useHistorialCitas`) son stores Pinia del feature (fábrica en
   `model/useRangosCitas.ts`) para que la página pueda recargarlos igual que la lista del día. El rango se
-  recalcula en cada recarga a partir de "hoy" del navegador ([DTF-07](../Deudas/DTF-07.md)); las citas
-  se ubican por la `fecha` del backend.
+  recalcula en cada recarga a partir de "hoy" en la zona de la clínica (Chile,
+  [DTF-07](../Deudas/DTF-07.md) cerrada); las citas se ubican por la `fecha` del backend.
 - La configuración de recordatorios se pide cada vez que se monta la tarjeta (un cambio en
   `/recordatorios` se ve al volver). El `GET` y su DTO pasaron a `entities/recordatorio` porque lo leen
   dos features; `configurar-recordatorios` los reexporta.
@@ -146,11 +146,12 @@ Casos que se ven raros y son correctos:
 | **Prueba manual contra el backend real** | Crear hoy/mañana, cancelar (ver "Mostrar 1 cancelada"), reagendar, confirmar → asistió, volver el foco; comparar las cifras de las tarjetas con la agenda. Solo se verificó con respuestas simuladas. |
 | Métricas de ausentismo | Requieren RF-08 (comportamiento del paciente); cuando exista, se agregan como tarjeta nueva, no sobre datos fijos. |
 | Móvil | Las tarjetas pasan a 2 y 1 columna; el resto del dashboard (sidebar fijo) sigue sin arreglarse para móvil. |
-| Zona horaria | "Hoy", los rangos y "ahora" salen del navegador — [DTF-07](../Deudas/DTF-07.md). |
+| Zona horaria | Resuelta el 2026-10-06: "hoy", los rangos y las fechas del topbar van en hora de Chile ("ahora" es un instante y no depende de la zona) — [DTF-07](../Deudas/DTF-07.md), cerrada. |
 
 ## Deudas técnicas asociadas
 
 - [DTF-03](../Deudas/DTF-03.md) — **cerrada** el 2026-10-05 (no queda ningún dato de prueba).
 - [DTF-06](../Deudas/DTF-06.md) — `MAX_DIAS_RANGO` (42) copiado del backend: el gráfico de 6 semanas depende de él.
-- [DTF-07](../Deudas/DTF-07.md) — zona del navegador = zona de la clínica.
+- [DTF-07](../Deudas/DTF-07.md) — zona del navegador = zona de la clínica. **Cerrada** el 2026-10-06
+  (zona fija de Chile).
 - `DT-29` (backend) — `GET /citas/hoy` y `GET /citas?desde&hasta` ya se consumen.

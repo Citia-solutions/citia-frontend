@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { HttpError } from '@/shared/api/httpClient'
-import { fechaLocalISO } from '@/shared/lib/fecha'
+import { fechaEnClinicaISO } from '@/shared/lib/fecha'
 import { getAppointmentsInRange, type AgendaAppointment } from '@/entities/appointment'
 import { rangoProximosDias, rangoUltimasSemanas, type RangoDias } from './resumen'
 
@@ -33,8 +33,8 @@ function definirStoreDeRango(id: string, calcularRango: (hoy: string) => RangoDi
     async function reload(): Promise<void> {
       const peticion = ++ultimaPeticion
       ultimoPedidoMs = Date.now()
-      // "Hoy" en la zona del navegador (DTF-07): solo decide qué días se piden.
-      const rango = calcularRango(fechaLocalISO(new Date()))
+      // "Hoy" en la zona de la clínica: solo decide qué días se piden.
+      const rango = calcularRango(fechaEnClinicaISO(new Date()))
       loading.value = true
       try {
         const lista = await getAppointmentsInRange(rango.desde, rango.hasta)

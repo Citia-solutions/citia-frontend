@@ -25,6 +25,7 @@ Lo que existe hoy:
 | `/solicitudes` | Bandeja de solicitudes del enlace público (aceptar / rechazar) y botón para copiar el enlace de agenda | Sí |
 | `/recordatorios` | Configuración de los recordatorios por correo (US-03) | Sí |
 | `/agendar-cita/:tenantSlug` | Flujo público: el paciente pide hora sin cuenta (`POST /publico/:tenantSlug/solicitudes`) | No |
+| cualquier otra | **No encontrada** (ruta comodín `/:pathMatch(.*)*`): enlace al Resumen con sesión o al login sin ella | No |
 
 - **Voucher de la cita** (se abre desde el Resumen y desde la agenda): reagendar, cancelar, confirmar,
   registrar asistencia / inasistencia (solo desde la hora de inicio), estado de los recordatorios de
@@ -35,6 +36,10 @@ Lo que existe hoy:
 - **Roles:** el backend emite solo `ADMINISTRADOR` y `PROFESIONAL`, que el front traduce a
   `UserRole = 'admin' | 'profesional'` (`entities/session/model/types.ts`). No hay más roles. Hoy el
   front no ramifica por rol: solo muestra la etiqueta en el sidebar.
+- **Zona horaria:** todas las horas se muestran y se arman en la zona fija de Chile
+  (`ZONA_HORARIA = 'America/Santiago'`, `shared/config/zonaHoraria.ts`, espejo de `APP_TZ` del backend),
+  nunca en la del navegador. Las fechas y horas pasan siempre por `shared/lib/fecha.ts`: nada de
+  `getHours()`, `getDate()`, `new Date(año, mes, día)` ni `Intl.DateTimeFormat` sueltos en features.
 
 ### Sesión: cómo se persiste y se restaura
 
@@ -63,8 +68,8 @@ No hay `GET /me`: la sesión se rehidrata desde el navegador. Detalle en `src/en
 - **Pinia** 3 para estado global
 - **Vue Router** 4 con route guards
 - **CSS** custom properties en `src/app/styles/main.css` (sin frameworks externos como Tailwind)
-- HTTP con `fetch` nativo a través de `src/shared/api/httpClient.ts`; fechas sin librerías
-  (`src/shared/lib/fecha.ts`)
+- HTTP con `fetch` nativo a través de `src/shared/api/httpClient.ts`; fechas sin librerías, con `Intl`
+  y la zona de Chile (`src/shared/lib/fecha.ts`)
 - Node `^22.18.0 || >=24.12.0`
 - **Sin suite de tests ni ESLint/Prettier configurados.** La verificación es `npm run build`, que corre
   `vue-tsc` y el build de Vite; los cambios visibles se prueban en el navegador, con respuestas
@@ -84,7 +89,7 @@ src/
 ├── app/          # Arranque y configuración global: router (+ guard y cerrarSesion), providers
 │                 # (Pinia, router, handler del 401), layouts del panel, estilos raíz
 ├── pages/        # Composición de pantallas: login, dashboard, agenda, solicitudes,
-│                 # recordatorios, agendar-cita (pública)
+│                 # recordatorios, agendar-cita (pública), no-encontrada (404)
 ├── features/     # Casos de uso (ui + model + api):
 │   ├── auth/                      # login
 │   ├── dashboard/                 # widgets del Resumen
@@ -95,7 +100,7 @@ src/
 │   ├── compartir-enlace-agenda/   # copiar el enlace /agendar-cita/:tenantSlug
 │   └── configurar-recordatorios/  # configuración de recordatorios por correo
 ├── entities/     # Entidades de negocio: session, appointment, recordatorio, solicitud
-└── shared/       # api (httpClient, errores de validación), config (bloques horarios),
+└── shared/       # api (httpClient, errores de validación), config (bloques horarios, zona horaria),
                   # lib (authToken, fecha, rut), ui (componentes Base*)
 ```
 

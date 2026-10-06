@@ -2,7 +2,11 @@
 // Modal de "Nueva cita". La visibilidad la decide el padre (prop isOpen);
 // este componente avisa cuando quiere cerrarse (emit close) y cuando el
 // servidor confirmó la cita (emit created, con la cita ya guardada).
-import { watch } from 'vue'
+//
+// Mientras se guarda no se puede cerrar: ni la X, ni "Cancelar", ni un clic
+// fuera, ni `Esc` (mismo criterio que el voucher y los modales de la bandeja).
+// Si se cerrara, la cita podría quedar creada sin que el profesional lo vea.
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
 import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
@@ -21,17 +25,74 @@ const emit = defineEmits<{
 // organización, este arreglo es el único punto a cambiar.
 const DURACIONES = [15, 30, 45, 60, 90]
 
-const { form, errors, submitError, isSubmitting, reset, submit } = useCrearCita((cita) => {
+const { form, errors, submitError, isSubmitting, hoyISO, reset, submit } = useCrearCita((cita) => {
   emit('created', cita)
   emit('close')
 })
 
+const dialog = ref<HTMLElement | null>(null)
+const pacienteInput = ref<HTMLInputElement | null>(null)
+let focoPrevio: HTMLElement | null = null
+
+/** Pide cerrar el modal, salvo mientras se guarda. */
+function cerrar(): void {
+  if (isSubmitting.value) return
+  emit('close')
+}
+
+const FOCUSABLES =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/** `Esc` cierra (salvo guardando) y `Tab` no sale del diálogo (mismo patrón que el voucher). */
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    cerrar()
+    return
+  }
+  if (e.key !== 'Tab' || !dialog.value) return
+
+  const focusables = Array.from(dialog.value.querySelectorAll<HTMLElement>(FOCUSABLES))
+  const primero = focusables[0]
+  const ultimo = focusables[focusables.length - 1]
+  if (!primero || !ultimo) {
+    e.preventDefault()
+    return
+  }
+  const activo = document.activeElement
+  const dentro = activo instanceof Node && dialog.value.contains(activo)
+  if (!dentro) {
+    e.preventDefault()
+    primero.focus()
+  } else if (e.shiftKey && activo === primero) {
+    e.preventDefault()
+    ultimo.focus()
+  } else if (!e.shiftKey && activo === ultimo) {
+    e.preventDefault()
+    primero.focus()
+  }
+}
+
 watch(
   () => props.isOpen,
-  (open) => {
-    if (open) reset()
+  async (open) => {
+    if (open) {
+      focoPrevio = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      reset()
+      document.addEventListener('keydown', onKeydown)
+      await nextTick()
+      pacienteInput.value?.focus()
+    } else {
+      document.removeEventListener('keydown', onKeydown)
+      // Devuelve el foco al botón desde el que se abrió.
+      focoPrevio?.focus()
+      focoPrevio = null
+    }
   },
+  { immediate: true },
 )
+
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
 function handleSubmit(): void {
   submit()
@@ -39,12 +100,14 @@ function handleSubmit(): void {
 </script>
 
 <template>
-  <div v-if="isOpen" class="modal" @mousedown.self="emit('close')">
+  <div v-if="isOpen" class="modal" @mousedown.self="cerrar">
     <div
+      ref="dialog"
       class="modal__dialog"
       role="dialog"
       aria-modal="true"
       aria-labelledby="nueva-cita-titulo"
+      :aria-busy="isSubmitting"
     >
       <header class="modal-header">
         <div class="modal-header__text">
@@ -56,7 +119,7 @@ function handleSubmit(): void {
           class="modal-header__close"
           aria-label="Cerrar"
           :disabled="isSubmitting"
-          @click="emit('close')"
+          @click="cerrar"
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <path d="m6 6 12 12M18 6 6 18" />
@@ -70,6 +133,7 @@ function handleSubmit(): void {
             <label class="modal__label" for="paciente">Nombre del paciente</label>
             <input
               id="paciente"
+              ref="pacienteInput"
               v-model="form.pacienteNombre"
               class="modal__input"
               type="text"
@@ -134,7 +198,7 @@ function handleSubmit(): void {
         <div class="modal__row">
           <div class="modal__field">
             <label class="modal__label" for="fecha">Fecha de atención</label>
-            <input id="fecha" v-model="form.fecha" class="modal__input" type="date" />
+            <input id="fecha" v-model="form.fecha" class="modal__input" type="date" :min="hoyISO" />
             <span v-if="errors.fecha" class="modal__error">{{ errors.fecha }}</span>
           </div>
 
@@ -188,7 +252,7 @@ function handleSubmit(): void {
             variant="outline"
             :block="false"
             :disabled="isSubmitting"
-            @click="emit('close')"
+            @click="cerrar"
           >
             Cancelar
           </BaseButton>

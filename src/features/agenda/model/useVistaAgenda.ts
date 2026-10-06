@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { fechaLocalISO, sumarDias } from '@/shared/lib/fecha'
+import { fechaEnClinicaISO, sumarDias } from '@/shared/lib/fecha'
 import { FILTRO_POR_DEFECTO, inicioDeSemana, type FiltroEstado } from './agenda'
 
 export type VistaAgenda = 'semana' | 'lista'
@@ -12,8 +12,8 @@ export type VistaAgenda = 'semana' | 'lista'
 let estado: ReturnType<typeof crear> | null = null
 
 function crear() {
-  /** Hoy en la zona del navegador (DTF-07): solo elige la semana inicial. */
-  const hoy = fechaLocalISO(new Date())
+  /** Hoy en la zona de la clínica: solo elige la semana inicial. */
+  const hoy = fechaEnClinicaISO(new Date())
   const lunes = inicioDeSemana(hoy)
   return {
     vista: ref<VistaAgenda>('semana'),

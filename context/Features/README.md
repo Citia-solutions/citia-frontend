@@ -16,6 +16,12 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
 
 ## Notas
 
+- **Detalles menores de la auditoría (2026-10-06, `chore/frontend-detalles-menores`, sin commit):**
+  página "No encontrada" para URLs desconocidas y `meta.public` fuera del router
+  ([login-sesion](login-sesion.md)); "Nueva cita" sin fechas pasadas y sin cerrarse mientras guarda
+  ([crear-cita](crear-cita.md)); calendario público con navegación entre meses (hasta 3 hacia adelante) y
+  sin horas pasadas ([agendar-cita-paciente](agendar-cita-paciente.md)); horas en la zona fija de Chile en
+  todo el front, que cerró [DTF-07](../Deudas/DTF-07.md); `<html lang="es">`.
 - **Fase 2 — recordatorios (2026-10-04):** [recordatorios](recordatorios.md) (pantalla nueva y estado
   en el voucher) y el **correo obligatorio** del modal ([crear-cita](crear-cita.md)), que **debe salir
   en el mismo release que el backend** o el modal recibe 400. El despliegue en Netlify

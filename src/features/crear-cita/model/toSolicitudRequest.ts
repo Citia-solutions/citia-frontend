@@ -1,3 +1,4 @@
+import { fechaCalendario, formatearFechaLarga } from '@/shared/lib/fecha'
 import { normalizarRut } from '@/shared/lib/rut'
 import type { FlujoCitaForm } from './flujoCitaModel'
 
@@ -16,12 +17,6 @@ export interface SolicitudRecibida {
   mensaje: string
 }
 
-const FORMATO_DIA = new Intl.DateTimeFormat('es-CL', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-})
-
 /**
  * Convierte el día y la hora elegidos en una **preferencia legible**.
  *
@@ -32,18 +27,17 @@ const FORMATO_DIA = new Intl.DateTimeFormat('es-CL', {
  * la preferencia y fija la hora real al aceptar la solicitud. Por eso viaja como
  * texto y no como un instante.
  *
- * La fecha se arma por componentes locales; pasar `'2026-09-18'` a `new Date()`
- * la interpretaría como UTC y en Chile mostraría el día anterior.
+ * El día se formatea con `fechaCalendario` (no con `new Date('2026-09-18')`, que
+ * lo leería como medianoche UTC y en Chile mostraría el día anterior). El texto
+ * tiene que seguir calzando con `sugerirInicio` (bandeja), que lo lee para
+ * precargar la hora al aceptar.
  */
 export function aPreferenciaHoraria(fecha: string, hora: string): string {
-  const partes = fecha.split('-')
-  const anio = Number(partes[0])
-  const mes = Number(partes[1])
-  const dia = Number(partes[2])
-
-  if ([anio, mes, dia].some(Number.isNaN)) return `${fecha} ${hora}`.trim()
-
-  return `${FORMATO_DIA.format(new Date(anio, mes - 1, dia))} a las ${hora}`
+  try {
+    return `${formatearFechaLarga(fechaCalendario(fecha))} a las ${hora}`
+  } catch {
+    return `${fecha} ${hora}`.trim()
+  }
 }
 
 /**

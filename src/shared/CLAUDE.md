@@ -25,13 +25,20 @@ src/shared/
 │                          # HORAS_JORNADA (grilla de la agenda) y errorFinDeJornada(hora, duración).
 │                          # Única fuente: modal "Nueva cita", reagendar, aceptar solicitud, flujo
 │                          # público y agenda. Para cambiar el horario se tocan solo las 3 constantes
+│   └── zonaHoraria.ts     # ZONA_HORARIA ('America/Santiago', espejo de APP_TZ del backend) y
+│                          # LOCALE_FECHAS ('es-CL'). Solo la lee lib/fecha.ts (DTF-07, cerrada)
 ├── lib/
 │   └── authToken.ts      # getToken(), setToken(token, persistent), removeToken()
 │                         # persistent=true → localStorage; false → sessionStorage
 │                         # readTokenClaims(token) → { sub, exp } | null (sin verificar firma)
 │                         # isTokenExpired(claims)
-│   └── fecha.ts          # Fechas sin librerías, en zona del NAVEGADOR (DTF-07): aInicioISO,
-│                         # fechaLocalISO, sumarDias, diferenciaDias, inicioDeSemana (lunes), …
+│   └── fecha.ts          # Fechas sin librerías, SIEMPRE en la zona de la clínica (ZONA_HORARIA),
+│                         # nunca en la del navegador. Instantes: aInicioISO(fecha, hora) (seguro
+│                         # ante el cambio de horario), esInicioPasado, fechaEnClinicaISO,
+│                         # horaEnClinica, esDiaPasado, esMismoDia, formatearFecha(Larga),
+│                         # formatearMomentoCorto. Días 'YYYY-MM-DD': fechaCalendario (mediodía
+│                         # UTC, solo para formatear), partesDeFecha, aFechaISO, diasDelMes,
+│                         # sumarDias, diferenciaDias, diaDeLaSemana, inicioDeSemana (lunes), …
 │   └── rut.ts            # Validación y formato del RUT (DTF-05)
 └── ui/
     ├── BaseButton.vue    # Props: variant('primary'|'outline'), loading, block
@@ -54,6 +61,11 @@ src/shared/
   `onUnauthorized` y después lanza el `HttpError` como siempre. El handler vive en `app/providers`
   (cierra la sesión y lleva a `/login?redirect=<ruta>`); shared no conoce la sesión ni el router
 - Cambios en `HttpError` o en la firma de `request<T>()` requieren verificar todos los módulos
+- **Fechas y horas solo con `lib/fecha.ts`.** Dos clases de dato que no se mezclan: **instantes**
+  (`Date`, ISO del backend), que se muestran y se arman en `ZONA_HORARIA`; y **días** 'YYYY-MM-DD', que
+  se cuentan y formatean sin convertir zonas. Fuera de `fecha.ts` no se usan `getHours()`, `getDate()`,
+  `new Date(año, mes, día)` ni `Intl.DateTimeFormat` (dependen de la zona del navegador o la olvidan):
+  para un formato nuevo, `formatearFecha(fecha, opciones)`; para los números de un día, `partesDeFecha`
 
 ## Variables de Entorno
 

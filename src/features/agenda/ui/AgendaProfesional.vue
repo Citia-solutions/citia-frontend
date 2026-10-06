@@ -8,7 +8,7 @@
 // `select` y la página compone. Quién y cuándo recarga lo decide la página.
 import { computed, onMounted } from 'vue'
 import BaseCard from '@/shared/ui/BaseCard.vue'
-import { fechaLocalISO, sumarDias } from '@/shared/lib/fecha'
+import { fechaEnClinicaISO, sumarDias } from '@/shared/lib/fecha'
 import { useAgendaAppointments, type AgendaAppointment } from '@/entities/appointment'
 import {
   aplicarFiltro,
@@ -27,8 +27,8 @@ const emit = defineEmits<{ select: [appointment: AgendaAppointment] }>()
 
 const store = useAgendaAppointments()
 
-/** Hoy en la zona del navegador (DTF-07): solo resalta el día y "Hoy" / atajos. */
-const hoy = fechaLocalISO(new Date())
+/** Hoy en la zona de la clínica: solo resalta el día y "Hoy" / atajos. */
+const hoy = fechaEnClinicaISO(new Date())
 
 // Modo, semana, rango y filtro sobreviven a salir y volver a la agenda.
 const { vista, lunes, desdeLista, hastaLista, filtro } = useVistaAgenda()

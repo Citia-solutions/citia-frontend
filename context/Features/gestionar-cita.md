@@ -193,9 +193,10 @@ Decisión del usuario: **no se puede marcar Asistió ni No asistió antes de la 
 - ⚠️ **Es un bloqueo solo del frontend.** El backend acepta `PATCH /citas/:id/asistencia` e
   `/inasistencia` antes de la hora (las guardas de `Cita` solo miran el estado) y `accionesPermitidas`
   las declara igual. Otro cliente, o una llamada directa a la API, puede marcarlas antes.
-- El desbloqueo ocurre en el instante `inicio` según el reloj del navegador; el texto muestra `hora`
-  (zona de la clínica). Coinciden mientras la zona del navegador sea la de la clínica
-  ([DTF-07](../Deudas/DTF-07.md)).
+- El desbloqueo ocurre en el instante `inicio` según el reloj del navegador (un instante: no depende de
+  su zona); el texto muestra `hora`, de la clínica. Desde el 2026-10-06 todo lo demás del voucher (fecha
+  larga, hora de término, recordatorios, "Ya no aparece en tu lista de hoy") también va en hora de Chile
+  ([DTF-07](../Deudas/DTF-07.md), cerrada).
 
 ## Pendientes
 
@@ -210,7 +211,8 @@ Decisión del usuario: **no se puede marcar Asistió ni No asistió antes de la 
 
 - [DTF-06](../Deudas/DTF-06.md) — límite del motivo copiado del DTO; desde la Fase 2 también el largo
   del correo (254) y el margen de 30 min de los recordatorios.
-- [DTF-07](../Deudas/DTF-07.md) — la fecha/hora elegida se interpreta en la zona del navegador, y las
-  horas de los recordatorios (Fase 2) se muestran en esa zona.
+- [DTF-07](../Deudas/DTF-07.md) — la fecha/hora elegida se interpretaba en la zona del navegador, y las
+  horas de los recordatorios (Fase 2) se mostraban en esa zona. **Cerrada** el 2026-10-06: zona fija de
+  Chile para elegir, mostrar y prellenar reagendar.
 - `DT-12` / `DT-13` (backend) — solapamiento y horas pasadas aceptadas en silencio.
 - `DT-29` (backend) — `GET :id`, `reagendar` y `cancelar` ya se consumen.

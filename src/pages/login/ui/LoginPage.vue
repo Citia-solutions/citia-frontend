@@ -8,15 +8,23 @@ const router = useRouter()
 /**
  * A dónde volver tras iniciar sesión: `?redirect=` lo ponen el guard (ruta
  * protegida sin sesión) y el cierre por 401 (token vencido). Solo se aceptan
- * rutas internas de la app; cualquier otra cosa (`//otro-sitio`, una URL
- * absoluta, el propio login) cae al Resumen.
+ * rutas internas de la app que existen; cualquier otra cosa (`//otro-sitio`,
+ * una URL absoluta, el propio login, una ruta que cae en "No encontrada") va
+ * al Resumen.
  */
 function destinoTrasLogin(): string | { name: 'home' } {
   const redirect = router.currentRoute.value.query.redirect
   if (typeof redirect !== 'string' || !/^\/(?![/\\])/.test(redirect)) return { name: 'home' }
 
   const destino = router.resolve(redirect)
-  if (destino.matched.length === 0 || destino.name === 'login') return { name: 'home' }
+  // Con la ruta comodín todo "calza": una ruta inexistente resuelve a `noEncontrada`.
+  if (
+    destino.matched.length === 0 ||
+    destino.name === 'login' ||
+    destino.name === 'noEncontrada'
+  ) {
+    return { name: 'home' }
+  }
   return destino.fullPath
 }
 

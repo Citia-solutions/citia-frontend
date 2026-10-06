@@ -3,6 +3,8 @@
 **Estado:** ✅ Implementado y conectado (2026-09-10)
 **Rama:** `feature/agendar-cita-paciente`
 **Commits:** `e18c34c` (flujo multi-paso), `1980990` (envío real como preferencia)
+**Detalles menores (2026-10-06):** `chore/frontend-detalles-menores` — calendario con navegación entre
+meses, sin días ni horas pasados, "hoy" de Chile ([abajo](#el-calendario-del-paso-horario-2026-10-06))
 **Backend:** [`citia-backend/context/Features/us02-gestion-citas.md`](../../../citia-backend/context/Features/us02-gestion-citas.md)
 
 ---
@@ -47,6 +49,27 @@ De ahí que el copy importe tanto como el código:
 `HorarioStep` son fijas (`BLOQUES_HORARIOS`: 07:00–21:00 cada hora desde el 2026-10-05; antes
 09:00–18:00) y no consultan nada, porque no existe modelo de disponibilidad. Si algún día el paciente reserva de verdad, ese paso tendrá que consultarlo.
 
+### El calendario del paso Horario (2026-10-06)
+
+Antes solo mostraba el mes en curso: a fin de mes el paciente no podía pedir hora para la semana
+siguiente. Ahora:
+
+- **Navegación entre meses** con flechas *Mes anterior* / *Mes siguiente* (`aria-label`, título del mes
+  con `aria-live`). Abre en el mes en curso, **no retrocede** a meses pasados y avanza hasta
+  `MESES_HACIA_ADELANTE = 3` meses (el actual y los 3 siguientes), constante en
+  `features/crear-cita/model/calendarioMes.ts` junto con la lógica pura del mes (`celdasDelMes`,
+  `sumarMeses`). Cambiar de mes no borra el día elegido.
+- **"Hoy" es el de Chile** (`fechaEnClinicaISO`), no el del navegador del paciente: los días anteriores se
+  deshabilitan como antes y, si el día elegido es hoy, las **horas que ya pasaron** se deshabilitan y se ven
+  tachadas (también en el selector de horas de móvil, que además se cierra con `Esc`).
+- **Validación** en `validarPaso('horario')`, por si la página queda abierta hasta que pasen: *"Ese día ya
+  pasó. Elige otro."* y *"Esa hora ya pasó. Elige otra."* Es la misma regla del modal "Nueva cita" y de
+  aceptar una solicitud, con el tono del paciente.
+
+La preferencia sigue siendo texto (`'jueves, 18 de septiembre a las 10:00'`), ahora formateada con
+`formatearFechaLarga(fechaCalendario(fecha))` de `shared/lib/fecha.ts`; el texto no cambió, así que
+`sugerirInicio` (bandeja) lo sigue leyendo igual.
+
 ---
 
 ## Contrato con el backend
@@ -69,8 +92,9 @@ ignoraba (no hay guard), pero una llamada anónima no debe cargar credenciales.
 | `fecha` + `hora` | `preferenciaHoraria` | `'viernes, 18 de septiembre a las 10:00'` |
 | `rut` | `rut` | normalizado a forma canónica |
 
-La fecha se arma **por componentes locales**. Pasar `'2026-09-18'` a `new Date()` la interpretaría
-como UTC y en Chile mostraría el día anterior.
+El día se formatea con `fechaCalendario` (mediodía UTC de ese día, que en Chile sigue siendo el mismo
+día) y en la zona de la clínica. Pasar `'2026-09-18'` a `new Date()` lo interpretaría como medianoche
+UTC y en Chile mostraría el día anterior.
 
 ### El 202 no significa "guardado"
 
@@ -119,8 +143,8 @@ el paciente escribe, en vez de descubrir el error después de enviar.
 | Qué | Nota |
 |-----|------|
 | ⛔ **No compartir el enlace todavía** | Falta el límite de tasa en el backend (`DT-18`). Cuando exista, la ruta responderá `429` y `mensajeDeError` en `useAgendarCita.ts` necesitará un texto para ese caso ("Demasiados intentos, espera unos minutos"). |
-| **El profesional no tiene dónde copiar su enlace** | La ruta existe, pero ninguna pantalla del dashboard le muestra su URL pública. |
-| Se pierde el instante estructurado | `preferenciaHoraria` viaja como texto. Cuando exista la bandeja habrá que decidir si el backend guarda además la fecha elegida para prellenarla al aceptar. |
+| ~~El profesional no tiene dónde copiar su enlace~~ | Resuelto en el cierre de Fase 1: "Copiar enlace de agenda" en `/solicitudes` (`features/compartir-enlace-agenda`, ver [bandeja-solicitudes](bandeja-solicitudes.md)). |
+| Se pierde el instante estructurado | `preferenciaHoraria` viaja como texto. La bandeja lo lee con `sugerirInicio` para precargar la hora al aceptar; si el texto cambia de forma, la precarga deja de funcionar (sin romper nada). |
 | Campos provisionales | El backend los marcó como tales; si cambian, `toSolicitudRequest.ts` es el único archivo a tocar. |
 | Sin tests | El flujo no tiene pruebas: el proyecto todavía no tiene infraestructura de testing. |
 

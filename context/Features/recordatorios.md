@@ -177,6 +177,8 @@ reexporta: la pantalla no cambió. Nuevo en la entidad: `describirAntelaciones([
 
 - [DTF-06](../Deudas/DTF-06.md) — límites de la configuración (30–10.080 min, máx. 3, teléfono 30,
   correo 254), horas sin envío y margen de 30 min copiados del backend.
-- [DTF-07](../Deudas/DTF-07.md) — las horas de los recordatorios se muestran en la zona del navegador.
+- [DTF-07](../Deudas/DTF-07.md) — las horas de los recordatorios se mostraban en la zona del navegador.
+  **Cerrada** el 2026-10-06: se muestran en hora de Chile, la misma zona con que el backend decide las
+  horas sin envío.
 - `DT-16` (backend) — el consentimiento no se revisa antes de enviar (`sin_consentimiento` existe pero
   la política está apagada).

@@ -7,6 +7,8 @@
 **Código:** `src/features/auth/` · `src/entities/session/` · `src/shared/lib/authToken.ts` ·
 `src/shared/api/httpClient.ts` (`onUnauthorized`) · `src/app/router/` (guard y `cerrarSesion.ts`) ·
 `src/app/providers/index.ts` (401) · `src/app/layouts/PanelSidebar.vue` · **Ruta:** `/login`
+**Detalles menores (2026-10-06):** `chore/frontend-detalles-menores` — página "No encontrada" y `meta`
+del router ([abajo](#rutas-públicas-y-no-encontrada-2026-10-06))
 
 > El login existía desde el inicio sin documento propio. Este documento nace con la limpieza previa al
 > release, que le agregó la sesión persistente, el 401 global y el botón "Cerrar sesión".
@@ -69,7 +71,25 @@ recibe 401, y después lanza el `HttpError` como siempre. El handler, en `app/pr
 3. Si no, `cerrarSesion(router, rutaActual)` → `/login?redirect=<rutaActual>`.
 
 `LoginPage` respeta `?redirect=` **solo con rutas internas que existen** (empieza con `/`, no con `//`,
-no es el login); cualquier otra cosa va al Resumen. Evita usar el login como redirección abierta.
+no es el login ni cae en "No encontrada"); cualquier otra cosa va al Resumen. Evita usar el login como
+redirección abierta.
+
+## Rutas públicas y "No encontrada" (2026-10-06)
+
+- **El guard solo lee `meta.requiresAuth`**, que va en el padre `/` del panel y heredan las hijas. Todo lo
+  demás es público por omisión. El `meta.public` que llevaban `/login` y `/agendar-cita/:tenantSlug` no lo
+  leía nadie y **se quitó**; `RouteMeta` quedó tipado en `app/router/index.ts` con `requiresAuth` como
+  única marca.
+- **Ruta comodín** `/:pathMatch(.*)*` → `NoEncontradaPage` (`pages/no-encontrada`, ruta `noEncontrada`).
+  Antes una URL desconocida mostraba una página en blanco. Es pública y sin layout: con sesión ofrece
+  *"Volver al inicio"* (Resumen) y sin sesión *"Ir a iniciar sesión"*; el guard ya restauró la sesión al
+  llegar. vue-router ordena por especificidad, así que no tapa `/agendar-cita/:tenantSlug` ni las rutas
+  del panel; `/agendar-cita` sin slug y `/agenda/algo` sí caen en ella.
+- Con el comodín toda ruta "calza", por eso `LoginPage` descarta además `noEncontrada` al leer
+  `?redirect=`.
+
+Verificado en el navegador: URL inventada sin sesión → 404 con "Ir a iniciar sesión"; con sesión →
+"Volver al inicio", que lleva al Resumen; `/agendar-cita/demo` sigue resolviendo a la vista pública.
 
 ## Cerrar sesión
 

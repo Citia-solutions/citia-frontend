@@ -118,6 +118,9 @@ cuando la bandeja carga "Recibidas", informa su largo y se evita la segunda peti
 ## Deudas técnicas asociadas
 
 - [DTF-06](../Deudas/DTF-06.md) — `DURACION_MAXIMA_MIN` y `TOPE_BANDEJA` copiados del backend.
-- [DTF-07](../Deudas/DTF-07.md) — la hora elegida al aceptar se interpreta en la zona del navegador.
+- [DTF-07](../Deudas/DTF-07.md) — la hora elegida al aceptar se interpretaba en la zona del navegador.
+  **Cerrada** el 2026-10-06: se interpreta en hora de Chile, y aceptar rechaza un día pasado (error en
+  *Fecha*) o una hora de hoy que ya pasó (error en *Hora*) con *"Elige una fecha y hora futuras."*, igual
+  que el modal "Nueva cita".
 - `DT-18` (backend) — límite de tasa de la ruta pública: bloquea publicar el enlace.
 - `DT-13` (backend) — el backend acepta citas en el pasado; el front lo impide al aceptar.

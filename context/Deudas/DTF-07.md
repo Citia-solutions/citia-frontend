@@ -1,7 +1,39 @@
 # DTF-07 · Se asume que la zona del navegador es la de la clínica
 
 **Origen:** `src/shared/lib/fecha.ts` (`aInicioISO` y utilidades de fecha local)
-**Severidad:** 🟡 baja · **Estado:** abierta
+**Severidad:** 🟡 baja · **Estado:** cerrada (2026-10-06, `chore/frontend-detalles-menores`)
+
+> **Cierre: zona fija de Chile.** Para el MVP, que opera solo en Chile, el front ya no usa la zona del
+> navegador: la fija en `ZONA_HORARIA = 'America/Santiago'` (`src/shared/config/zonaHoraria.ts`), espejo
+> de `APP_TZ` del backend (default `America/Santiago`, [ADR-07](../../../citia-backend/context/Decisions/ADR-07.md)).
+>
+> - **Mostrar:** todos los formateadores de `shared/lib/fecha.ts` (`formatearFechaLarga`,
+>   `formatearMomentoCorto`, `horaEnClinica`, `fechaEnClinicaISO`, el nuevo `formatearFecha`) pasan
+>   `timeZone: ZONA_HORARIA`. Las horas de los recordatorios del voucher, el voucher, la bandeja, el
+>   topbar y la agenda muestran la hora de Chile aunque el navegador esté en otra zona. Los dos
+>   `Intl.DateTimeFormat` que vivían en features (`agenda.ts`, `toSolicitudRequest.ts`) pasan por ahí.
+> - **Armar instantes:** `aInicioISO(fecha, hora)` lee la fecha y la hora elegidas como hora de Chile
+>   ('2026-08-25' + '10:00' → `2026-08-25T14:00:00.000Z`). Es **seguro ante el cambio de horario**:
+>   prueba el desfase de un día antes y uno después del momento pedido y se queda con el que calza; una
+>   hora repetida (fin del horario de verano) toma la primera y una inexistente (inicio) se corre hacia
+>   adelante lo que dura el salto, como `Temporal` con `disambiguation: 'compatible'`. Los bloques
+>   (07:00–21:00) nunca caen en esas horas.
+> - **"Hoy" y "pasado":** `fechaEnClinicaISO(new Date())` (antes `fechaLocalISO`), `esDiaPasado`,
+>   `esMismoDia` y el nuevo `esInicioPasado` comparan en hora de Chile: el aviso *"Ya no aparece en tu
+>   lista de hoy"*, el `min` de los selectores de fecha, la semana inicial de la agenda y los rangos del
+>   dashboard.
+> - **Días calendario** ('YYYY-MM-DD'): `fechaCalendario` devuelve el día a **mediodía UTC**, que en Chile
+>   (UTC−3/−4) sigue siendo el mismo día, y quien necesita sus números usa `partesDeFecha` en vez de
+>   `getDate()`. `sugerirInicio` (bandeja) y el calendario público ya no usan `new Date(año, mes, día)`.
+>
+> Verificado con Node forzando 7 zonas del navegador (de UTC−11 a UTC+14, incluida
+> `America/Santiago`): mismos instantes y mismos textos en todas, incluidos los fines de semana de
+> cambio de horario de 2026. **Lo que queda:** es una zona para todo el sistema, igual que en el
+> backend. Si algún día hay clínicas fuera de Chile, la zona tiene que venir de la organización (por
+> ejemplo, en la respuesta del login) y reemplazar la constante; `shared/lib/fecha.ts` es el único
+> lugar que la lee.
+>
+> Lo de abajo es el registro original.
 
 ## Qué pasa
 

@@ -8,9 +8,9 @@
 // - **vigente** = `pendiente` o `confirmada` (`isActiveStatus`), el criterio del
 //   backend. Solo se usa para "próxima cita".
 //
-// Las fechas son días 'YYYY-MM-DD'. "Hoy" sale de la zona del navegador
-// (DTF-07); el día de cada cita, de la `fecha` del backend (ADR-07).
-import { diferenciaDias, fechaCalendario, inicioDeSemana, sumarDias } from '@/shared/lib/fecha'
+// Las fechas son días 'YYYY-MM-DD'. "Hoy" sale de la zona de la clínica
+// (`fechaEnClinicaISO`); el día de cada cita, de la `fecha` del backend (ADR-07).
+import { diferenciaDias, inicioDeSemana, partesDeFecha, sumarDias } from '@/shared/lib/fecha'
 import {
   isActiveStatus,
   type AgendaAppointment,
@@ -101,8 +101,8 @@ const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 's
 
 /** '2026-09-22' → '22 sep'. */
 function diaMesCorto(fecha: string): string {
-  const d = fechaCalendario(fecha)
-  return `${d.getDate()} ${MESES_CORTOS[d.getMonth()] ?? ''}`
+  const [, mes, dia] = partesDeFecha(fecha)
+  return `${dia} ${MESES_CORTOS[mes - 1] ?? ''}`
 }
 
 export interface SemanaCitas {

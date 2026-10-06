@@ -130,7 +130,7 @@ function momento(iso: string | null): string {
  * - `fallido` → cuándo salió si alcanzó a salir (rebote), si no, para cuándo estaba;
  * - `cancelado` / `omitido` → para cuándo estaba.
  *
- * Hora en la zona del navegador, igual que el resto del front (DTF-07).
+ * Hora de la clínica (`ZONA_HORARIA`, Chile), igual que el resto del front.
  */
 export function lineaDeTiempo(r: Recordatorio): string {
   switch (r.estado) {
