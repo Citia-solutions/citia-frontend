@@ -16,6 +16,7 @@ const { values, errors, submitError, isSubmitting, submit } = useLogin(() => emi
       label="Clínica"
       placeholder="mi-clinica"
       autocomplete="organization"
+      hint="El identificador de tu clínica, p. ej. clinica-demo."
       :error="errors.tenantSlug"
     >
       <template #icon>
@@ -43,26 +44,21 @@ const { values, errors, submitError, isSubmitting, submit } = useLogin(() => emi
       </template>
     </BaseInput>
 
-    <div class="login-form__password">
-      <div class="login-form__password-head">
-        <span class="login-form__password-label">Contraseña</span>
-        <a href="#" class="login-form__link">¿Olvidaste tu clave?</a>
-      </div>
-      <BaseInput
-        v-model="values.password"
-        type="password"
-        placeholder="••••••••"
-        autocomplete="current-password"
-        :error="errors.password"
-      >
-        <template #icon>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="4" y="11" width="16" height="9" rx="2" />
-            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          </svg>
-        </template>
-      </BaseInput>
-    </div>
+    <BaseInput
+      v-model="values.password"
+      label="Contraseña"
+      type="password"
+      placeholder="••••••••"
+      autocomplete="current-password"
+      :error="errors.password"
+    >
+      <template #icon>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="11" width="16" height="9" rx="2" />
+          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+        </svg>
+      </template>
+    </BaseInput>
 
     <BaseCheckbox v-model="values.rememberMe" label="Mantener sesión iniciada" />
 
@@ -77,30 +73,6 @@ const { values, errors, submitError, isSubmitting, submit } = useLogin(() => emi
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-}
-.login-form__password {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.login-form__password-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.login-form__password-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-.login-form__link {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  text-decoration: none;
-}
-.login-form__link:hover {
-  text-decoration: underline;
 }
 .login-form__error {
   font-size: 0.85rem;

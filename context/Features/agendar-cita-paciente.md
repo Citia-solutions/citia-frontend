@@ -44,8 +44,8 @@ De ahí que el copy importe tanto como el código:
 | — | *"Es tu horario preferido, no una reserva: revisaremos tu solicitud y te contactaremos para confirmar la hora definitiva."* |
 
 "Hora disponible" prometía una disponibilidad que el sistema **no conoce**: las franjas de
-`HorarioStep` son fijas (09:00–18:00) y no consultan nada, porque no existe modelo de
-disponibilidad. Si algún día el paciente reserva de verdad, ese paso tendrá que consultarlo.
+`HorarioStep` son fijas (`BLOQUES_HORARIOS`: 07:00–21:00 cada hora desde el 2026-10-05; antes
+09:00–18:00) y no consultan nada, porque no existe modelo de disponibilidad. Si algún día el paciente reserva de verdad, ese paso tendrá que consultarlo.
 
 ---
 

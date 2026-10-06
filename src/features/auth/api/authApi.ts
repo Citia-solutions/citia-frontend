@@ -1,5 +1,5 @@
 import { http } from '@/shared/api/httpClient'
-import type { AuthUser, Session } from '@/entities/session'
+import type { Session, UserRole } from '@/entities/session'
 
 export interface LoginCredentials {
   tenantSlug: string
@@ -25,20 +25,27 @@ interface LoginResponseBackend {
     tenantId: string
     /** Aditivo desde el cierre de Fase 1; un backend anterior no lo manda. */
     tenantSlug?: string
+    /** Aditivo desde 2026-10-05 (nombre visible de la organización); ídem. */
+    tenantNombre?: string
   }
 }
 
-/** El backend solo emite ADMINISTRADOR y PROFESIONAL; 'recepcion' aún no existe. */
-const ROLES: Record<string, AuthUser['role']> = {
+/** El backend solo emite ADMINISTRADOR y PROFESIONAL. */
+const ROLES: Record<string, UserRole> = {
   ADMINISTRADOR: 'admin',
   PROFESIONAL: 'profesional',
 }
 
 export type LoginResponse = Session
 
-/** POST /auth/login con tenantSlug + email + contraseña. */
+/**
+ * POST /auth/login con tenantSlug + email + contraseña.
+ *
+ * Va con `{ auth: false }`: es una ruta pública, y así un 401 aquí ("credenciales
+ * inválidas") no se confunde con una sesión vencida ni dispara el cierre global.
+ */
 export async function login(credentials: LoginCredentials): Promise<Session> {
-  const res = await http.post<LoginResponseBackend>('/auth/login', credentials)
+  const res = await http.post<LoginResponseBackend>('/auth/login', credentials, { auth: false })
 
   return {
     token: res.accessToken,
@@ -49,15 +56,7 @@ export async function login(credentials: LoginCredentials): Promise<Session> {
       // Ante un rol desconocido se asume el menos privilegiado.
       role: ROLES[res.usuario.rol] ?? 'profesional',
       ...(res.usuario.tenantSlug ? { tenantSlug: res.usuario.tenantSlug } : {}),
+      ...(res.usuario.tenantNombre ? { tenantNombre: res.usuario.tenantNombre } : {}),
     },
   }
-}
-
-/**
- * Login con Google Workspace.
- * TODO: integrar el flujo OAuth real (redirect o popup) cuando esté el backend.
- * Por ahora es un stub para no bloquear el desarrollo del resto del login.
- */
-export function loginWithGoogle(): Promise<LoginResponse> {
-  return Promise.reject(new Error('El acceso con Google Workspace aún no está disponible.'))
 }

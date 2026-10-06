@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
+import { BLOQUES_HORARIOS, errorFinDeJornada } from '@/shared/config/bloquesHorarios'
 import { aInicioISO, fechaLocalISO } from '@/shared/lib/fecha'
 import type { Solicitud } from '@/entities/solicitud'
 import { aceptarSolicitud } from '../api/bandejaApi'
@@ -142,6 +142,10 @@ export function useAceptarSolicitud() {
     const d = form.duracionMin
     if (!Number.isInteger(d) || d < 1 || d > DURACION_MAXIMA_MIN) {
       e.duracionMin = `La duración debe ser un número entero entre 1 y ${DURACION_MAXIMA_MIN} minutos.`
+    } else if (form.hora && !e.hora) {
+      // Misma regla que el modal "Nueva cita": la última cita termina a `FIN_DE_JORNADA`.
+      const finDeJornada = errorFinDeJornada(form.hora, d)
+      if (finDeJornada) e.hora = finDeJornada
     }
     if (!form.tipoConsulta.trim()) e.tipoConsulta = 'Indica el tipo de consulta.'
     return e

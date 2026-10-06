@@ -1,9 +1,24 @@
 <script setup lang="ts">
-const stats = [
-  { value: '−40%', label: 'ausentismo' },
-  { value: '42h', label: 'recuperadas/mes' },
-  { value: '$1.47M', label: 'ingresos/mes' },
-]
+// Panel izquierdo del login: marca y lo que Citia hace hoy. Sin cifras: no hay
+// datos reales que las respalden, y el texto no promete nada que el producto
+// no haga (ni dinero, ni "recuperar cupos").
+const features = [
+  {
+    title: 'Agenda del día y de la semana',
+    text: 'Revisa tus citas en lista o en vista semanal, con el estado de cada una.',
+    icon: 'agenda',
+  },
+  {
+    title: 'Solicitudes desde tu enlace',
+    text: 'Tus pacientes piden hora desde un enlace y tú decides si la aceptas.',
+    icon: 'solicitudes',
+  },
+  {
+    title: 'Recordatorios por correo',
+    text: 'Citia les recuerda la cita automáticamente, en los momentos que elijas.',
+    icon: 'recordatorios',
+  },
+] as const
 </script>
 
 <template>
@@ -20,19 +35,51 @@ const stats = [
     </div>
 
     <div class="aside__pitch">
-      <h1 class="aside__headline">Cada hora perdida es una hora que podemos recuperar.</h1>
+      <h1 class="aside__headline">Tu agenda clínica, en orden y al día.</h1>
       <p class="aside__subtitle">
-        Automatiza confirmaciones, recupera cupos cancelados y reduce el ausentismo de tus
-        pacientes.
+        Citia reúne tus citas, las solicitudes de hora de tus pacientes y los recordatorios por
+        correo en un solo panel.
       </p>
     </div>
 
-    <dl class="aside__stats">
-      <div v-for="stat in stats" :key="stat.label" class="aside__stat">
-        <dt class="aside__stat-value">{{ stat.value }}</dt>
-        <dd class="aside__stat-label">{{ stat.label }}</dd>
-      </div>
-    </dl>
+    <ul class="aside__features">
+      <li v-for="feature in features" :key="feature.title" class="aside__feature">
+        <span class="aside__feature-icon" aria-hidden="true">
+          <svg
+            v-if="feature.icon === 'agenda'"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+          </svg>
+          <svg
+            v-else-if="feature.icon === 'solicitudes'"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+            <path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3 7 9 6 9-6" />
+          </svg>
+        </span>
+        <div class="aside__feature-text">
+          <span class="aside__feature-title">{{ feature.title }}</span>
+          <span class="aside__feature-desc">{{ feature.text }}</span>
+        </div>
+      </li>
+    </ul>
   </aside>
 </template>
 
@@ -72,7 +119,7 @@ const stats = [
   font-size: 2.4rem;
   line-height: 1.1;
   font-weight: 800;
-  margin: 0 1 1.2rem;
+  margin: 0 0 1.2rem;
   max-width: 18ch;
 }
 .aside__subtitle {
@@ -82,23 +129,42 @@ const stats = [
   max-width: 38ch;
   margin: 0;
 }
-.aside__stats {
-  display: flex;
-  gap: 2.5rem;
-  margin: 0;
-}
-.aside__stat {
+.aside__features {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-}
-.aside__stat-value {
-  font-size: 1.8rem;
-  font-weight: 800;
-}
-.aside__stat-label {
+  gap: 1.1rem;
+  list-style: none;
   margin: 0;
+  padding: 0;
+}
+.aside__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+.aside__feature-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.aside__feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-width: 40ch;
+}
+.aside__feature-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.aside__feature-desc {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.65);
 }
 </style>

@@ -156,12 +156,20 @@ reagendar) se esconden tras *"Ver reemplazados (N)"* para no ensuciar la lista.
 
 ---
 
+## Cambio del lote 2 de la limpieza (2026-10-05)
+
+`GET /recordatorios/configuracion` y su DTO (`ConfiguracionRecordatoriosDto`) pasaron a
+`entities/recordatorio` porque también los lee la tarjeta **Recordatorios** del dashboard
+([dashboard-citas-del-dia](dashboard-citas-del-dia.md)). `features/configurar-recordatorios` los
+reexporta: la pantalla no cambió. Nuevo en la entidad: `describirAntelaciones([1440, 120])` →
+*"24 h y 2 h antes"*.
+
 ## Pendientes
 
 | Qué | Nota |
 |-----|------|
 | **Prueba manual contra el backend real** | Crear una cita y ver *Programando…* → `programado`; reagendar (reemplazados plegados); cancelar (`cita_terminal`); apagar la configuración y ver `desactivado`; paciente sin correo → `sin_correo` → agregar correo. |
-| Quién configura | La configuración es **por usuario** y se aplica a las citas de las que es dueño. Una cuenta `recepcion` también ve la pantalla y guardaría una configuración que no afecta a nadie. Decidir si se oculta por rol. |
+| Quién configura | La configuración es **por usuario** y se aplica a las citas de las que es dueño. Los dos roles que existen (`admin` y `profesional`, [DTF-04](../Deudas/DTF-04.md) cerrada: ya no hay `recepcion`) ven la pantalla, porque el front no ramifica por rol; un usuario sin citas propias guardaría una configuración que no afecta a nadie. Decidir si se oculta por rol. |
 | RUT existente con otro correo | Al crear con un RUT que ya tiene correo distinto, el backend conserva el guardado y la UI no avisa (la ayuda del RUT lo menciona). Se ve y se corrige en el voucher. |
 | Horas sin envío / margen copiados | `HORAS_SIN_ENVIO` (21:00–08:00) y el margen de 30 min de `deberiaTenerRecordatorios` son copias del entorno del backend — [DTF-06](../Deudas/DTF-06.md). |
 

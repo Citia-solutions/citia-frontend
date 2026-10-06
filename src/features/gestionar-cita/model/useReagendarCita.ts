@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue'
-import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
+import { BLOQUES_HORARIOS, errorFinDeJornada } from '@/shared/config/bloquesHorarios'
 import { aInicioISO, esMismoDia, fechaLocalISO, horaLocal } from '@/shared/lib/fecha'
 import type { Appointment } from '@/entities/appointment'
 import { reagendarCita } from '../api/gestionarCitaApi'
@@ -62,6 +62,10 @@ export function useReagendarCita(appointment: Appointment) {
     if (!nuevo) return 'Elige el nuevo día y la nueva hora.'
     if (nuevo.getTime() <= Date.now()) return 'Elige una fecha y hora futuras.'
     if (nuevo.getTime() === inicioActual.getTime()) return 'Es la misma hora que ya tiene la cita.'
+    // Misma regla que al crear: la última cita termina a `FIN_DE_JORNADA`.
+    // Reagendar conserva la duración, así que solo se puede mover la hora.
+    const finDeJornada = errorFinDeJornada(form.hora, appointment.durationMin, 'Elige una hora más temprana.')
+    if (finDeJornada) return finDeJornada
     if (form.motivo.length > MOTIVO_MAX) return `El motivo no puede superar ${MOTIVO_MAX} caracteres.`
     return null
   })

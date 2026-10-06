@@ -65,12 +65,21 @@ export const useAgendaAppointments = defineStore('agendaAppointments', () => {
    * Cambia el rango y lo pide. Mientras llega, se siguen viendo los datos del
    * rango anterior con el indicador de "Actualizando…" (no se vuelve al
    * esqueleto al navegar de semana).
+   *
+   * Sin `forzar`, no vuelve a pedir un rango que ya está cargado (cambiar de
+   * vista con el mismo rango, por ejemplo). Con `forzar: true` pide siempre: lo
+   * usa la agenda al montarse, porque mientras se estaba en otra sección las
+   * citas pudieron cambiar (creadas, canceladas o confirmadas desde el dashboard).
    */
-  async function setRange(nuevoDesde: string, nuevoHasta: string): Promise<void> {
+  async function setRange(
+    nuevoDesde: string,
+    nuevoHasta: string,
+    opciones: { forzar?: boolean } = {},
+  ): Promise<void> {
     const cambio = nuevoDesde !== desde.value || nuevoHasta !== hasta.value
     desde.value = nuevoDesde
     hasta.value = nuevoHasta
-    if (cambio || !loaded.value) await reload()
+    if (opciones.forzar || cambio || !loaded.value) await reload()
   }
 
   /** Recarga solo si pasó `minIntervalMs` desde el último pedido (volver el foco). */

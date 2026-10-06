@@ -1,5 +1,17 @@
-// Tipos del feature `gestionar-cita` (voucher: reagendar y cancelar).
-import type { AppointmentStatus, AvisosCitaDto } from '@/entities/appointment'
+// Tipos del feature `gestionar-cita` (voucher: reagendar, cancelar, confirmar
+// y registrar asistencia).
+import type { AppointmentAction, AppointmentStatus, AvisosCitaDto } from '@/entities/appointment'
+
+/**
+ * Transiciones de estado sin cuerpo que ofrece el voucher (lote 2 de la
+ * limpieza previa al release, 2026-10-05). Son valores de `accionesPermitidas`:
+ * un botón aparece solo si el backend declara la acción.
+ *
+ * - `confirmar`: pendiente → confirmada.
+ * - `asistencia`: confirmada → asistio (terminal).
+ * - `inasistencia`: confirmada → no_asistio (terminal).
+ */
+export type TransicionEstado = Extract<AppointmentAction, 'confirmar' | 'asistencia' | 'inasistencia'>
 
 /** Cuerpo de `PATCH /citas/:id/reagendar`. */
 export interface ReagendarCitaRequest {

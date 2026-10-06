@@ -20,7 +20,18 @@
 // completar o corregir el correo del paciente (`PATCH /pacientes/:id`). Los
 // recordatorios se programan de forma asíncrona: tras abrir, reagendar o
 // cancelar se reintenta unos segundos hasta que la lista refleje el cambio.
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+//
+// Lote 2 de la limpieza previa al release (2026-10-05): sección
+// "Confirmación" / "Asistencia" con Confirmar (pendiente → confirmada) y
+// Asistió / No asistió (confirmada → asistio / no_asistio). Igual que
+// reagendar y cancelar, cada botón aparece SOLO si viene en
+// `accionesPermitidas`: una cita pendiente que ya pasó solo ofrece Confirmar
+// (se explica que para registrar la asistencia primero hay que confirmarla).
+//
+// Asistió / No asistió además esperan la hora de inicio (decisión del usuario,
+// 2026-10-05; el backend no lo exige): antes solo se explica desde qué hora se
+// podrá, y los botones aparecen solos al llegar esa hora (`useYaEmpezo`).
+import { computed, nextTick, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import {
@@ -42,6 +53,7 @@ import {
 } from '@/entities/appointment'
 import { invalidaVoucher } from '../model/mensajeDeError'
 import { useDetalleCita } from '../model/useDetalleCita'
+import { useYaEmpezo } from '../model/useYaEmpezo'
 import {
   deberiaTenerRecordatorios,
   hayAlguno,
@@ -50,9 +62,15 @@ import {
   useRecordatoriosCita,
   type CondicionRecordatorios,
 } from '../model/useRecordatoriosCita'
-import type { CitaActualizada, ResultadoAccion, ResultadoContacto } from '../model/types'
+import type {
+  CitaActualizada,
+  ResultadoAccion,
+  ResultadoContacto,
+  TransicionEstado,
+} from '../model/types'
 import ReagendarCitaForm from './ReagendarCitaForm.vue'
 import CancelarCitaConfirm from './CancelarCitaConfirm.vue'
+import CambiarEstadoConfirm from './CambiarEstadoConfirm.vue'
 import EditarContactoForm from './EditarContactoForm.vue'
 import RecordatoriosCita from './RecordatoriosCita.vue'
 
@@ -76,13 +94,15 @@ const emit = defineEmits<{
   changed: []
 }>()
 
-type Vista = 'detalle' | 'reagendar' | 'cancelar' | 'contacto'
+type Vista = 'detalle' | 'reagendar' | 'cancelar' | 'contacto' | 'estado'
 interface Aviso {
   tipo: 'exito' | 'error'
   textos: string[]
 }
 
 const vista = ref<Vista>('detalle')
+/** Transición que se está confirmando en la vista 'estado'. */
+const transicion = ref<TransicionEstado>('confirmar')
 const enviando = ref(false)
 const aviso = ref<Aviso | null>(null)
 /** Citas con las que choca la nueva hora tras reagendar (vacío si no hay). */
@@ -144,6 +164,60 @@ function motivoDeshabilitado(accion: AppointmentAction): string | undefined {
   return permitida(accion) ? undefined : 'No disponible en el estado actual de la cita'
 }
 
+// ---------------------------------------------------------------------------
+// Confirmación y asistencia: solo lo que declara `accionesPermitidas`
+// ---------------------------------------------------------------------------
+
+/**
+ * "Ya empezó" con reloj propio: se renueva al abrir, tras cada carga del
+ * detalle y, mientras el voucher está abierto, justo a la hora de inicio.
+ */
+const { yaEmpezo, refrescar: refrescarAhora } = useYaEmpezo(cita, toRef(props, 'isOpen'))
+
+const TRANSICIONES: readonly TransicionEstado[] = ['confirmar', 'asistencia', 'inasistencia']
+
+/** Transiciones de estado que el backend ofrece para esta cita (vacío hasta que llega el detalle). */
+const transicionesPermitidas = computed(() => TRANSICIONES.filter((t) => permitida(t)))
+
+/**
+ * Lo que se puede hacer AHORA: lo que declara el backend, salvo Asistió / No
+ * asistió antes de la hora de inicio. Ese bloqueo es solo del front (decisión
+ * del usuario, 2026-10-05): el backend sí lo acepta. Confirmar no espera.
+ */
+function disponible(t: TransicionEstado): boolean {
+  return permitida(t) && (t === 'confirmar' || yaEmpezo.value)
+}
+
+/** false en una confirmada que aún no empieza: la sección queda solo con el texto. */
+const hayBotonesEstado = computed(() => TRANSICIONES.some((t) => disponible(t)))
+
+/** Título de la sección: "Confirmación" si se puede confirmar; si no, "Asistencia". */
+const tituloEstado = computed(() => (permitida('confirmar') ? 'Confirmación' : 'Asistencia'))
+
+/**
+ * Texto de la sección. Es presentación: qué botones hay lo decide el backend
+ * (más el bloqueo por hora de `disponible`).
+ * Una pendiente que ya empezó solo admite Confirmar (ADR-04): se explica por
+ * qué no hay Asistió / No asistió, sin ofrecer un atajo que ensuciaría el dato.
+ * Una confirmada que aún no empieza no muestra botones: solo desde qué hora.
+ */
+const textoEstado = computed(() => {
+  if (permitida('confirmar')) {
+    return yaEmpezo.value
+      ? 'Esta cita ya empezó y sigue pendiente. Para registrar si el paciente asistió, primero confírmala.'
+      : '¿El paciente confirmó que vendrá? Márcala como confirmada.'
+  }
+  return yaEmpezo.value
+    ? '¿El paciente vino a la cita?'
+    : `Podrás registrar la asistencia cuando llegue la hora de la cita (${cita.value?.time ?? ''}).`
+})
+
+function abrirTransicion(t: TransicionEstado): void {
+  if (enviando.value || !disponible(t)) return
+  transicion.value = t
+  irA('estado')
+}
+
 /** `tel:` sin espacios ni guiones. */
 function hrefTelefono(telefono: string): string {
   return `tel:${telefono.replace(/[^\d+]/g, '')}`
@@ -155,6 +229,7 @@ function hrefTelefono(telefono: string): string {
 
 async function cargarDetalle(): Promise<void> {
   const id = props.appointment?.id
+  refrescarAhora()
   if (id) await loadDetalle(id)
 }
 
@@ -162,6 +237,7 @@ async function cargarDetalle(): Promise<void> {
 async function cargarDetalleInicial(): Promise<void> {
   const fila = props.appointment
   if (!fila) return
+  refrescarAhora()
   const nuevo = await loadDetalle(fila.id)
   if (notFound.value || (nuevo && nuevo.status !== fila.status)) emit('changed')
 }
@@ -212,6 +288,36 @@ function textosReagendada(actualizada: CitaActualizada): string[] {
     textos.push('Ya no aparece en tu lista de hoy.')
   }
   return textos
+}
+
+const EXITO_TRANSICION: Record<TransicionEstado, string> = {
+  confirmar: 'Cita confirmada.',
+  asistencia: 'Asistencia registrada: el paciente asistió.',
+  inasistencia: 'Inasistencia registrada: el paciente no asistió.',
+}
+
+/** Resultado de Confirmar / Asistió / No asistió. Mismo tratamiento que cancelar. */
+async function alResultadoTransicion(resultado: ResultadoAccion, t: TransicionEstado): Promise<void> {
+  enviando.value = false
+  if (resultado.ok) {
+    irA('detalle')
+    aviso.value = { tipo: 'exito', textos: [EXITO_TRANSICION[t]] }
+    emit('changed')
+    // Asistió / No asistió cierran la cita: el backend anula los recordatorios
+    // programados (asíncrono). Confirmar no los toca.
+    if (t !== 'confirmar') refrescarRecordatorios(ningunoProgramado)
+    await cargarDetalle()
+    return
+  }
+  // 409 / 404: la cita cambió. Se vuelve al detalle con el mensaje y se recarga todo.
+  if (invalidaVoucher(resultado.status)) {
+    irA('detalle')
+    aviso.value = { tipo: 'error', textos: [resultado.mensaje] }
+    emit('changed')
+    refrescarRecordatorios()
+    await cargarDetalle()
+  }
+  // Los demás fallos (401, red) los muestra la propia vista, que permite reintentar.
 }
 
 async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'cancelar'): Promise<void> {
@@ -487,7 +593,45 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
           <p v-if="esTerminal" class="voucher__terminal">{{ notaTerminal }} Ya no admite cambios.</p>
 
-          <footer v-else-if="!notFound" class="voucher__actions">
+          <section
+            v-if="!esTerminal && !notFound && transicionesPermitidas.length > 0"
+            class="voucher__estado"
+            aria-labelledby="voucher-estado"
+          >
+            <h3 id="voucher-estado" class="voucher__section-title">{{ tituloEstado }}</h3>
+            <p class="voucher__estado-text">{{ textoEstado }}</p>
+            <div v-if="hayBotonesEstado" class="voucher__estado-actions">
+              <BaseButton
+                v-if="disponible('confirmar')"
+                variant="outline"
+                class="voucher__ok"
+                :block="false"
+                @click="abrirTransicion('confirmar')"
+              >
+                Confirmar cita
+              </BaseButton>
+              <BaseButton
+                v-if="disponible('asistencia')"
+                variant="outline"
+                class="voucher__ok"
+                :block="false"
+                @click="abrirTransicion('asistencia')"
+              >
+                Asistió
+              </BaseButton>
+              <BaseButton
+                v-if="disponible('inasistencia')"
+                variant="outline"
+                class="voucher__danger"
+                :block="false"
+                @click="abrirTransicion('inasistencia')"
+              >
+                No asistió
+              </BaseButton>
+            </div>
+          </section>
+
+          <footer v-if="!esTerminal && !notFound" class="voucher__actions">
             <BaseButton
               variant="outline"
               class="voucher__danger"
@@ -524,6 +668,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           @back="irA('detalle')"
           @submitting="enviando = $event"
           @result="alResultado($event, 'cancelar')"
+        />
+
+        <CambiarEstadoConfirm
+          v-else-if="vista === 'estado'"
+          :appointment="cita"
+          :transicion="transicion"
+          @back="irA('detalle')"
+          @submitting="enviando = $event"
+          @result="alResultadoTransicion($event, transicion)"
         />
 
         <EditarContactoForm
@@ -769,6 +922,31 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   gap: 0.7rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--color-border);
+}
+.voucher__estado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+.voucher__estado-text {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text);
+}
+.voucher__estado-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+/* Tono positivo (confirmar, asistió) sobre BaseButton outline. */
+.voucher .voucher__ok {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+.voucher .voucher__ok:not(:disabled):hover {
+  background: var(--color-success-soft);
 }
 /* Tono destructivo sobre BaseButton outline (más especificidad que .btn--outline). */
 .voucher .voucher__danger {

@@ -1,13 +1,27 @@
 # DTF-03 · El dashboard muestra datos de prueba
 
-**Origen:** `src/features/dashboard/api/dashboardApi.ts`
-**Severidad:** 🟡 baja (antes 🟠 media) · **Estado:** abierta — **parte de citas cerrada** por US-02.09 (2026-09-24)
+**Origen:** `src/features/dashboard/api/dashboardApi.ts` (borrado el 2026-10-05)
+**Severidad:** 🟡 baja (antes 🟠 media) · **Estado:** **cerrada (2026-10-05)** — parte de citas por US-02.09
+(2026-09-24); el resto por el lote 2 de la limpieza previa al release
+
+> **Cierre (2026-10-05, lote 2 de la limpieza previa al release):** por decisión del usuario, el dashboard
+> **no muestra ningún dato inventado**. Se borraron `dashboardApi.ts`, `MetricsRow`, `MetricCard`,
+> `WeeklyAbsenteeism`, `EngineActivity` y sus tipos: fuera ausentismo, horas e ingresos recuperados,
+> pacientes en riesgo, prepago y la actividad del motor (con sus nombres falsos). En su lugar, todo con
+> endpoints existentes: cuatro tarjetas (citas hoy, próxima cita, próximos 7 días, solicitudes por
+> responder), "Citas por semana" (6 semanas, un pedido de 42 días) y la tarjeta de Recordatorios — ver
+> [dashboard-citas-del-dia](../Features/dashboard-citas-del-dia.md). Las métricas de ausentismo volverán
+> cuando exista RF-08, como tarjetas nuevas sobre datos reales.
 
 > **Actualización:** la lista "Citas de hoy" ya consume `GET /api/citas/hoy` y los estados son los seis
 > del backend (`recuperada`/`riesgo_alto` salieron del código) — ver
 > [dashboard-citas-del-dia](../Features/dashboard-citas-del-dia.md). **Quedan con datos de prueba:**
-> métricas, ausentismo semanal, actividad del motor y la píldora "Citas anuladas" del sidebar, que
-> no tienen endpoint. Lo de abajo es el registro original.
+> métricas, ausentismo semanal y actividad del motor, que no tienen endpoint. Lo de abajo es el
+> registro original.
+>
+> **Actualización (2026-10-05, limpieza previa al release):** el ítem "Citas anuladas" del sidebar,
+> con su píldora fija "3", **se quitó** junto con "Pacientes" y la tarjeta "Citia IA": el sidebar
+> solo muestra lo que funciona. Ya no forma parte de esta deuda.
 
 ## Qué pasa
 

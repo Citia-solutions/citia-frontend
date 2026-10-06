@@ -11,12 +11,14 @@ import {
   isTerminalStatus,
   type AgendaAppointment,
 } from '@/entities/appointment'
-import { agruparPorFecha } from '../model/agenda'
+import { agruparPorFecha, conteoDeCitas } from '../model/agenda'
 
 const props = defineProps<{
   appointments: AgendaAppointment[]
   hoy: string
   loadedAt: Date
+  /** "2 canceladas ocultas por el filtro." si el filtro esconde citas del rango. */
+  notaOcultas?: string | null
 }>()
 
 const emit = defineEmits<{ select: [appointment: AgendaAppointment] }>()
@@ -28,6 +30,8 @@ const grupos = computed(() =>
     fecha,
     titulo: capitalizar(formatearFechaLarga(fechaCalendario(fecha))),
     esHoy: fecha === props.hoy,
+    // Las canceladas a la vista se cuentan aparte; las ocultas no llegan aquí.
+    conteo: conteoDeCitas(citas),
     citas,
   })).sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0)),
 )
@@ -40,21 +44,20 @@ function rowClasses(appt: AgendaAppointment): Record<string, boolean> {
       !cancelada && (isTerminalStatus(appt.status) || isPastAppointment(appt, props.loadedAt)),
   }
 }
-
-function plural(n: number, singular: string): string {
-  return `${n} ${n === 1 ? singular : `${singular}s`}`
-}
 </script>
 
 <template>
   <div class="agenda-list">
-    <p v-if="grupos.length === 0" class="agenda-list__empty">No hay citas en este rango.</p>
+    <p v-if="grupos.length === 0" class="agenda-list__empty">
+      No hay citas en este rango.
+      <span v-if="notaOcultas" class="agenda-list__empty-note">{{ notaOcultas }}</span>
+    </p>
 
     <section v-for="g in grupos" :key="g.fecha" class="agenda-list__group" :aria-labelledby="`dia-${g.fecha}`">
       <h3 :id="`dia-${g.fecha}`" class="agenda-list__day">
         {{ g.titulo }}
         <span v-if="g.esHoy" class="agenda-list__today">Hoy</span>
-        <span class="agenda-list__count">{{ plural(g.citas.length, 'cita') }}</span>
+        <span class="agenda-list__count">{{ g.conteo }}</span>
       </h3>
       <ul class="agenda-list__list">
         <li v-for="appt in g.citas" :key="appt.id">
@@ -94,6 +97,11 @@ function plural(n: number, singular: string): string {
   text-align: center;
   font-size: 0.92rem;
   color: var(--color-text-muted);
+}
+.agenda-list__empty-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
 }
 .agenda-list__day {
   display: flex;

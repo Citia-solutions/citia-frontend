@@ -59,6 +59,21 @@ un backend viejo funciona igual: el correo ya era aceptado).
 - **Aceptar una solicitud** (bandeja): el paciente sale de la solicitud, que trae correo. Sin cambios.
 - `POST /pacientes` no tiene consumidor en el front (`DT-29`).
 
+## Bloques horarios y fin de la jornada (2026-10-05)
+
+Lote 2 de la limpieza previa al release, por decisión del usuario:
+
+- **Bloques de 1 hora con inicios de 07:00 a 21:00** (antes 09:00–18:00 sin las 14:00). Viven en
+  `shared/config/bloquesHorarios.ts`, que los **calcula** de tres constantes fáciles de cambiar
+  (`PRIMER_BLOQUE`, `ULTIMO_BLOQUE`, `DURACION_BLOQUE_MIN`). La misma lista usan reagendar (voucher),
+  aceptar una solicitud (bandeja), el paso Horario del flujo público y la grilla de la agenda.
+- **La última cita termina a las 22:00** (`FIN_DE_JORNADA`, derivado: último bloque + 1 h). El modal
+  valida que `hora + duración` no pase de ahí: a las 21:00 una cita de 90 min se rechaza con *"Con 90
+  min, la cita terminaría a las 22:30. La última cita debe terminar a más tardar a las 22:00. Elige una
+  hora más temprana o una duración más corta."* La misma regla (`errorFinDeJornada`) se aplica al
+  reagendar y al aceptar una solicitud. **El backend no la impone**: es una regla de la interfaz, como no
+  agendar al pasado.
+
 ## Pendientes
 
 - **Prueba manual contra el backend real:** crear sin correo (debe atajarlo el front), con correo

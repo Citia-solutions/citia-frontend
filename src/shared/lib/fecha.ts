@@ -152,6 +152,15 @@ export function diaDeLaSemana(fechaISO: string): number {
   return new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()
 }
 
+/**
+ * Lunes de la semana que contiene `fecha` (semana lunes–domingo, como en
+ * Chile). La usan la agenda (semana visible) y el dashboard (citas por semana).
+ */
+export function inicioDeSemana(fechaISO: string): string {
+  const desdeLunes = (diaDeLaSemana(fechaISO) + 6) % 7
+  return sumarDias(fechaISO, -desdeLunes)
+}
+
 /** 'HH:mm' → minutos desde la medianoche (NaN si no calza). */
 export function minutosDelDia(hora: string): number {
   const [h, m] = hora.split(':').map(Number)

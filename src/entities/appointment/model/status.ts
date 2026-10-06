@@ -1,6 +1,6 @@
 // Presentación de los estados de una cita: etiqueta, color y qué significan.
-// Lo usan la lista del día y el voucher, para que una misma cita se vea igual
-// en los dos lugares.
+// Lo usan la lista del día, la agenda (lista y grilla) y el voucher, para que
+// una misma cita se vea igual en todos lados.
 import type { Appointment, AppointmentStatus } from './types'
 
 export type StatusBadgeVariant = 'success' | 'warning' | 'info' | 'danger' | 'neutral'
@@ -27,6 +27,17 @@ export const STATUS_BADGE_VARIANT: Record<AppointmentStatus, StatusBadgeVariant>
   ghosting: 'danger',
 }
 
+const ESTADOS_VIGENTES: ReadonlySet<AppointmentStatus> = new Set(['pendiente', 'confirmada'])
+
+/**
+ * true si la cita sigue siendo un compromiso abierto (`pendiente` o
+ * `confirmada`), el mismo criterio que `estaVigente()` del backend. Solo para
+ * presentación y conteos (p. ej. "próxima cita"); no habilita acciones.
+ */
+export function isActiveStatus(status: AppointmentStatus): boolean {
+  return ESTADOS_VIGENTES.has(status)
+}
+
 const ESTADOS_TERMINALES: ReadonlySet<AppointmentStatus> = new Set([
   'cancelada',
   'asistio',
@@ -41,6 +52,11 @@ const ESTADOS_TERMINALES: ReadonlySet<AppointmentStatus> = new Set([
  */
 export function isTerminalStatus(status: AppointmentStatus): boolean {
   return ESTADOS_TERMINALES.has(status)
+}
+
+/** true si la hora de inicio ya llegó: `inicio <= ahora`. */
+export function hasStarted(appointment: Appointment, now: Date = new Date()): boolean {
+  return new Date(appointment.startsAt).getTime() <= now.getTime()
 }
 
 /** true si la cita ya terminó: `inicio + duración < ahora`. */

@@ -1,7 +1,18 @@
 # DTF-04 · El modelo de sesión contempla un rol que el backend no emite
 
 **Origen:** `src/entities/session/model/types.ts`
-**Severidad:** 🟡 baja · **Estado:** abierta
+**Severidad:** 🟡 baja · **Estado:** cerrada (2026-10-05, limpieza previa al release, `feature/frontend-prerelease`)
+
+> **Cierre: se quitó `'recepcion'` del tipo.** Ahora `UserRole = 'admin' | 'profesional'`, los dos
+> que emite el backend. El cierre se adelantó porque apareció justo la vista que la deuda anunciaba:
+> el sidebar muestra el rol en español (`ROLE_LABELS` en `entities/session/model/role.ts`).
+>
+> La traducción de roles sigue siendo una decisión visible: `authApi.ts` mapea `ADMINISTRADOR` y
+> `PROFESIONAL`, y un rol desconocido cae al menos privilegiado (`profesional`). Un `citia.user`
+> guardado con un rol que no está en `ROLE_LABELS` se descarta al restaurar la sesión.
+>
+> **Para agregar un rol** (cuando el backend lo emita; encadenado a `DT-07` y `DT-02`): `types.ts`,
+> `ROLE_LABELS` y el mapa de `authApi.ts`. Lo de abajo es el registro original.
 
 ## Qué pasa
 
