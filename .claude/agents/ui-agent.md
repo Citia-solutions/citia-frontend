@@ -55,7 +55,8 @@ src/pages/
 ├── agenda/ui/           # AgendaPage
 ├── solicitudes/ui/      # SolicitudesPage
 ├── recordatorios/ui/    # RecordatoriosPage
-└── agendar-cita/ui/     # AgendarCitaPage (pública, sin layout)
+├── agendar-cita/ui/     # AgendarCitaPage (pública, sin layout)
+└── no-encontrada/ui/    # NoEncontradaPage (404 de la ruta comodín, pública, sin layout)
 
 src/features/
 ├── dashboard/                 # ResumenTarjetas (4 tarjetas), TodayAppointments, CitasPorSemana,
@@ -91,16 +92,23 @@ Cada feature expone su API pública en `index.ts`; las páginas importan desde a
   de estados (ver `context/Features/gestionar-cita.md`)
 - Las llamadas a rutas públicas (`POST /publico/:tenantSlug/solicitudes` del flujo del paciente) van
   con `{ auth: false }`: la sesión del navegador no debe viajar a una ruta anónima
-- Horario de atención: solo desde `shared/config/bloquesHorarios.ts`; fechas con `shared/lib/fecha.ts`
-  (zona del navegador, DTF-07); errores 400 de NestJS con `mensajesDeValidacion`
-  (`shared/api/erroresValidacion.ts`)
+- Horario de atención: solo desde `shared/config/bloquesHorarios.ts`; fechas y horas solo con
+  `shared/lib/fecha.ts`, que trabaja en la zona fija de Chile (`ZONA_HORARIA`; nada de `getHours()`,
+  `getDate()`, `new Date(año, mes, día)` ni `Intl.DateTimeFormat` en los features); errores 400 de
+  NestJS con `mensajesDeValidacion` (`shared/api/erroresValidacion.ts`)
+- No se agenda al pasado desde la UI (el backend lo permite, DT-13): el modal "Nueva cita", reagendar y
+  aceptar una solicitud usan `min` = hoy en el selector y rechazan un inicio pasado con *"Elige una
+  fecha y hora futuras."*; el flujo público deshabilita días y horas pasados
 - Los componentes `Base*` son puramente presentacionales — sin lógica de negocio ni llamadas API
 - `AuthAside` no lleva cifras ni promesas que el producto no cumpla
 - CSS: usar siempre las variables de `main.css` (`--color-*`, `--radius-*`, `--shadow-card`)
 - Responsive: el aside del login se oculta por debajo de 860px; el voucher pasa a pantalla completa
   por debajo de 560px
 - Accesibilidad: atributos `aria-*`, labels asociados; en los modales, foco inicial, `Esc` cierra
-  (salvo enviando) y `Tab` no sale del diálogo
+  (salvo enviando) y `Tab` no sale del diálogo. Mientras se envía, ni el clic fuera ni `Esc` cierran
+  (un `cerrar()` que vuelve si `isSubmitting`). Lo cumplen el modal "Nueva cita", el voucher y los dos
+  modales de la bandeja; la trampa de `Tab` la tienen el modal "Nueva cita" y el voucher, pero todavía
+  no los de la bandeja (aceptar / rechazar)
 
 ## Paleta (variables CSS de `src/app/styles/main.css`)
 

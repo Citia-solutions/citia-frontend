@@ -1,5 +1,10 @@
 <script setup lang="ts">
-// Sección 3: Horario. Calendario del mes actual + franjas horarias.
+// Sección 3: Horario. Calendario por meses + franjas horarias.
+//
+// El calendario abre en el mes en curso y deja avanzar hasta
+// `MESES_HACIA_ADELANTE` meses; hacia atrás no pasa del mes actual. Los días y
+// las horas de hoy que ya pasaron no se pueden elegir. "Hoy" es el de la zona
+// de la clínica (Chile), no el del navegador del paciente.
 //
 // IMPORTANTE: esto NO reserva la hora. El paciente expresa su PREFERENCIA
 // —elegir día y hora es la forma más clara de decir cuándo le acomoda— y el
@@ -9,10 +14,11 @@
 //
 // Si algún día el paciente reserva de verdad, hará falta el modelo de
 // disponibilidad y este paso pasa a consultarlo.
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
-import { esDiaPasado } from '@/shared/lib/fecha'
+import { esInicioPasado, fechaEnClinicaISO } from '@/shared/lib/fecha'
 import { useErroresVisibles } from '../../model/useErroresVisibles'
+import { celdasDelMes, MESES_HACIA_ADELANTE, mesDe, sumarMeses } from '../../model/calendarioMes'
 import type { FlujoCitaErrors, FlujoCitaForm } from '../../model/flujoCitaModel'
 
 const props = withDefaults(
@@ -40,14 +46,42 @@ watch(
 )
 
 // Modal de horas: solo se usa en móvil (<1024px). Abre al tocar el botón y
-// lista las franjas en un diálogo centrado, scrolleable si no caben.
+// lista las franjas en un diálogo centrado, scrolleable si no caben. `Esc` lo
+// cierra.
 const modalAbierto = ref(false)
+
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    modalAbierto.value = false
+  }
+}
+
+watch(modalAbierto, (abierto) => {
+  if (abierto) document.addEventListener('keydown', onKeydown)
+  else document.removeEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
 const HORAS = BLOQUES_HORARIOS
 
-const hoy = new Date()
-const añoActual = hoy.getFullYear()
-const mesActual = hoy.getMonth()
+/** Hoy en la zona de la clínica, al montar el paso. */
+const hoy = fechaEnClinicaISO(new Date())
+const mesActual = mesDe(hoy)
+
+/** Meses que se avanzó desde el actual: 0 … `MESES_HACIA_ADELANTE`. */
+const desplazamiento = ref(0)
+const mesVisible = computed(() => sumarMeses(mesActual, desplazamiento.value))
+const puedeRetroceder = computed(() => desplazamiento.value > 0)
+const puedeAvanzar = computed(() => desplazamiento.value < MESES_HACIA_ADELANTE)
+
+function cambiarMes(paso: -1 | 1): void {
+  const destino = desplazamiento.value + paso
+  if (destino < 0 || destino > MESES_HACIA_ADELANTE) return
+  desplazamiento.value = destino
+}
+
 const MESES = [
   'Enero',
   'Febrero',
@@ -64,32 +98,33 @@ const MESES = [
 ]
 const DIAS_SEMANA = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
 
-/** Días del mes actual con su fecha ISO 'YYYY-MM-DD'. */
-const dias = computed(() => {
-  const primerDia = new Date(añoActual, mesActual, 1)
-  const inicioSemana = (primerDia.getDay() + 6) % 7 // semana empieza en lunes
-  const totalDias = new Date(añoActual, mesActual + 1, 0).getDate()
+const tituloMes = computed(() => `${MESES[mesVisible.value.mes - 1] ?? ''} ${mesVisible.value.anio}`)
 
-  const celdas: Array<{ iso: string; numero: number } | null> = []
-  for (let i = 0; i < inicioSemana; i += 1) celdas.push(null)
+/** Días del mes visible con su fecha ISO 'YYYY-MM-DD' (null = hueco antes del día 1). */
+const dias = computed(() => celdasDelMes(mesVisible.value))
 
-  for (let dia = 1; dia <= totalDias; dia += 1) {
-    const iso = `${añoActual}-${String(mesActual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
-    celdas.push({ iso, numero: dia })
-  }
-  return celdas
-})
-
-// Compara en zona LOCAL: `toISOString()` da la fecha UTC y en Chile, de noche,
-// marcaba el día de hoy como pasado.
+// Compara días 'YYYY-MM-DD' contra el hoy de la clínica: `toISOString()` daría
+// la fecha UTC, que en Chile de noche ya es "mañana".
 function esPasado(iso: string): boolean {
-  return esDiaPasado(iso, hoy)
+  return iso < hoy
 }
+
+/** Horas de hoy que ya pasaron (vacío si el día elegido no es hoy). */
+const horasPasadas = computed<ReadonlySet<string>>(() => {
+  if (props.form.fecha !== hoy) return new Set()
+  return new Set(HORAS.filter((hora) => esInicioPasado(hoy, hora)))
+})
 
 function seleccionarDia(iso: string): void {
   if (esPasado(iso)) return
   props.form.fecha = iso
   props.form.hora = ''
+}
+
+function seleccionarHora(hora: string): void {
+  if (horasPasadas.value.has(hora)) return
+  props.form.hora = hora
+  modalAbierto.value = false
 }
 </script>
 
@@ -101,7 +136,29 @@ function seleccionarDia(iso: string): void {
       </label>
       <div class="step__calendar">
         <header class="step__calendar-head">
-          <span>{{ MESES[mesActual] }} {{ añoActual }}</span>
+          <button
+            type="button"
+            class="step__nav"
+            aria-label="Mes anterior"
+            :disabled="!puedeRetroceder"
+            @click="cambiarMes(-1)"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <span class="step__calendar-title" aria-live="polite">{{ tituloMes }}</span>
+          <button
+            type="button"
+            class="step__nav"
+            aria-label="Mes siguiente"
+            :disabled="!puedeAvanzar"
+            @click="cambiarMes(1)"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
         </header>
 
       <div class="step__weekdays">
@@ -141,9 +198,12 @@ function seleccionarDia(iso: string): void {
           :key="hora"
           type="button"
           class="step__hora"
-          :class="{ 'step__hora--selected': form.hora === hora }"
-          :disabled="!form.fecha"
-          @click="form.hora = hora"
+          :class="{
+            'step__hora--selected': form.hora === hora,
+            'step__hora--pasada': horasPasadas.has(hora),
+          }"
+          :disabled="!form.fecha || horasPasadas.has(hora)"
+          @click="seleccionarHora(hora)"
         >
           {{ hora }}
         </button>
@@ -196,7 +256,8 @@ function seleccionarDia(iso: string): void {
               type="button"
               class="hora-modal__option"
               :class="{ 'hora-modal__option--selected': form.hora === hora }"
-              @click="form.hora = hora; modalAbierto = false"
+              :disabled="horasPasadas.has(hora)"
+              @click="seleccionarHora(hora)"
             >
               {{ hora }}
             </button>
@@ -225,9 +286,42 @@ function seleccionarDia(iso: string): void {
   padding: 1rem;
 }
 .step__calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   font-weight: 700;
   color: var(--color-text);
   margin-bottom: 0.7rem;
+}
+.step__calendar-title {
+  flex: 1;
+  text-align: center;
+}
+.step__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.step__nav:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+}
+.step__nav:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+.step__nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 .step__weekdays,
 .step__grid {
@@ -309,6 +403,11 @@ function seleccionarDia(iso: string): void {
 .step__hora:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* Hora de hoy que ya pasó: distinta de la elegida, que también va al 50 %. */
+.step__hora--pasada {
+  opacity: 0.25 !important;
+  text-decoration: line-through;
 }
 .step__hora-btn {
   display: none;
@@ -410,8 +509,13 @@ function seleccionarDia(iso: string): void {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.hora-modal__option:hover {
+.hora-modal__option:hover:not(:disabled) {
   background: var(--color-surface-muted);
+}
+.hora-modal__option:disabled {
+  opacity: 0.4;
+  text-decoration: line-through;
+  cursor: not-allowed;
 }
 .hora-modal__option--selected {
   border-color: var(--color-primary);

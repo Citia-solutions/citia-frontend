@@ -3,16 +3,18 @@
 //
 // Todo trabaja sobre FECHAS 'YYYY-MM-DD' y horas 'HH:mm' tal como las proyecta
 // el backend en la zona de la clínica (`fecha`, `hora`). Nada de aquí convierte
-// zonas (ADR-07: el backend proyecta, el cliente muestra). La única referencia
-// al navegador es "hoy", para elegir la semana inicial y resaltar el día
-// (mismo supuesto que DTF-07).
+// zonas (ADR-07: el backend proyecta, el cliente muestra). "Hoy", para elegir
+// la semana inicial y resaltar el día, es el de la zona de la clínica
+// (`fechaEnClinicaISO`).
 import { HORAS_JORNADA } from '@/shared/config/bloquesHorarios'
 import {
   capitalizar,
   diferenciaDias,
   fechaCalendario,
+  formatearFecha,
   inicioDeSemana,
   minutosDelDia,
+  partesDeFecha,
   sumarDias,
 } from '@/shared/lib/fecha'
 import {
@@ -37,29 +39,31 @@ export function diasDeSemana(lunes: string): string[] {
   return Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))
 }
 
-const MES = new Intl.DateTimeFormat('es-CL', { month: 'long' })
+/** '2026-09-22' → 'septiembre'. */
+function nombreDelMes(fecha: string): string {
+  return formatearFecha(fechaCalendario(fecha), { month: 'long' })
+}
 
 /** '22 – 28 de septiembre de 2026' · '29 de septiembre – 5 de octubre de 2026'. */
 export function etiquetaRango(desde: string, hasta: string): string {
-  const a = fechaCalendario(desde)
-  const b = fechaCalendario(hasta)
-  const mesA = MES.format(a)
-  const mesB = MES.format(b)
-  if (a.getFullYear() !== b.getFullYear()) {
-    return `${a.getDate()} de ${mesA} de ${a.getFullYear()} – ${b.getDate()} de ${mesB} de ${b.getFullYear()}`
+  const [anioA, , diaA] = partesDeFecha(desde)
+  const [anioB, , diaB] = partesDeFecha(hasta)
+  const mesA = nombreDelMes(desde)
+  const mesB = nombreDelMes(hasta)
+  if (anioA !== anioB) {
+    return `${diaA} de ${mesA} de ${anioA} – ${diaB} de ${mesB} de ${anioB}`
   }
   if (mesA !== mesB) {
-    return `${a.getDate()} de ${mesA} – ${b.getDate()} de ${mesB} de ${b.getFullYear()}`
+    return `${diaA} de ${mesA} – ${diaB} de ${mesB} de ${anioB}`
   }
-  return `${a.getDate()} – ${b.getDate()} de ${mesB} de ${b.getFullYear()}`
+  return `${diaA} – ${diaB} de ${mesB} de ${anioB}`
 }
-
-const DIA_CORTO = new Intl.DateTimeFormat('es-CL', { weekday: 'short' })
 
 /** Encabezado de columna: { nombre: 'Lun', numero: 22 }. */
 export function encabezadoDia(fecha: string): { nombre: string; numero: number } {
-  const d = fechaCalendario(fecha)
-  return { nombre: capitalizar(DIA_CORTO.format(d).replace('.', '')), numero: d.getDate() }
+  const [, , dia] = partesDeFecha(fecha)
+  const nombre = formatearFecha(fechaCalendario(fecha), { weekday: 'short' })
+  return { nombre: capitalizar(nombre.replace('.', '')), numero: dia }
 }
 
 /**

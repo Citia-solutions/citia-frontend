@@ -2,7 +2,9 @@
 
 **Estado:** ✅ Implementado y conectado · correo obligatorio desde la Fase 2 (2026-10-04, ⚠️ sin prueba
 manual contra el backend real)
-**Rama del cambio de Fase 2:** `feature/fase2-recordatorios` (sin commit)
+**Rama del cambio de Fase 2:** `feature/fase2-recordatorios` (sin commit) · **detalles menores
+(2026-10-06):** `chore/frontend-detalles-menores` — sin fechas pasadas, no se cierra mientras guarda,
+hora de Chile ([abajo](#detalles-menores-2026-10-06))
 **Backend:** [`us02-gestion-citas.md`](../../../citia-backend/context/Features/us02-gestion-citas.md) ·
 [ADR-13 §14](../../../citia-backend/context/Decisions/ADR-13.md) (correo obligatorio)
 **Feature:** `src/features/crear-cita/` (`ModalNuevaCita.vue`, `useCrearCita.ts`, `crearCitaSchema.ts`,
@@ -25,7 +27,8 @@ recarga su lista y, si la cita choca con otra, muestra el aviso de solapamiento 
 
 `POST /citas` — `{ inicio, duracionMin, tipoConsulta, paciente: { rut?, nombre, telefono, correo, consentimiento } }`
 
-- `inicio` con zona explícita (`aInicioISO`, DT-14).
+- `inicio` con zona explícita (`aInicioISO`, DT-14). La fecha y el bloque elegidos se leen como **hora de
+  Chile** (`ZONA_HORARIA`), no del navegador ([DTF-07](../Deudas/DTF-07.md), cerrada).
 - El backend resuelve el paciente por RUT: si existe en la organización, vincula la cita al existente.
 - `rut` se omite si va vacío (el backend valida formato cuando está presente).
 
@@ -73,6 +76,30 @@ Lote 2 de la limpieza previa al release, por decisión del usuario:
   hora más temprana o una duración más corta."* La misma regla (`errorFinDeJornada`) se aplica al
   reagendar y al aceptar una solicitud. **El backend no la impone**: es una regla de la interfaz, como no
   agendar al pasado.
+
+## Detalles menores (2026-10-06)
+
+Rama `chore/frontend-detalles-menores`, por la auditoría previa al release:
+
+- **Sin fechas pasadas.** El selector de fecha lleva `min` = hoy (en hora de Chile, se renueva al abrir el
+  modal) y `validateNuevaCita` rechaza un día pasado (error en *Fecha*) o un bloque de hoy que ya empezó
+  (error en *Hora*), con el mismo texto que reagendar: *"Elige una fecha y hora futuras."* El backend no lo
+  impide (DT-13); es una regla de la interfaz. **Aceptar una solicitud** aplica la misma regla y el mismo
+  texto (`useAceptarSolicitud`), y el **flujo público** la suya con el tono del paciente (ver
+  [agendar-cita-paciente](agendar-cita-paciente.md)).
+- **No se cierra mientras guarda.** Con el envío en curso se ignoran el clic fuera y `Esc` (además de la X
+  y "Cancelar", que ya estaban deshabilitados), igual que el voucher y los modales de la bandeja. Si no,
+  la cita podía quedar creada sin que el profesional lo viera. Se sumó lo que el modal no tenía y pide
+  la convención de modales: `Esc` cierra cuando no se está guardando, el foco inicial va al nombre del
+  paciente, `Tab` no sale del diálogo (mismo código que el voucher) y al cerrar el foco vuelve al botón
+  que lo abrió.
+- **Hora de Chile.** Ver [DTF-07](../Deudas/DTF-07.md): `aInicioISO` arma el instante en
+  `America/Santiago` y es seguro ante el cambio de horario.
+
+Verificado en el navegador con `fetch` simulado: fecha pasada y bloque de hoy ya pasado bloqueados sin
+pedir nada al servidor; con un `POST /citas` demorado 4 s, el clic fuera y `Esc` no cierran el modal, que
+se cierra solo al responder; `Esc` y el clic fuera sí cierran sin envío en curso; 10:00 del 7 de octubre
+viaja como `2026-10-07T13:00:00.000Z`.
 
 ## Pendientes
 

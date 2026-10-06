@@ -4,7 +4,7 @@
 // nueva, y los avisos de lo que implica mover la cita antes del botón.
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
-import { capitalizar, formatearFechaLarga, horaLocal } from '@/shared/lib/fecha'
+import { capitalizar, formatearFechaLarga, horaEnClinica } from '@/shared/lib/fecha'
 import type { Appointment } from '@/entities/appointment'
 import { MOTIVO_MAX } from '../model/mensajeDeError'
 import { useReagendarCita } from '../model/useReagendarCita'
@@ -54,7 +54,7 @@ const horaActual = computed(() => {
 const nuevaHora = computed(() => {
   const nuevo = nuevoInicio.value
   if (!nuevo || errorValidacion.value) return null
-  return `${formatearFechaLarga(nuevo)}, ${horaLocal(nuevo)}`
+  return `${formatearFechaLarga(nuevo)}, ${horaEnClinica(nuevo)}`
 })
 
 const eraConfirmada = computed(() => props.appointment.status === 'confirmada')

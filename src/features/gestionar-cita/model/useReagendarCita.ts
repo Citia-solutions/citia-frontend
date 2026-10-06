@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from 'vue'
 import { BLOQUES_HORARIOS, errorFinDeJornada } from '@/shared/config/bloquesHorarios'
-import { aInicioISO, esMismoDia, fechaLocalISO, horaLocal } from '@/shared/lib/fecha'
+import { aInicioISO, esMismoDia, fechaEnClinicaISO, horaEnClinica } from '@/shared/lib/fecha'
 import type { Appointment } from '@/entities/appointment'
 import { reagendarCita } from '../api/gestionarCitaApi'
 import { mensajeDeError, MOTIVO_MAX, statusDe } from './mensajeDeError'
@@ -17,23 +17,24 @@ export interface ReagendarForm {
  * de la cita, validación de futuro (el backend NO impide reagendar al pasado:
  * el front es la única barrera) y envío.
  *
- * Todo en zona del navegador, igual que `aInicioISO`: prellenado, validación y
- * envío usan la misma referencia, así que "misma hora" y "pasado" cuadran.
+ * Todo en la zona de la clínica, igual que `aInicioISO`: prellenado, validación
+ * y envío usan la misma referencia, así que "misma hora" y "pasado" cuadran
+ * aunque el navegador esté en otra zona.
  */
 export function useReagendarCita(appointment: Appointment) {
   const inicioActual = new Date(appointment.startsAt)
 
   const form = reactive<ReagendarForm>({
-    fecha: fechaLocalISO(inicioActual),
-    hora: horaLocal(inicioActual),
+    fecha: fechaEnClinicaISO(inicioActual),
+    hora: horaEnClinica(inicioActual),
     motivo: '',
   })
 
   const isSubmitting = ref(false)
   const submitError = ref<string | null>(null)
 
-  /** Hoy en zona local: `min` del selector de fecha. */
-  const hoyISO = fechaLocalISO(new Date())
+  /** Hoy en la zona de la clínica: `min` del selector de fecha. */
+  const hoyISO = fechaEnClinicaISO(new Date())
 
   /**
    * Bloques del modal de creación + la hora actual de la cita si no es un
@@ -41,7 +42,7 @@ export function useReagendarCita(appointment: Appointment) {
    * cambiar el control del modal de creación.
    */
   const opcionesHora = computed<string[]>(() => {
-    const actual = horaLocal(inicioActual)
+    const actual = horaEnClinica(inicioActual)
     if (BLOQUES_HORARIOS.includes(actual)) return [...BLOQUES_HORARIOS]
     return [...BLOQUES_HORARIOS, actual].sort()
   })

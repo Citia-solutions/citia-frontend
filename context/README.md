@@ -39,6 +39,11 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   carriles sin canceladas ([agenda-profesional](Features/agenda-profesional.md)), Confirmar / Asistió / No
   asistió en el voucher ([gestionar-cita](Features/gestionar-cita.md)) y bloques horarios 07:00–21:00
   ([crear-cita](Features/crear-cita.md)). Cerró DTF-03.
+- **Detalles menores de la auditoría** (2026-10-06, `chore/frontend-detalles-menores`): página "No
+  encontrada" ([login-sesion](Features/login-sesion.md)), "Nueva cita" sin fechas pasadas ni cierre
+  mientras guarda ([crear-cita](Features/crear-cita.md)), calendario público por meses
+  ([agendar-cita-paciente](Features/agendar-cita-paciente.md)) y horas en la zona fija de Chile. Cerró
+  DTF-07.
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
@@ -76,6 +81,11 @@ modal "nueva cita" (sale en el mismo release que el backend) · `public/_redirec
 reales, "Citas por semana" y tarjeta de Recordatorios · canceladas ocultas por defecto (dashboard y
 agenda) · **Confirmar / Asistió / No asistió** en el voucher · agenda que recarga al entrar · bloques
 horarios 07:00–21:00 (la cita termina a más tardar a las 22:00).
+
+**Detalles menores, verificado con respuestas simuladas** (y la zona horaria con Node en 7 zonas): URL
+desconocida → "No encontrada" · "Nueva cita" sin fechas ni bloques pasados y sin cerrarse mientras guarda
+(igual aceptar una solicitud) · calendario público con meses (actual + 3) · **horas en la zona fija de
+Chile** (`America/Santiago`, espejo de `APP_TZ`), aunque el navegador esté en otra.
 
 **Con datos de prueba:** nada. Ni el dashboard, ni el sidebar, ni el topbar tienen datos fijos
 ([DTF-03](Deudas/DTF-03.md), cerrada).

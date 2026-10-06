@@ -21,9 +21,12 @@ src/pages/
 ├── recordatorios/
 │   └── ui/
 │       └── RecordatoriosPage.vue # Configuración de recordatorios por correo (US-03)
-└── agendar-cita/
+├── agendar-cita/
+│   └── ui/
+│       └── AgendarCitaPage.vue  # Vista pública por secciones (flujo + stepper)
+└── no-encontrada/
     └── ui/
-        └── AgendarCitaPage.vue  # Vista pública por secciones (flujo + stepper)
+        └── NoEncontradaPage.vue # 404: ruta pedida + enlace al Resumen (con sesión) o al login (sin ella)
 ```
 
 ## Rutas
@@ -36,6 +39,10 @@ src/pages/
 | `/agenda`      | `AgendaPage`      | Sí            | Hija de `PanelLayout` |
 | `/solicitudes` | `SolicitudesPage` | Sí            | Hija de `PanelLayout` |
 | `/recordatorios` | `RecordatoriosPage` | Sí          | Hija de `PanelLayout`; compone `features/configurar-recordatorios` |
+| `/:pathMatch(.*)*` | `NoEncontradaPage` | No         | Ruta `noEncontrada`: cualquier URL que no calce con otra. Pública, sin layout |
+
+El guard solo lee `meta.requiresAuth` (en el padre `/`); el resto de las rutas son públicas por
+omisión, sin `meta.public`.
 
 Las vistas autenticadas son hijas de `app/layouts/PanelLayout.vue` (sidebar + `<RouterView />`):
 las páginas no pintan el sidebar. El sidebar (`app/layouts/PanelSidebar.vue`) muestra la clínica, el
@@ -52,8 +59,11 @@ solicitudes lo refresca `PanelLayout`; el dashboard solo pide `refreshIfStale(30
 
 - Las páginas SOLO componen features y layouts; no contienen lógica de negocio
 - `LoginPage` maneja la redirección post-login usando `route.query.redirect`. Solo acepta rutas
-  internas que existan (empiezan con `/`, no con `//`, y no son el propio login); si no, va a `home`.
-  `?redirect=` lo ponen el guard y el cierre de sesión por 401
+  internas que existan (empiezan con `/`, no con `//`, y no son el propio login ni resuelven a
+  `noEncontrada`, que con la ruta comodín es lo que da cualquier ruta inexistente); si no, va a
+  `home`. `?redirect=` lo ponen el guard y el cierre de sesión por 401
+- `NoEncontradaPage` lee `useSessionStore().isAuthenticated` (el guard ya restauró la sesión) para
+  elegir el enlace; no redirige sola
 - `AuthAside` es presentacional, sin lógica. **No lleva cifras ni promesas que el producto no
   cumpla** (nada de dinero, porcentajes ni "recuperar cupos"): solo lo que Citia hace hoy
 - Nada en `pages/` cierra la sesión: eso es del sidebar y del 401 global (`app/router/cerrarSesion.ts`)

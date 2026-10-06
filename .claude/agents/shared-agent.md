@@ -39,10 +39,11 @@ src/shared/
 │   │                       # base URL = VITE_API_URL ?? '/api'
 │   └── erroresValidacion.ts # mensajesDeValidacion(e): mensajes de un 400 de NestJS
 ├── config/
-│   └── bloquesHorarios.ts  # Horario de atención (07:00–21:00, bloques de 60 min, fin 22:00)
+│   ├── bloquesHorarios.ts  # Horario de atención (07:00–21:00, bloques de 60 min, fin 22:00)
+│   └── zonaHoraria.ts      # ZONA_HORARIA = 'America/Santiago' (espejo de APP_TZ) y LOCALE_FECHAS
 ├── lib/
 │   ├── authToken.ts        # get/set/removeToken (citia.token), readTokenClaims, isTokenExpired
-│   ├── fecha.ts            # Fechas sin librerías, en zona del navegador (DTF-07)
+│   ├── fecha.ts            # Fechas sin librerías, siempre en ZONA_HORARIA (nunca la del navegador)
 │   └── rut.ts              # Validación y formato del RUT
 └── ui/                     # Componentes Base* (gestionados por ui-agent)
 
@@ -60,7 +61,8 @@ src/entities/
 src/app/
 ├── App.vue                 # Solo <RouterView />
 ├── router/
-│   ├── index.ts            # Rutas + guard global (restoreSession en cada navegación)
+│   ├── index.ts            # Rutas (+ comodín → NoEncontradaPage) + guard global
+│   │                       # (restoreSession en cada navegación); RouteMeta tipado
 │   └── cerrarSesion.ts     # cerrarSesion(router, redirect?): limpia y recarga en /login
 ├── providers/
 │   └── index.ts            # Pinia, router y el handler de onUnauthorized (401 global)
@@ -87,8 +89,13 @@ src/app/
 - Cambios en `AuthUser` o en el contrato de `setSession` requieren avisar a `auth-agent` y al orquestador
 - El router marca las rutas protegidas con `meta.requiresAuth` en el padre `/` (`PanelLayout`); las
   hijas lo heredan. El guard llama a `restoreSession()` en cada navegación y manda al login con
-  `?redirect=`. No implementar chequeos de auth en componentes. (`meta.public` está declarado en
-  `/login` y `/agendar-cita/:tenantSlug`, pero hoy el guard no lo lee)
+  `?redirect=`. No implementar chequeos de auth en componentes. `requiresAuth` es la única marca de
+  `RouteMeta` (tipada en `app/router/index.ts`): lo demás es público por omisión, sin `meta.public`.
+  La ruta comodín `/:pathMatch(.*)*` (`noEncontrada`) va al final de la lista; vue-router la rankea
+  por especificidad, así que solo gana cuando nada más calza
+- Fechas y horas solo con `shared/lib/fecha.ts`, que lee `ZONA_HORARIA` (DTF-07, cerrada): nada de
+  `getHours()`, `getDate()`, `new Date(año, mes, día)` ni `Intl.DateTimeFormat` sueltos. Si cambia
+  `APP_TZ` en el backend, cambia `shared/config/zonaHoraria.ts`
 - `cerrarSesion` recibe el router por parámetro (no lo importa, para no cerrar un ciclo con
   `PanelSidebar`) y navega con carga completa, para no dejar datos del usuario anterior en los stores
 - Entidades: solo importan de `src/shared/`; desde fuera se importa por su `index.ts`. `status.ts` de

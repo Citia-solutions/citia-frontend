@@ -38,7 +38,7 @@ import {
   capitalizar,
   esMismoDia,
   formatearFechaLarga,
-  horaLocal,
+  horaEnClinica,
   sumarMinutos,
 } from '@/shared/lib/fecha'
 import {
@@ -152,7 +152,7 @@ const fechaLarga = computed(() =>
 const rangoHorario = computed(() => {
   if (!cita.value) return ''
   const fin = sumarMinutos(new Date(cita.value.startsAt), cita.value.durationMin)
-  return `${cita.value.time} – ${horaLocal(fin)}`
+  return `${cita.value.time} – ${horaEnClinica(fin)}`
 })
 
 function permitida(accion: AppointmentAction): boolean {
@@ -282,7 +282,7 @@ function irA(destino: Vista): void {
 function textosReagendada(actualizada: CitaActualizada): string[] {
   const inicio = new Date(actualizada.inicio)
   const textos = [
-    `Cita movida al ${formatearFechaLarga(inicio)} a las ${horaLocal(inicio)}. Quedó pendiente de confirmación.`,
+    `Cita movida al ${formatearFechaLarga(inicio)} a las ${horaEnClinica(inicio)}. Quedó pendiente de confirmación.`,
   ]
   if (props.listaDelDia && !esMismoDia(inicio, new Date())) {
     textos.push('Ya no aparece en tu lista de hoy.')

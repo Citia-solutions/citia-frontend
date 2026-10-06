@@ -4,6 +4,7 @@
 // Apellidos en dos campos (el modal del profesional usa uno solo), y porque el
 // paciente elige día y hora como PREFERENCIA en vez de fijar la cita.
 // `toSolicitudRequest` mapea esto al contrato del backend.
+import { esDiaPasado, esInicioPasado } from '@/shared/lib/fecha'
 import { esRutValido } from '@/shared/lib/rut'
 
 /** Valores del formulario por secciones. */
@@ -136,11 +137,18 @@ export function validarPaso(values: FlujoCitaForm, paso: FlujoCitaPaso): FlujoCi
       break
 
     case 'horario':
+      // Misma regla que el modal "Nueva cita" (hora de la clínica): el
+      // calendario ya no deja elegir un día ni una hora de hoy que pasaron,
+      // pero la página puede quedar abierta hasta que pasen.
       if (!values.fecha) {
         errors.fecha = 'Selecciona el día que prefieres.'
+      } else if (esDiaPasado(values.fecha)) {
+        errors.fecha = 'Ese día ya pasó. Elige otro.'
       }
       if (!values.hora) {
         errors.hora = 'Selecciona la hora que prefieres.'
+      } else if (values.fecha && !errors.fecha && esInicioPasado(values.fecha, values.hora)) {
+        errors.hora = 'Esa hora ya pasó. Elige otra.'
       }
       break
 

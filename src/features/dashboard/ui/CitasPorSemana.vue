@@ -6,7 +6,7 @@
 // barra, detalle al pasar el mouse y una tabla oculta para lectores de pantalla.
 import { computed } from 'vue'
 import BaseCard from '@/shared/ui/BaseCard.vue'
-import { fechaLocalISO } from '@/shared/lib/fecha'
+import { fechaEnClinicaISO } from '@/shared/lib/fecha'
 import { citasPorSemana, plural, SEMANAS_HISTORIAL } from '../model/resumen'
 import { useHistorialCitas } from '../model/useRangosCitas'
 
@@ -18,7 +18,7 @@ const ALTO_MINIMO = 4
 const store = useHistorialCitas()
 
 const semanas = computed(() =>
-  store.desde ? citasPorSemana(store.appointments, store.desde, fechaLocalISO(new Date())) : [],
+  store.desde ? citasPorSemana(store.appointments, store.desde, fechaEnClinicaISO(new Date())) : [],
 )
 
 const maximo = computed(() => Math.max(1, ...semanas.value.map((s) => s.agendadas + s.canceladas)))

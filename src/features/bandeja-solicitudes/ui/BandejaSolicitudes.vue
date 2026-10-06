@@ -9,7 +9,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseCard from '@/shared/ui/BaseCard.vue'
-import { capitalizar, formatearFechaLarga, horaLocal } from '@/shared/lib/fecha'
+import { capitalizar, formatearFechaLarga, horaEnClinica } from '@/shared/lib/fecha'
 import {
   AvisoSolapamiento,
   solapamientosDe,
@@ -87,12 +87,12 @@ function abrirRechazar(s: Solicitud): void {
   rechazarAbierto.value = true
 }
 
-/** 'Miércoles 17 de septiembre, 11:02' (zona del navegador, DTF-07). */
+/** 'Miércoles, 17 de septiembre, 11:02' (hora de la clínica). */
 function momento(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return `${capitalizar(formatearFechaLarga(d))}, ${horaLocal(d)}`
+  return `${capitalizar(formatearFechaLarga(d))}, ${horaEnClinica(d)}`
 }
 
 function hrefTelefono(telefono: string): string {
@@ -108,7 +108,7 @@ function alAceptar(resultado: ResultadoResolucion<SolicitudAceptada>): void {
       tipo: 'exito',
       texto:
         `Solicitud de ${solicitud.nombrePaciente} aceptada: cita agendada para el ` +
-        `${formatearFechaLarga(inicio)} a las ${horaLocal(inicio)}, pendiente de confirmación.`,
+        `${formatearFechaLarga(inicio)} a las ${horaEnClinica(inicio)}, pendiente de confirmación.`,
       solapamientos: solapamientosDe(cita.avisos),
       verAgenda: true,
     }

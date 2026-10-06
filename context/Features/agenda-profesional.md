@@ -93,8 +93,9 @@ guarda el rango pedido y **refrescar = volver a pedir el rango**. Mismas reglas 
   o terminal (mismo código visual que "Citas de hoy").
 - En pantallas angostas la grilla se desplaza **dentro de la tarjeta** (mín. 780 px); la página no
   tiene scroll horizontal.
-- La semana empieza el lunes. "Hoy" (semana inicial, resaltado, atajos) sale de la zona del navegador
-  ([DTF-07](../Deudas/DTF-07.md)); las citas se ubican siempre por `fecha`/`hora` del backend.
+- La semana empieza el lunes. "Hoy" (semana inicial, resaltado, atajos) es el de la zona de la clínica,
+  Chile (`fechaEnClinicaISO`; [DTF-07](../Deudas/DTF-07.md), cerrada el 2026-10-06); las citas se ubican
+  siempre por `fecha`/`hora` del backend.
 
 ---
 
@@ -156,10 +157,11 @@ visibles y tachadas") también en la agenda.
 | **Prueba manual contra el backend real** | Semana con cruces, citas pegadas, rango de 42 días y de 43 (400), reagendar a otra semana, crear con choque. |
 | Vista mes | El tope de 42 días ya la permite; no se pidió. |
 | Editar cita (duración) | El backend lo expone y trae `avisos`; el front no tiene la UI. |
-| Zona horaria | Ver [DTF-07](../Deudas/DTF-07.md). |
+| Zona horaria | Fija en Chile desde el 2026-10-06 ([DTF-07](../Deudas/DTF-07.md), cerrada). Clínicas en otra zona pedirían que venga de la organización. |
 
 ## Deudas técnicas asociadas
 
 - [DTF-06](../Deudas/DTF-06.md) — `MAX_DIAS_RANGO` copiado del backend.
-- [DTF-07](../Deudas/DTF-07.md) — "hoy" y la fecha/hora elegida al crear/reagendar, en zona del navegador.
+- [DTF-07](../Deudas/DTF-07.md) — "hoy" y la fecha/hora elegida al crear/reagendar, antes en zona del
+  navegador. **Cerrada** el 2026-10-06: zona fija de Chile.
 - `DT-12` (backend) — cerrada en diseño por ADR-11; el front ya consume el aviso.

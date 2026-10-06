@@ -1,4 +1,5 @@
 import { errorFinDeJornada } from '@/shared/config/bloquesHorarios'
+import { esDiaPasado, esInicioPasado } from '@/shared/lib/fecha'
 import { esRutValido } from '@/shared/lib/rut'
 import type { NuevaCitaErrors, NuevaCitaField, NuevaCitaForm } from './types'
 
@@ -19,6 +20,7 @@ export const CORREO_MAX = 254
 const MSG_CORREO_REQUERIDO = 'Ingresa el correo del paciente: ahí le llegan los recordatorios.'
 const MSG_CORREO_INVALIDO = 'El correo no es válido. Revisa que esté bien escrito (ej: nombre@correo.cl).'
 const MSG_CORREO_LARGO = `El correo no puede superar los ${CORREO_MAX} caracteres.`
+const MSG_INICIO_PASADO = 'Elige una fecha y hora futuras.'
 
 /**
  * Validación mínima sin librería externa (mismo estilo que loginSchema.ts).
@@ -26,9 +28,12 @@ const MSG_CORREO_LARGO = `El correo no puede superar los ${CORREO_MAX} caractere
  *
  * Refleja lo que el backend exige, para no descubrir un 400 después de enviar.
  * El servidor sigue siendo la autoridad: esto es solo para no hacerle perder
- * el viaje al usuario.
+ * el viaje al usuario. Suma dos reglas de la interfaz que el backend no impone:
+ * no agendar al pasado y no pasar del fin de la jornada.
+ *
+ * @param ahora referencia para "pasado" (por defecto, el momento de validar).
  */
-export function validateNuevaCita(values: NuevaCitaForm): NuevaCitaErrors {
+export function validateNuevaCita(values: NuevaCitaForm, ahora: Date = new Date()): NuevaCitaErrors {
   const errors: NuevaCitaErrors = {}
 
   if (!values.pacienteNombre.trim()) {
@@ -58,12 +63,19 @@ export function validateNuevaCita(values: NuevaCitaForm): NuevaCitaErrors {
     errors.correo = MSG_CORREO_INVALIDO
   }
 
+  // No se agenda al pasado (el backend no lo impide, DT-13): ni un día que ya
+  // pasó ni una hora de hoy que ya pasó, en hora de la clínica. Misma regla y
+  // mismo texto que reagendar y aceptar una solicitud.
   if (!values.fecha) {
     errors.fecha = 'Selecciona la fecha.'
+  } else if (esDiaPasado(values.fecha, ahora)) {
+    errors.fecha = MSG_INICIO_PASADO
   }
 
   if (!values.hora) {
     errors.hora = 'Selecciona el bloque horario.'
+  } else if (values.fecha && !errors.fecha && esInicioPasado(values.fecha, values.hora, ahora)) {
+    errors.hora = MSG_INICIO_PASADO
   }
 
   if (!values.duracionMin || values.duracionMin <= 0) {

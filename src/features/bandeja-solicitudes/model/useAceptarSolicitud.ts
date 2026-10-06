@@ -1,6 +1,13 @@
 import { computed, reactive, ref } from 'vue'
 import { BLOQUES_HORARIOS, errorFinDeJornada } from '@/shared/config/bloquesHorarios'
-import { aInicioISO, fechaLocalISO } from '@/shared/lib/fecha'
+import {
+  aFechaISO,
+  aInicioISO,
+  esDiaPasado,
+  esInicioPasado,
+  fechaEnClinicaISO,
+  partesDeFecha,
+} from '@/shared/lib/fecha'
 import type { Solicitud } from '@/entities/solicitud'
 import { aceptarSolicitud } from '../api/bandejaApi'
 import { DURACION_MAXIMA_MIN, mensajeDeError, statusDe } from './mensajeDeError'
@@ -18,6 +25,9 @@ export type AceptarErrors = Partial<Record<AceptarField, string>>
 
 /** Duración por defecto, la misma del modal "Nueva cita". */
 const DURACION_POR_DEFECTO = 30
+
+/** Mismo texto que el modal "Nueva cita" y reagendar. */
+const MSG_INICIO_PASADO = 'Elige una fecha y hora futuras.'
 
 const MESES: Record<string, number> = {
   enero: 1,
@@ -41,9 +51,9 @@ const MESES: Record<string, number> = {
  * PRECARGAR el formulario. Es solo una sugerencia: la preferencia es texto
  * libre, no trae año y no reserva nada. Si no calza, se deja vacío.
  *
- * El año se toma del de `recibidaEn`; si ese día ya había pasado cuando llegó
- * la solicitud, se asume el año siguiente (una preferencia de enero enviada en
- * diciembre).
+ * El año se toma del de `recibidaEn` (en la zona de la clínica); si ese día ya
+ * había pasado cuando llegó la solicitud, se asume el año siguiente (una
+ * preferencia de enero enviada en diciembre).
  */
 export function sugerirInicio(
   preferencia: string,
@@ -57,15 +67,16 @@ export function sugerirInicio(
   if (!mes || !dia) return null
 
   const recibida = new Date(recibidaEn)
-  const base = Number.isNaN(recibida.getTime()) ? new Date() : recibida
-  let anio = anioTxt ? Number(anioTxt) : base.getFullYear()
-  const candidata = new Date(anio, mes - 1, dia)
-  // Fecha inexistente (31 de septiembre): Date la corre al mes siguiente.
-  if (candidata.getMonth() !== mes - 1) return null
-  if (!anioTxt && fechaLocalISO(candidata) < fechaLocalISO(base)) anio += 1
+  const base = fechaEnClinicaISO(Number.isNaN(recibida.getTime()) ? new Date() : recibida)
+  const anio = anioTxt ? Number(anioTxt) : partesDeFecha(base)[0]
+  // `aFechaISO` da null si el día no existe (31 de septiembre).
+  let fecha = aFechaISO(anio, mes, dia)
+  if (!fecha) return null
+  if (!anioTxt && fecha < base) fecha = aFechaISO(anio + 1, mes, dia)
+  if (!fecha) return null
 
   const hora = `${String(Number(hTxt)).padStart(2, '0')}:${minTxt}`
-  return { fecha: fechaLocalISO(new Date(anio, mes - 1, dia)), hora }
+  return { fecha, hora }
 }
 
 /**
@@ -91,8 +102,8 @@ export function useAceptarSolicitud() {
   const sugerida = ref(false)
   let solicitudId = ''
 
-  /** Hoy en zona local: `min` del selector de fecha. */
-  const hoyISO = computed(() => fechaLocalISO(new Date()))
+  /** Hoy en la zona de la clínica: `min` del selector de fecha. Se renueva al abrir. */
+  const hoyISO = ref(fechaEnClinicaISO(new Date()))
 
   /** Bloques del modal de creación + la hora sugerida si no es un bloque. */
   const opcionesHora = computed<string[]>(() => {
@@ -103,17 +114,11 @@ export function useAceptarSolicitud() {
   /** Prepara el formulario para una solicitud (al abrir el modal). */
   function reset(solicitud: Solicitud): void {
     solicitudId = solicitud.id
+    hoyISO.value = fechaEnClinicaISO(new Date())
     const sugerencia = sugerirInicio(solicitud.preferenciaHoraria, solicitud.recibidaEn)
     // Solo se precarga si la sugerencia sigue siendo futura: proponer una hora
     // que ya pasó obligaría a borrarla.
-    let usarSugerencia = false
-    if (sugerencia) {
-      try {
-        usarSugerencia = new Date(aInicioISO(sugerencia.fecha, sugerencia.hora)).getTime() > Date.now()
-      } catch {
-        usarSugerencia = false
-      }
-    }
+    const usarSugerencia = sugerencia !== null && !esInicioPasado(sugerencia.fecha, sugerencia.hora)
     Object.assign(form, {
       fecha: usarSugerencia && sugerencia ? sugerencia.fecha : '',
       hora: usarSugerencia && sugerencia ? sugerencia.hora : '',
@@ -131,10 +136,12 @@ export function useAceptarSolicitud() {
     if (!form.fecha) e.fecha = 'Selecciona la fecha.'
     if (!form.hora) e.hora = 'Selecciona la hora.'
     if (form.fecha && form.hora) {
+      // Misma regla que el modal "Nueva cita" y reagendar, en hora de la
+      // clínica: ni un día pasado ni una hora de hoy que ya pasó.
       try {
-        if (new Date(aInicioISO(form.fecha, form.hora)).getTime() <= Date.now()) {
-          e.fecha = 'Elige una fecha y hora futuras.'
-        }
+        aInicioISO(form.fecha, form.hora)
+        if (esDiaPasado(form.fecha)) e.fecha = MSG_INICIO_PASADO
+        else if (esInicioPasado(form.fecha, form.hora)) e.hora = MSG_INICIO_PASADO
       } catch {
         e.fecha = 'La fecha u hora no es válida.'
       }
