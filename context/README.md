@@ -1,0 +1,98 @@
+# Contexto del frontend
+
+Documentación viva de `citia-frontend`. Es **deliberadamente más delgada** que la del backend: las
+decisiones de arquitectura y de dominio se documentan una sola vez, del lado del backend
+(`citia-backend/context/Decisions/`), y aquí solo vive lo que es propio de la interfaz.
+
+---
+
+## Por dónde empezar
+
+| Si quieres saber… | Ve a |
+|---|---|
+| **qué está construido** y cuál es su contrato con el backend | [`Features/`](Features/README.md) |
+| **qué falta o está a medias** en el front | [`Deudas/`](Deudas/README.md) |
+| los requisitos funcionales | [`rf.md`](rf.md) |
+| el stack y las convenciones | [`stack-tecnologico.md`](stack-tecnologico.md) |
+| **por qué el sistema es así** | `citia-backend/context/Decisions/` |
+
+---
+
+## Contenido
+
+- **[`Features/`](Features/README.md)** — una por funcionalidad implementada.
+- **[`Deudas/`](Deudas/README.md)** — deudas técnicas del front, con prefijo `DTF-` para no
+  confundirlas con las del backend al hablar de ellas.
+- **Cierre de Fase 1 de US-02** (2026-09-25): [agenda-profesional](Features/agenda-profesional.md)
+  (semana + lista, aviso de solapamiento) y [bandeja-solicitudes](Features/bandeja-solicitudes.md)
+  (aceptar/rechazar solicitudes, enlace de agenda). Contrato del lado del backend.
+- **Fase 2 — US-03 recordatorios** (2026-10-04): [recordatorios](Features/recordatorios.md)
+  (configuración `/recordatorios` + estado en el voucher), correo obligatorio en
+  [crear-cita](Features/crear-cita.md) y despliegue en Netlify
+  ([stack-tecnologico](stack-tecnologico.md#despliegue-netlify)).
+- **Limpieza previa al release, lote 1** (2026-10-05): [login-sesion](Features/login-sesion.md) —
+  sesión persistente, 401 global, "Cerrar sesión", sidebar con usuario/rol/clínica reales, y fuera
+  del login, sidebar y topbar todo lo que no funcionaba o mostraba datos inventados. Cerró DTF-01,
+  DTF-02 y DTF-04.
+- **Limpieza previa al release, lote 2** (2026-10-05): dashboard sin datos de prueba
+  ([dashboard-citas-del-dia](Features/dashboard-citas-del-dia.md)), canceladas ocultas por defecto y
+  carriles sin canceladas ([agenda-profesional](Features/agenda-profesional.md)), Confirmar / Asistió / No
+  asistió en el voucher ([gestionar-cita](Features/gestionar-cita.md)) y bloques horarios 07:00–21:00
+  ([crear-cita](Features/crear-cita.md)). Cerró DTF-03.
+- **Detalles menores de la auditoría** (2026-10-06, `chore/frontend-detalles-menores`): página "No
+  encontrada" ([login-sesion](Features/login-sesion.md)), "Nueva cita" sin fechas pasadas ni cierre
+  mientras guarda ([crear-cita](Features/crear-cita.md)), calendario público por meses
+  ([agendar-cita-paciente](Features/agendar-cita-paciente.md)) y horas en la zona fija de Chile. Cerró
+  DTF-07.
+- **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
+  implementa, su contrato real pasa a `Features/`.
+  - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
+  - **Subtareas de US-02** (gestión de citas; archivos `02.NN-*`, no son historias propias):
+    - [`02.07-paciente-reagenda-cancela.md`](us/02.07-paciente-reagenda-cancela.md) — el paciente
+      cancela o pide cambiar la hora desde un enlace. ⛔ Bloqueada por backend (ADR-10) y por el canal.
+    - [`02.08-voucher-cita.md`](us/02.08-voucher-cita.md) — voucher de la cita para el profesional,
+      con reagendar y cancelar. ✅ Implementada → [gestionar-cita](Features/gestionar-cita.md).
+    - [`02.09-dashboard-refleja-cambios.md`](us/02.09-dashboard-refleja-cambios.md) — conectar la
+      lista del día y mantenerla al día. ✅ Implementada → [dashboard-citas-del-dia](Features/dashboard-citas-del-dia.md); cerró la parte de citas de DTF-03.
+- **[`rf.md`](rf.md)** · **[`stack-tecnologico.md`](stack-tecnologico.md)**
+
+---
+
+## Estado, de un vistazo
+
+**Sesión (limpieza previa al release, verificado con respuestas simuladas):** la sesión sobrevive a
+un F5 (y a otra pestaña con "Mantener sesión iniciada"), un token vencido o un 401 llevan al login con
+`?redirect=`, y el sidebar tiene "Cerrar sesión" — ver [login-sesion](Features/login-sesion.md).
+
+**Conectado al backend:** login · modal "nueva cita" del profesional · flujo público del paciente
+(`/agendar-cita/:tenantSlug`) · **lista "Citas de hoy"** del dashboard
+([US-02.09](Features/dashboard-citas-del-dia.md)) · **voucher con reagendar y cancelar**
+([US-02.08](Features/gestionar-cita.md)). Estas dos últimas, sin prueba manual contra el backend real.
+
+**Construido contra el contrato, sin backend todavía** (cierre de Fase 1, verificado con respuestas
+simuladas): **agenda** `/agenda` · **bandeja de solicitudes** `/solicitudes` · **aviso de
+solapamiento** al crear, reagendar y aceptar · **enlace de agenda** copiable (con advertencia DT-18).
+
+**Fase 2, verificado solo con respuestas simuladas:** pantalla **Recordatorios** `/recordatorios` ·
+**estado de los recordatorios** y **editar contacto** en el voucher · **correo obligatorio** en el
+modal "nueva cita" (sale en el mismo release que el backend) · `public/_redirects` para Netlify.
+
+**Lote 2 de la limpieza, verificado solo con respuestas simuladas:** dashboard con cuatro tarjetas
+reales, "Citas por semana" y tarjeta de Recordatorios · canceladas ocultas por defecto (dashboard y
+agenda) · **Confirmar / Asistió / No asistió** en el voucher · agenda que recarga al entrar · bloques
+horarios 07:00–21:00 (la cita termina a más tardar a las 22:00).
+
+**Detalles menores, verificado con respuestas simuladas** (y la zona horaria con Node en 7 zonas): URL
+desconocida → "No encontrada" · "Nueva cita" sin fechas ni bloques pasados y sin cerrarse mientras guarda
+(igual aceptar una solicitud) · calendario público con meses (actual + 3) · **horas en la zona fija de
+Chile** (`America/Santiago`, espejo de `APP_TZ`), aunque el navegador esté en otra.
+
+**Con datos de prueba:** nada. Ni el dashboard, ni el sidebar, ni el topbar tienen datos fijos
+([DTF-03](Deudas/DTF-03.md), cerrada).
+
+**Planificado:** la vista del paciente ([US-02.07](us/02.07-paciente-reagenda-cancela.md)), bloqueada
+hasta que se acepte `ADR-10` (propuesto) en el backend y se responda cómo le llega el enlace al
+paciente (Q11).
+
+**Arquitectura:** Feature-Sliced Design. La regla que no se rompe es la dirección de las capas:
+`pages → features → entities → shared`, nunca al revés.

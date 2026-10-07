@@ -1,44 +1,144 @@
 <script setup lang="ts">
-// Página raíz del dashboard "Resumen": sidebar fijo + contenido principal scrolleable.
-import DashboardSidebar from './DashboardSidebar.vue'
+// Página raíz del dashboard "Resumen". El sidebar lo pone `PanelLayout` (app);
+// aquí va el contenido principal scrolleable.
+//
+// La página COMPONE: escucha los eventos que ya emiten los features (cita
+// creada, cita cambiada desde el voucher) y les pide a los stores de citas que
+// recarguen: los de hoy (lista, tarjetas 1 y 2, topbar), próximos 7 días
+// (tarjeta 3) y últimas 6 semanas (gráfico). Los features siguen sin saber que
+// el dashboard existe. Mismo mecanismo que "Citas de hoy" (US-02.09).
+//
+// Todo lo que muestra es real (lote 2 de la limpieza previa al release): no
+// queda ninguna cifra de prueba.
+//
+// Si la cita recién creada se cruza con otras (ADR-11), el modal ya se cerró:
+// el aviso se muestra aquí, sobre el contenido, hasta que se descarte.
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import DashboardTopbar from './DashboardTopbar.vue'
 import {
-  MetricsRow,
+  CitasPorSemana,
+  RecordatoriosResumen,
+  ResumenTarjetas,
   TodayAppointments,
-  WeeklyAbsenteeism,
-  EngineActivity,
+  useHistorialCitas,
+  useProximasCitas,
 } from '@/features/dashboard'
+import { ModalNuevaCita, type CitaCreada } from '@/features/crear-cita'
+import { VoucherCita } from '@/features/gestionar-cita'
+import {
+  AvisoSolapamiento,
+  solapamientosDe,
+  useTodayAppointments,
+  type AgendaAppointment,
+  type Appointment,
+} from '@/entities/appointment'
+import { useSolicitudesRecibidas } from '@/entities/solicitud'
+
+/** Mínimo entre refetches automáticos al volver el foco a la pestaña. */
+const REFETCH_MIN_MS = 30_000
+
+const todayAppointments = useTodayAppointments()
+const proximasCitas = useProximasCitas()
+const historialCitas = useHistorialCitas()
+const solicitudesRecibidas = useSolicitudesRecibidas()
+const router = useRouter()
+
+/** Las citas cambiaron (o pudieron cambiar): se vuelven a pedir los tres rangos. */
+function recargarCitas(): void {
+  void todayAppointments.reload()
+  void proximasCitas.reload()
+  void historialCitas.reload()
+}
+
+// Modal "Nueva cita" (lo abren el topbar y el estado vacío de la lista).
+const nuevaCitaAbierta = ref(false)
+
+// Voucher: se guarda una copia de la fila, así recargar la lista (o que la
+// cita desaparezca de ella al moverla a otro día) no afecta al voucher abierto.
+const voucherAbierto = ref(false)
+const citaSeleccionada = ref<Appointment | null>(null)
+
+// Aviso de solapamiento de la última cita creada (vacío = no se muestra).
+const solapamientosCreada = ref<AgendaAppointment[]>([])
+
+function alCrearCita(cita: CitaCreada): void {
+  solapamientosCreada.value = solapamientosDe(cita.avisos)
+  recargarCitas()
+}
+
+function abrirVoucher(appointment: Appointment): void {
+  citaSeleccionada.value = { ...appointment }
+  voucherAbierto.value = true
+}
+
+// Cambios que no pasan por esta pestaña (otra pestaña, otra persona, el
+// paciente cuando exista US-02.07, o cruzar la medianoche): se recarga al
+// volver a la pestaña, con un mínimo entre pedidos.
+function alCambiarVisibilidad(): void {
+  if (document.visibilityState === 'visible') {
+    void todayAppointments.reloadIfStale(REFETCH_MIN_MS)
+    void proximasCitas.reloadIfStale(REFETCH_MIN_MS)
+    void historialCitas.reloadIfStale(REFETCH_MIN_MS)
+    // El conteo de solicitudes lo refresca `PanelLayout` al volver el foco.
+  }
+}
+
+onMounted(() => {
+  recargarCitas()
+  // `PanelLayout` cuenta las solicitudes al entrar al panel; al volver al
+  // dashboard desde otra sección, se recuenta si el dato tiene más de 30 s.
+  void solicitudesRecibidas.refreshIfStale(REFETCH_MIN_MS)
+  document.addEventListener('visibilitychange', alCambiarVisibilidad)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', alCambiarVisibilidad)
+})
 </script>
 
 <template>
-  <div class="dashboard">
-    <DashboardSidebar />
+  <main class="dashboard__main">
+    <DashboardTopbar @nueva-cita="nuevaCitaAbierta = true" />
 
-    <main class="dashboard__main">
-      <DashboardTopbar />
+    <AvisoSolapamiento
+      :solapamientos="solapamientosCreada"
+      dismissible
+      @dismiss="solapamientosCreada = []"
+    />
 
-      <MetricsRow />
+    <ResumenTarjetas @select="abrirVoucher" />
 
-      <div class="dashboard__grid">
-        <div class="dashboard__col-main">
-          <TodayAppointments />
-        </div>
-        <div class="dashboard__col-side">
-          <WeeklyAbsenteeism />
-          <EngineActivity />
-        </div>
+    <div class="dashboard__grid">
+      <div class="dashboard__col-main">
+        <TodayAppointments
+          @select="abrirVoucher"
+          @schedule="nuevaCitaAbierta = true"
+          @calendar="router.push({ name: 'agenda' })"
+        />
       </div>
-    </main>
-  </div>
+      <div class="dashboard__col-side">
+        <CitasPorSemana />
+        <RecordatoriosResumen />
+      </div>
+    </div>
+  </main>
+
+  <ModalNuevaCita
+    :is-open="nuevaCitaAbierta"
+    @close="nuevaCitaAbierta = false"
+    @created="alCrearCita"
+  />
+
+  <VoucherCita
+    :is-open="voucherAbierto"
+    :appointment="citaSeleccionada"
+    @close="voucherAbierto = false"
+    @changed="recargarCitas"
+  />
 </template>
 
 <style scoped>
-.dashboard {
-  display: flex;
-  align-items: flex-start;
-  min-height: 100vh;
-  background: var(--color-bg);
-}
 .dashboard__main {
   flex: 1;
   min-width: 0;

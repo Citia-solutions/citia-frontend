@@ -1,13 +1,35 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { LoginForm, GoogleAuthButton } from '@/features/auth'
+import { LoginForm } from '@/features/auth'
 import AuthAside from './AuthAside.vue'
 
 const router = useRouter()
 
-function handleSuccess(): void {
+/**
+ * A dónde volver tras iniciar sesión: `?redirect=` lo ponen el guard (ruta
+ * protegida sin sesión) y el cierre por 401 (token vencido). Solo se aceptan
+ * rutas internas de la app que existen; cualquier otra cosa (`//otro-sitio`,
+ * una URL absoluta, el propio login, una ruta que cae en "No encontrada") va
+ * al Resumen.
+ */
+function destinoTrasLogin(): string | { name: 'home' } {
   const redirect = router.currentRoute.value.query.redirect
-  router.push(typeof redirect === 'string' ? redirect : { name: 'home' })
+  if (typeof redirect !== 'string' || !/^\/(?![/\\])/.test(redirect)) return { name: 'home' }
+
+  const destino = router.resolve(redirect)
+  // Con la ruta comodín todo "calza": una ruta inexistente resuelve a `noEncontrada`.
+  if (
+    destino.matched.length === 0 ||
+    destino.name === 'login' ||
+    destino.name === 'noEncontrada'
+  ) {
+    return { name: 'home' }
+  }
+  return destino.fullPath
+}
+
+function handleSuccess(): void {
+  router.push(destinoTrasLogin())
 }
 </script>
 
@@ -23,14 +45,6 @@ function handleSuccess(): void {
         </header>
 
         <LoginForm @success="handleSuccess" />
-
-        <div class="login__divider"><span>o continúa con</span></div>
-
-        <GoogleAuthButton />
-
-        <p class="login__demo">
-          ¿Aún no tienes cuenta? <a href="#">Solicita una demo</a>
-        </p>
       </div>
     </main>
   </div>
@@ -42,9 +56,6 @@ function handleSuccess(): void {
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
   background: var(--color-bg);
-}
-.login__aside {
-  display: block;
 }
 .login__panel {
   display: flex;
@@ -74,36 +85,12 @@ function handleSuccess(): void {
   margin: 0;
   color: var(--color-text-muted);
 }
-.login__divider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-}
-.login__divider::before,
-.login__divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-}
-.login__demo {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-.login__demo a {
-  color: var(--color-primary);
-  font-weight: 600;
-  text-decoration: none;
-}
 
 @media (max-width: 860px) {
   .login {
     grid-template-columns: 1fr;
   }
+  /* En escritorio el aside conserva su propio `display: flex` (no se pisa aquí). */
   .login__aside {
     display: none;
   }
