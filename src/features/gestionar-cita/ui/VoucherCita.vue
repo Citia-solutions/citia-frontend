@@ -31,6 +31,12 @@
 // Asistió / No asistió además esperan la hora de inicio (decisión del usuario,
 // 2026-10-05; el backend no lo exige): antes solo se explica desde qué hora se
 // podrá, y los botones aparecen solos al llegar esa hora (`useYaEmpezo`).
+//
+// Fase 3 (US-04 + US-02.07, respuesta del paciente desde el enlace del
+// recordatorio): "Confirmada por el paciente / por ti" y "Cancelada por el
+// paciente" (`confirmadaPor` / `canceladaPor` del detalle); la nota "El
+// paciente pidió otra hora" con enlace a la bandeja; y "Invalidar enlace del
+// paciente" (vista 'enlace') mientras la cita está vigente.
 import { computed, nextTick, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
@@ -44,6 +50,7 @@ import {
 import {
   AppointmentStatusBadge,
   AvisoSolapamiento,
+  isActiveStatus,
   isTerminalStatus,
   solapamientosDe,
   type AgendaAppointment,
@@ -54,6 +61,7 @@ import {
 import { invalidaVoucher } from '../model/mensajeDeError'
 import { useDetalleCita } from '../model/useDetalleCita'
 import { useYaEmpezo } from '../model/useYaEmpezo'
+import { useSolicitudOtraHora } from '../model/useSolicitudOtraHora'
 import {
   deberiaTenerRecordatorios,
   hayAlguno,
@@ -66,12 +74,14 @@ import type {
   CitaActualizada,
   ResultadoAccion,
   ResultadoContacto,
+  ResultadoInvalidarEnlace,
   TransicionEstado,
 } from '../model/types'
 import ReagendarCitaForm from './ReagendarCitaForm.vue'
 import CancelarCitaConfirm from './CancelarCitaConfirm.vue'
 import CambiarEstadoConfirm from './CambiarEstadoConfirm.vue'
 import EditarContactoForm from './EditarContactoForm.vue'
+import InvalidarEnlaceConfirm from './InvalidarEnlaceConfirm.vue'
 import RecordatoriosCita from './RecordatoriosCita.vue'
 
 const props = withDefaults(
@@ -94,7 +104,7 @@ const emit = defineEmits<{
   changed: []
 }>()
 
-type Vista = 'detalle' | 'reagendar' | 'cancelar' | 'contacto' | 'estado'
+type Vista = 'detalle' | 'reagendar' | 'cancelar' | 'contacto' | 'estado' | 'enlace'
 interface Aviso {
   tipo: 'exito' | 'error'
   textos: string[]
@@ -127,6 +137,12 @@ const {
   cargar: cargarRecordatorios,
 } = useRecordatoriosCita()
 
+const {
+  solicitud: solicitudOtraHora,
+  reset: resetSolicitudOtraHora,
+  cargar: cargarSolicitudOtraHora,
+} = useSolicitudOtraHora()
+
 /** Lo que se muestra: el detalle si ya llegó; si no, la fila. */
 const cita = computed<Appointment | null>(() => detail.value ?? props.appointment)
 
@@ -154,6 +170,53 @@ const rangoHorario = computed(() => {
   const fin = sumarMinutos(new Date(cita.value.startsAt), cita.value.durationMin)
   return `${cita.value.time} – ${horaEnClinica(fin)}`
 })
+
+// ---------------------------------------------------------------------------
+// Respuesta del paciente (Fase 3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Quién confirmó / canceló, de la bitácora (`confirmadaPor` / `canceladaPor`).
+ * Solo se dice cuando explica el estado que se ve: "Confirmada por…" en una
+ * confirmada (y en las que se cerraron tras confirmarse) y "Cancelada por el
+ * paciente" en una cancelada. Si el campo no viene, no se dice nada.
+ */
+const textoActor = computed<string | null>(() => {
+  const d = detail.value
+  if (!d) return null
+  if (d.status === 'cancelada') {
+    return d.cancelledBy === 'paciente' ? 'Cancelada por el paciente' : null
+  }
+  if (d.status === 'confirmada' || d.status === 'asistio' || d.status === 'no_asistio') {
+    if (d.confirmedBy === 'paciente') return 'Confirmada por el paciente'
+    if (d.confirmedBy === 'profesional') return 'Confirmada por ti'
+  }
+  return null
+})
+
+/**
+ * Preferencia de la solicitud de otra hora abierta, si hay. En una cita
+ * terminal no se muestra: el backend la descarta (y si aún no lo hizo, ya no
+ * hay nada que mover).
+ */
+const preferenciaOtraHora = computed<string | null>(() =>
+  !esTerminal.value && !notFound.value ? solicitudOtraHora.value?.preferenciaHoraria ?? null : null,
+)
+
+/**
+ * "Invalidar enlace del paciente" solo con la cita vigente (con el detalle
+ * fresco): en una terminal el enlace ya no sirve. No está en
+ * `accionesPermitidas`: la ruta es idempotente y no depende del estado.
+ */
+const puedeInvalidarEnlace = computed(
+  () => detail.value !== null && !notFound.value && isActiveStatus(detail.value.status),
+)
+
+/** Vuelve a pedir la solicitud de otra hora de la cita abierta. */
+function refrescarSolicitudOtraHora(): void {
+  const id = props.appointment?.id
+  if (id) void cargarSolicitudOtraHora(id)
+}
 
 function permitida(accion: AppointmentAction): boolean {
   return detail.value?.allowedActions.includes(accion) ?? false
@@ -306,6 +369,7 @@ async function alResultadoTransicion(resultado: ResultadoAccion, t: TransicionEs
     // Asistió / No asistió cierran la cita: el backend anula los recordatorios
     // programados (asíncrono). Confirmar no los toca.
     if (t !== 'confirmar') refrescarRecordatorios(ningunoProgramado)
+    refrescarSolicitudOtraHora()
     await cargarDetalle()
     return
   }
@@ -315,6 +379,7 @@ async function alResultadoTransicion(resultado: ResultadoAccion, t: TransicionEs
     aviso.value = { tipo: 'error', textos: [resultado.mensaje] }
     emit('changed')
     refrescarRecordatorios()
+    refrescarSolicitudOtraHora()
     await cargarDetalle()
   }
   // Los demás fallos (401, red) los muestra la propia vista, que permite reintentar.
@@ -347,6 +412,7 @@ async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'ca
           ),
     )
     // Las respuestas de PATCH no traen `accionesPermitidas`: se vuelve a pedir el detalle.
+    refrescarSolicitudOtraHora()
     await cargarDetalle()
     return
   }
@@ -358,10 +424,34 @@ async function alResultado(resultado: ResultadoAccion, accion: 'reagendar' | 'ca
     aviso.value = { tipo: 'error', textos: [resultado.mensaje] }
     emit('changed')
     refrescarRecordatorios()
+    refrescarSolicitudOtraHora()
     await cargarDetalle()
   }
   // Los demás fallos (400, 401, red) los muestra la propia vista, que conserva
   // lo escrito para reintentar.
+}
+
+/**
+ * Resultado de "Invalidar enlace del paciente" (éxito o 404; el resto lo
+ * muestra la vista). La cita no cambia: no se emite `changed` salvo en el 404.
+ */
+async function alInvalidarEnlace(resultado: ResultadoInvalidarEnlace): Promise<void> {
+  enviando.value = false
+  irA('detalle')
+  if (resultado.ok) {
+    aviso.value = {
+      tipo: 'exito',
+      textos: [
+        'Enlace del paciente invalidado: el de los correos ya enviados dejó de funcionar.',
+        'Si quedan recordatorios por enviar, llevarán un enlace nuevo.',
+      ],
+    }
+    return
+  }
+  aviso.value = { tipo: 'error', textos: [resultado.mensaje] }
+  emit('changed')
+  refrescarRecordatorios()
+  await cargarDetalle()
 }
 
 /** Resultado de la vista "Contacto" (éxito o 404; el resto lo muestra la vista). */
@@ -439,16 +529,19 @@ watch(
       enviando.value = false
       resetDetalle()
       resetRecordatorios()
+      resetSolicitudOtraHora()
       document.addEventListener('keydown', onKeydown)
       await nextTick()
       closeBtn.value?.focus()
       // En paralelo con el detalle: no dependen uno del otro.
       cargarRecordatoriosIniciales()
+      refrescarSolicitudOtraHora()
       await cargarDetalleInicial()
     } else {
       document.removeEventListener('keydown', onKeydown)
       // Cerrado no se sigue preguntando por los recordatorios.
       resetRecordatorios()
+      resetSolicitudOtraHora()
       // Devuelve el foco a la fila desde la que se abrió.
       focoPrevio?.focus()
       focoPrevio = null
@@ -505,11 +598,22 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
         <template v-if="vista === 'detalle'">
           <AvisoSolapamiento :solapamientos="solapamientos" />
 
+          <!-- Fase 3: el paciente pidió otra hora desde el enlace de su recordatorio. -->
+          <div v-if="preferenciaOtraHora" class="voucher__otra-hora" role="note">
+            <p class="voucher__otra-hora-text">
+              <strong>El paciente pidió otra hora:</strong> {{ preferenciaOtraHora }}
+            </p>
+            <RouterLink :to="{ name: 'solicitudes' }" class="voucher__otra-hora-link">
+              Responder en Solicitudes
+            </RouterLink>
+          </div>
+
           <div class="voucher__patient">
             <BaseAvatar :name="cita.patientName" :size="44" />
             <span class="voucher__patient-name">{{ cita.patientName }}</span>
             <AppointmentStatusBadge :status="cita.status" />
           </div>
+          <p v-if="textoActor" class="voucher__actor">{{ textoActor }}</p>
 
           <ul class="voucher__facts">
             <li class="voucher__fact">
@@ -590,6 +694,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
             @actualizar="actualizarRecordatorios"
             @editar-contacto="irA('contacto')"
           />
+
+          <section v-if="puedeInvalidarEnlace" class="voucher__enlace" aria-labelledby="voucher-enlace">
+            <h3 id="voucher-enlace" class="voucher__section-title">Enlace del paciente</h3>
+            <p class="voucher__muted">
+              Los recordatorios por correo llevan un enlace para que el paciente confirme, cancele o
+              pida otra hora.
+            </p>
+            <button type="button" class="voucher__invalidar" @click="irA('enlace')">
+              Invalidar enlace del paciente
+            </button>
+          </section>
 
           <p v-if="esTerminal" class="voucher__terminal">{{ notaTerminal }} Ya no admite cambios.</p>
 
@@ -685,6 +800,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           @back="irA('detalle')"
           @submitting="enviando = $event"
           @result="alGuardarContacto"
+        />
+
+        <InvalidarEnlaceConfirm
+          v-else-if="vista === 'enlace'"
+          :appointment="cita"
+          @back="irA('detalle')"
+          @submitting="enviando = $event"
+          @result="alInvalidarEnlace"
         />
       </div>
     </div>
@@ -800,6 +923,63 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--color-text);
+}
+/* "Confirmada por el paciente" / "por ti" / "Cancelada por el paciente", bajo el badge. */
+.voucher__actor {
+  margin: -0.6rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+.voucher__otra-hora {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  background: var(--color-info-soft);
+  border-left: 3px solid var(--color-info);
+  border-radius: var(--radius-md);
+}
+.voucher__otra-hora-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.voucher__otra-hora-link {
+  align-self: flex-start;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.voucher__otra-hora-link:hover {
+  text-decoration: underline;
+}
+.voucher__enlace {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.voucher__invalidar {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-danger);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.voucher__invalidar:hover {
+  text-decoration: underline;
+}
+.voucher__invalidar:focus-visible,
+.voucher__otra-hora-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 .voucher__facts {
   list-style: none;
