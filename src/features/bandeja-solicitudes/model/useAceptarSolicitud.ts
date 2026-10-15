@@ -8,7 +8,7 @@ import {
   fechaEnClinicaISO,
   partesDeFecha,
 } from '@/shared/lib/fecha'
-import type { Solicitud } from '@/entities/solicitud'
+import type { CitaOrigen, Solicitud } from '@/entities/solicitud'
 import { aceptarSolicitud } from '../api/bandejaApi'
 import { DURACION_MAXIMA_MIN, mensajeDeError, statusDe } from './mensajeDeError'
 import type { AceptarSolicitudRequest, ResultadoResolucion, SolicitudAceptada } from './types'
@@ -84,6 +84,10 @@ export function sugerirInicio(
  * cita (la del paciente era una preferencia), su duración y el tipo de consulta
  * (precargado con el motivo, ADR-09 §10).
  *
+ * Una solicitud de otra hora (`reagendamiento`, Fase 3) no crea una cita:
+ * mueve la que ya tiene el paciente. Por eso solo pide **fecha y hora** y envía
+ * `{ inicio }`; la duración y el tipo son los de la cita original.
+ *
  * Mismas reglas de la interfaz que reagendar: `inicio` con zona explícita
  * (`aInicioISO`), y no se acepta al pasado desde la UI — el backend lo
  * permitiría en silencio (DT-13).
@@ -100,7 +104,11 @@ export function useAceptarSolicitud() {
   const submitError = ref<string | null>(null)
   /** true si fecha y hora se precargaron desde la preferencia del paciente. */
   const sugerida = ref(false)
+  /** true si la solicitud abierta es de otra hora: el formulario es solo fecha y hora. */
+  const esOtraHora = ref(false)
   let solicitudId = ''
+  /** Cita que se movería (solo en una de otra hora). */
+  let citaOrigen: CitaOrigen | null = null
 
   /** Hoy en la zona de la clínica: `min` del selector de fecha. Se renueva al abrir. */
   const hoyISO = ref(fechaEnClinicaISO(new Date()))
@@ -114,6 +122,8 @@ export function useAceptarSolicitud() {
   /** Prepara el formulario para una solicitud (al abrir el modal). */
   function reset(solicitud: Solicitud): void {
     solicitudId = solicitud.id
+    esOtraHora.value = solicitud.tipo === 'reagendamiento'
+    citaOrigen = esOtraHora.value ? solicitud.citaOrigen : null
     hoyISO.value = fechaEnClinicaISO(new Date())
     const sugerencia = sugerirInicio(solicitud.preferenciaHoraria, solicitud.recibidaEn)
     // Solo se precarga si la sugerencia sigue siendo futura: proponer una hora
@@ -146,6 +156,7 @@ export function useAceptarSolicitud() {
         e.fecha = 'La fecha u hora no es válida.'
       }
     }
+    if (esOtraHora.value) return validarOtraHora(e)
     const d = form.duracionMin
     if (!Number.isInteger(d) || d < 1 || d > DURACION_MAXIMA_MIN) {
       e.duracionMin = `La duración debe ser un número entero entre 1 y ${DURACION_MAXIMA_MIN} minutos.`
@@ -158,6 +169,29 @@ export function useAceptarSolicitud() {
     return e
   }
 
+  /**
+   * Reglas extra de una solicitud de otra hora, sobre fecha y hora ya
+   * validadas: misma regla que reagendar desde el voucher (la cita conserva su
+   * duración, así que debe terminar a más tardar a `FIN_DE_JORNADA`) y no tiene
+   * sentido "moverla" a la hora que ya tiene.
+   */
+  function validarOtraHora(e: AceptarErrors): AceptarErrors {
+    if (!form.fecha || !form.hora || e.fecha || e.hora || !citaOrigen) return e
+    const finDeJornada = errorFinDeJornada(form.hora, citaOrigen.duracionMin, 'Elige una hora más temprana.')
+    if (finDeJornada) {
+      e.hora = finDeJornada
+    } else if (new Date(aInicioISO(form.fecha, form.hora)).getTime() === new Date(citaOrigen.inicio).getTime()) {
+      e.hora = 'Es la misma hora que ya tiene la cita.'
+    }
+    return e
+  }
+
+  function payload(): AceptarSolicitudRequest {
+    const inicio = aInicioISO(form.fecha, form.hora)
+    if (esOtraHora.value) return { inicio }
+    return { inicio, duracionMin: form.duracionMin, tipoConsulta: form.tipoConsulta.trim() }
+  }
+
   async function submit(): Promise<ResultadoResolucion<SolicitudAceptada> | null> {
     submitError.value = null
     errors.value = validar()
@@ -165,15 +199,10 @@ export function useAceptarSolicitud() {
 
     isSubmitting.value = true
     try {
-      const payload: AceptarSolicitudRequest = {
-        inicio: aInicioISO(form.fecha, form.hora),
-        duracionMin: form.duracionMin,
-        tipoConsulta: form.tipoConsulta.trim(),
-      }
-      const valor = await aceptarSolicitud(solicitudId, payload)
+      const valor = await aceptarSolicitud(solicitudId, payload())
       return { ok: true, valor }
     } catch (e) {
-      const mensaje = mensajeDeError(e, 'aceptar')
+      const mensaje = mensajeDeError(e, esOtraHora.value ? 'aceptarOtraHora' : 'aceptar')
       submitError.value = mensaje
       return { ok: false, status: statusDe(e), mensaje }
     } finally {
@@ -187,6 +216,7 @@ export function useAceptarSolicitud() {
     isSubmitting,
     submitError,
     sugerida,
+    esOtraHora,
     hoyISO,
     opcionesHora,
     reset,

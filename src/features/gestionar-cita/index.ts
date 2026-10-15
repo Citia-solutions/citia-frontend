@@ -2,13 +2,16 @@
 // las acciones reagendar y cancelar. Desde la Fase 2 (US-03) muestra además el
 // estado de los recordatorios y permite editar el contacto del paciente. Desde
 // el lote 2 de la limpieza previa al release (2026-10-05), confirmar y
-// registrar asistencia / inasistencia.
+// registrar asistencia / inasistencia. Desde la Fase 3 (US-04 + US-02.07),
+// quién confirmó / canceló, la nota "El paciente pidió otra hora" e invalidar
+// el enlace del paciente.
 export { default as VoucherCita } from './ui/VoucherCita.vue'
 export {
   reagendarCita,
   cancelarCita,
   cambiarEstadoCita,
   actualizarContactoPaciente,
+  invalidarEnlacePaciente,
 } from './api/gestionarCitaApi'
 export type {
   CitaActualizada,

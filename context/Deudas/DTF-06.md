@@ -39,6 +39,13 @@ Las dos últimas son **variables de entorno** del backend, no constantes de cód
 Railway, el front queda diciendo otra cosa hasta que se actualice a mano. Si eso empieza a pasar, que
 `GET /recordatorios/configuracion` las devuelva.
 
+**Fase 3 — respuesta del paciente (2026-10-14):** una copia más, del portal del paciente
+([responder-cita-paciente](../Features/responder-cita-paciente.md)):
+
+| Constante (front) | Valor | Espejo de (backend) |
+|-------------------|-------|---------------------|
+| `LIMITE_TEXTO` — `features/responder-cita/model/formularios.ts` | 300 | `preferencia` (1..300) y `motivo` (≤ 300) de `POST /publico/cita/cancelar` y `/otra-hora` |
+
 ## Por qué existe la copia
 
 Sin ella, pasarse de un largo devolvía un `400` genérico y el paciente no sabía qué campo corregir.

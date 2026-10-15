@@ -77,9 +77,18 @@ async function confirmar(): Promise<void> {
       aria-describedby="rechazar-texto"
     >
       <h2 id="rechazar-titulo" class="confirm__title">
-        ¿Rechazar la solicitud de {{ solicitud.nombrePaciente }}?
+        {{
+          solicitud.tipo === 'reagendamiento'
+            ? `¿Rechazar el pedido de otra hora de ${solicitud.nombrePaciente}?`
+            : `¿Rechazar la solicitud de ${solicitud.nombrePaciente}?`
+        }}
       </h2>
-      <p id="rechazar-texto" class="confirm__text">
+      <p v-if="solicitud.tipo === 'reagendamiento'" id="rechazar-texto" class="confirm__text">
+        Su cita se mantiene a la hora que tiene hoy y la solicitud pasará a
+        <strong>Rechazadas</strong>. El paciente no recibe ningún aviso desde Citia: si corresponde,
+        contáctalo tú.
+      </p>
+      <p v-else id="rechazar-texto" class="confirm__text">
         No se creará ninguna cita y la solicitud pasará a <strong>Rechazadas</strong>. El paciente
         no recibe ningún aviso desde Citia: si corresponde, contáctalo tú.
       </p>

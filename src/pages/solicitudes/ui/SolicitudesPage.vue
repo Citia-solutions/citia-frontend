@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Página "Solicitudes": la bandeja de las peticiones de hora que llegan por el
-// enlace público, y el enlace mismo para compartirlo (con su advertencia de
+// enlace público (y, desde la Fase 3, los pedidos de otra hora del enlace del
+// recordatorio), y el enlace de agenda para compartirlo (con su advertencia de
 // DT-18). La bandeja es autocontenida (lista + aceptar + rechazar); la página
 // solo compone y resuelve la navegación a la agenda.
 import { useRouter } from 'vue-router'
@@ -15,8 +16,9 @@ const router = useRouter()
     <header class="page__head">
       <h1 class="page__title">Solicitudes</h1>
       <p class="page__subtitle">
-        Peticiones de hora que dejan los pacientes en tu enlace de agenda. Aceptar una la convierte
-        en cita; la bandeja es de toda tu organización.
+        Peticiones de hora que dejan los pacientes en tu enlace de agenda, y pedidos de otra hora que
+        llegan desde el enlace de sus recordatorios. Aceptar una nueva la convierte en cita; aceptar
+        un pedido de otra hora mueve la cita que ya tenía. La bandeja es de toda tu organización.
       </p>
     </header>
 

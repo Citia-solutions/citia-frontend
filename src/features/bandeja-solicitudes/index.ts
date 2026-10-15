@@ -5,6 +5,8 @@ export { aceptarSolicitud, rechazarSolicitud } from './api/bandejaApi'
 export { sugerirInicio } from './model/useAceptarSolicitud'
 export type {
   AceptarSolicitudRequest,
+  AceptarSolicitudNuevaRequest,
+  AceptarReagendamientoRequest,
   SolicitudAceptada,
   CitaDeSolicitud,
 } from './model/types'
