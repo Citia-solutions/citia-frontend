@@ -15,6 +15,7 @@ Postgres están en Railway — ver `citia-backend/context/stack-tecnologico.md`.
 | Pieza | Valor |
 |-------|-------|
 | Rutas de la SPA | `public/_redirects` con `/*  /index.html  200`: cualquier ruta que no sea un archivo (`/agenda`, `/recordatorios`, `/agendar-cita/<slug>`) devuelve `index.html` y la resuelve vue-router. Sin esto, recargar una ruta que no sea `/` da 404. Una ruta que la SPA no conoce muestra la página "No encontrada" (desde el 2026-10-06), pero el HTTP sigue siendo 200: es un 404 solo de la interfaz |
+| Cabeceras | `public/_headers` (Fase 3, 2026-10-14): `/cita` (página del paciente) con `Referrer-Policy: no-referrer` y `X-Robots-Tag: noindex, nofollow`. ⚠️ Verificar en staging (`curl -I …/cita`) que Netlify las aplica a una ruta reescrita a `index.html` — ver [responder-cita-paciente](Features/responder-cita-paciente.md#netlify-public_headers) |
 | Build | `npm run build` (incluye `vue-tsc`) → publish directory `dist/` |
 | Sitios | Uno por entorno: **staging** ← rama `develop` (`staging.citiahealth.cl`) y **producción** ← rama `main` (`app.citiahealth.cl`). Dominio propio con un CNAME en Cloudflare hacia `<sitio>.netlify.app`, en modo *DNS only* |
 | Backend | `VITE_API_URL` = backend de Railway de **ese** entorno, con su prefijo `/api` |

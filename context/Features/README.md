@@ -13,8 +13,17 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
 | [recordatorios](recordatorios.md) — Fase 2, US-03: configuración `/recordatorios` + estado de los recordatorios en el voucher | ✅ Implementado · ⚠️ solo con respuestas simuladas | `feature/fase2-recordatorios` · sin commit |
 | [crear-cita](crear-cita.md) — modal "Nueva cita" del profesional; Fase 2: correo obligatorio · lote 2: bloques 07:00–21:00, la cita termina a más tardar a las 22:00 | ✅ Implementado y conectado · ⚠️ el cambio de Fase 2 sin prueba contra el backend | `feature/fase2-recordatorios` · lote 2 en `feature/frontend-prerelease`, sin commit |
 | [login-sesion](login-sesion.md) — login, sesión persistente (F5 / otra pestaña), 401 global, cerrar sesión y sidebar con datos reales | ✅ Implementado · ⚠️ lo nuevo verificado solo con respuestas simuladas | `feature/frontend-prerelease` · `a39dbdc` |
+| [responder-cita-paciente](responder-cita-paciente.md) — Fase 3, US-04 + US-02.07 v1: página pública `/cita#<token>` (confirmar, cancelar, pedir otra hora) · voucher: quién confirmó/canceló, "pidió otra hora", invalidar enlace · bandeja: "Pide otra hora", aceptar solo con fecha y hora, `descartada` | ✅ Implementado · ⚠️ solo con respuestas simuladas (backend en paralelo) | `feature/fase3-respuesta-paciente` · sin commit |
 
 ## Notas
+
+- **Fase 3 — respuesta del paciente (2026-10-14, `feature/fase3-respuesta-paciente`, sin commit):**
+  [responder-cita-paciente](responder-cita-paciente.md). Página nueva `/cita` (feature
+  `responder-cita`, pública, token en el fragmento y solo en memoria, `public/_headers` con
+  `no-referrer`), y cambios en el voucher ([gestionar-cita](gestionar-cita.md)) y la bandeja
+  ([bandeja-solicitudes](bandeja-solicitudes.md)). Construido contra el contrato mientras el backend se
+  implementa en paralelo; los campos nuevos (`confirmadaPor`, `canceladaPor`, `tipo`, `citaOrigen`) se
+  toleran ausentes.
 
 - **Detalles menores de la auditoría (2026-10-06, `chore/frontend-detalles-menores`, sin commit):**
   página "No encontrada" para URLs desconocidas y `meta.public` fuera del router
