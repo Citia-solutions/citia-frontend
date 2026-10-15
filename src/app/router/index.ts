@@ -6,6 +6,7 @@ import { AgendaPage } from '@/pages/agenda'
 import { SolicitudesPage } from '@/pages/solicitudes'
 import { RecordatoriosPage } from '@/pages/recordatorios'
 import { AgendarCitaPage } from '@/pages/agendar-cita'
+import { CitaPacientePage } from '@/pages/cita-paciente'
 import { NoEncontradaPage } from '@/pages/no-encontrada'
 import PanelLayout from '@/app/layouts/PanelLayout.vue'
 
@@ -35,6 +36,16 @@ const routes: RouteRecordRaw[] = [
     name: 'agendarCita',
     component: AgendarCitaPage,
     props: true,
+  },
+  {
+    // Fase 3: el paciente ve su hora y la confirma, la cancela o pide otra
+    // desde el enlace de su recordatorio por correo. El token va en el
+    // FRAGMENTO (`/cita#<token>`), nunca en el path ni en la query: el
+    // navegador no lo manda al servidor ni lo pone en el `Referer`. La página
+    // lo lee y lo borra de la URL. Pública y sin layout.
+    path: '/cita',
+    name: 'citaPaciente',
+    component: CitaPacientePage,
   },
   {
     // Panel del profesional: `PanelLayout` pone el sidebar y cada hija su
