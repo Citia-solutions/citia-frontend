@@ -3,6 +3,7 @@ import type {
   AgendaAppointment,
   Appointment,
   AppointmentAction,
+  AppointmentActor,
   AppointmentDetail,
   AppointmentStatus,
 } from '../model/types'
@@ -61,6 +62,12 @@ export interface CitaDetalleDto {
     correo: string | null
   }
   accionesPermitidas: AppointmentAction[]
+  /**
+   * Fase 3 (aditivo): actor del último cambio a `confirmada` / `cancelada` de la
+   * bitácora, o null. Se tolera ausente (backend anterior a la Fase 3).
+   */
+  confirmadaPor?: AppointmentActor | null
+  canceladaPor?: AppointmentActor | null
 }
 
 // ---------------------------------------------------------------------------
@@ -109,6 +116,8 @@ export function toAppointmentDetail(dto: CitaDetalleDto): AppointmentDetail {
       email: dto.paciente.correo,
     },
     allowedActions: dto.accionesPermitidas,
+    confirmedBy: dto.confirmadaPor ?? null,
+    cancelledBy: dto.canceladaPor ?? null,
   }
 }
 

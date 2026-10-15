@@ -72,8 +72,22 @@ export interface AppointmentPatient {
   email: string | null
 }
 
+/**
+ * Quién hizo un cambio de la cita, según la bitácora del backend
+ * (`confirmadaPor` / `canceladaPor` de `GET /citas/:id`, Fase 3). `paciente`
+ * es la respuesta desde el enlace del correo (`/cita`); `sistema`, un job.
+ */
+export type AppointmentActor = 'paciente' | 'profesional' | 'sistema'
+
 /** Detalle completo de una cita (`GET /citas/:id`). */
 export interface AppointmentDetail extends Appointment {
   patient: AppointmentPatient
   allowedActions: AppointmentAction[]
+  /**
+   * Quién hizo el último cambio a `confirmada` (Fase 3). null si nunca se
+   * confirmó o si el backend todavía no manda el campo.
+   */
+  confirmedBy: AppointmentActor | null
+  /** Quién la canceló (Fase 3). null si no está cancelada o si el campo no viene. */
+  cancelledBy: AppointmentActor | null
 }
