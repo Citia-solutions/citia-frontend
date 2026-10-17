@@ -2,6 +2,8 @@
 // Panel izquierdo del login: marca y lo que Citia hace hoy. Sin cifras: no hay
 // datos reales que las respalden, y el texto no promete nada que el producto
 // no haga (ni dinero, ni "recuperar cupos").
+import BaseLogo from '@/shared/ui/BaseLogo.vue'
+
 const features = [
   {
     title: 'Agenda del día y de la semana',
@@ -23,16 +25,7 @@ const features = [
 
 <template>
   <aside class="aside">
-    <div class="aside__brand">
-      <span class="aside__logo">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="4" width="18" height="17" rx="3" />
-          <path d="M3 9h18M8 2v4M16 2v4" />
-          <path d="m9 14 2 2 4-4" />
-        </svg>
-      </span>
-      <span class="aside__name">Citia</span>
-    </div>
+    <BaseLogo :alto="40" />
 
     <div class="aside__pitch">
       <h1 class="aside__headline">Tu agenda clínica, en orden y al día.</h1>
@@ -96,24 +89,6 @@ const features = [
   background: radial-gradient(circle at 70% 15%, #1e3a8a 0%, transparent 55%),
     linear-gradient(160deg, #0f1f3d 0%, #102a52 100%);
   overflow: hidden;
-}
-.aside__brand {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-.aside__logo {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--color-primary);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
-}
-.aside__name {
-  font-size: 1.3rem;
-  font-weight: 700;
 }
 .aside__headline {
   font-size: 2.4rem;
