@@ -10,6 +10,8 @@
 **Lote 2 de la limpieza previa al release (2026-10-05):** botones **Confirmar**, **Asistió** y **No
 asistió** — ver [Confirmación y asistencia](#confirmación-y-asistencia-2026-10-05). Asistió / No asistió
 solo desde la hora de inicio (bloqueo del front, mismo día).
+**Fase 3 (2026-10-14):** quién confirmó / canceló, nota *"El paciente pidió otra hora"* e *"Invalidar
+enlace del paciente"* — ver [Cambios de la Fase 3](#cambios-de-la-fase-3--respuesta-del-paciente-2026-10-14).
 
 ---
 
@@ -108,7 +110,7 @@ US-02.07, el job de cierre) muestra el mensaje, recarga el detalle y recarga la 
 | ~~Confirmar, asistencia, inasistencia~~ | ✅ Hechos el 2026-10-05 (ver abajo). |
 | Editar (duración, tipo) | El backend lo anuncia en `accionesPermitidas`; no se muestra todavía. |
 | ~~Aviso de solapamiento~~ | ✅ Hecho en el cierre de Fase 1 (ADR-11): tras reagendar, el voucher lista las citas con las que choca — ver [agenda-profesional](agenda-profesional.md#aviso-de-solapamiento-adr-11). |
-| "Generar enlace para el paciente" | Depende de US-02.07 y [ADR-10](../../../citia-backend/context/Decisions/ADR-10.md) (propuesto). |
+| ~~"Generar enlace para el paciente"~~ | Descartado en la Fase 3 (decisión E4): el enlace lo emite el sistema al enviar el primer recordatorio y el voucher solo ofrece **invalidarlo** (ver abajo). |
 
 ## Cambios del cierre de Fase 1 (2026-09-25)
 
@@ -197,6 +199,17 @@ Decisión del usuario: **no se puede marcar Asistió ni No asistió antes de la 
   su zona); el texto muestra `hora`, de la clínica. Desde el 2026-10-06 todo lo demás del voucher (fecha
   larga, hora de término, recordatorios, "Ya no aparece en tu lista de hoy") también va en hora de Chile
   ([DTF-07](../Deudas/DTF-07.md), cerrada).
+
+## Cambios de la Fase 3 — respuesta del paciente (2026-10-14)
+
+Rama `feature/fase3-respuesta-paciente`. Detalle completo (contrato y copy) en
+[responder-cita-paciente](responder-cita-paciente.md#voucher-featuresgestionar-cita).
+
+| Qué | Dónde |
+|-----|-------|
+| *"Confirmada por el paciente"* / *"Confirmada por ti"* / *"Cancelada por el paciente"* bajo el badge, desde `confirmadaPor` / `canceladaPor` de `GET /citas/:id` (opcionales: si no vienen, nada) | `VoucherCita.vue` (`textoActor`); `confirmedBy` / `cancelledBy` en `entities/appointment` |
+| Nota *"El paciente pidió otra hora: <preferencia>"* con *"Responder en Solicitudes"* (`/solicitudes`), desde `GET /solicitudes?citaOrigenId=<id>&estado=recibida`. Se recarga tras cada acción; al reagendar desde el voucher el backend da la solicitud por atendida y la nota desaparece | `model/useSolicitudOtraHora.ts` + `getSolicitudOtraHoraAbierta` de `entities/solicitud` |
+| Sección *Enlace del paciente* con **Invalidar enlace del paciente** (solo cita vigente) → vista de confirmación → `POST /citas/:id/enlace/invalidar` (204) | `ui/InvalidarEnlaceConfirm.vue`, `model/useInvalidarEnlace.ts`, `invalidarEnlacePaciente()` en `api/gestionarCitaApi.ts` |
 
 ## Pendientes
 

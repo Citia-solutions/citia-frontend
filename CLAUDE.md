@@ -22,15 +22,17 @@ Lo que existe hoy:
 | `/login` | Login con clínica + correo + contraseña y "Mantener sesión iniciada". Sin Google OAuth ni recuperación de contraseña | No |
 | `/` | **Resumen** (dashboard): topbar con conteos y "+ Nueva cita", cuatro tarjetas con datos reales (citas hoy, próxima cita, próximos 7 días, solicitudes por responder), "Citas de hoy", "Citas por semana" y resumen de recordatorios | Sí |
 | `/agenda` | Agenda del profesional: semana + lista por rango, "Nueva cita" y voucher | Sí |
-| `/solicitudes` | Bandeja de solicitudes del enlace público (aceptar / rechazar) y botón para copiar el enlace de agenda | Sí |
+| `/solicitudes` | Bandeja de solicitudes (aceptar / rechazar): las nuevas del enlace de agenda y, desde la Fase 3, los pedidos de otra hora del enlace del recordatorio ("Pide otra hora"; aceptar mueve la cita) y la pestaña Descartadas. Botón para copiar el enlace de agenda | Sí |
 | `/recordatorios` | Configuración de los recordatorios por correo (US-03) | Sí |
 | `/agendar-cita/:tenantSlug` | Flujo público: el paciente pide hora sin cuenta (`POST /publico/:tenantSlug/solicitudes`) | No |
+| `/cita#<token>` | **Página del paciente** (Fase 3): desde el enlace de su recordatorio ve su hora y la confirma, la cancela o pide otra (`/publico/cita*`, token en la cabecera `X-Enlace-Cita`). El token va en el fragmento, se borra de la URL al abrir y vive solo en memoria. Sin layout | No |
 | cualquier otra | **No encontrada** (ruta comodín `/:pathMatch(.*)*`): enlace al Resumen con sesión o al login sin ella | No |
 
 - **Voucher de la cita** (se abre desde el Resumen y desde la agenda): reagendar, cancelar, confirmar,
   registrar asistencia / inasistencia (solo desde la hora de inicio), estado de los recordatorios de
   la cita y editar el contacto del paciente. Qué botones existen lo decide `accionesPermitidas` del
-  backend.
+  backend. Desde la Fase 3: quién confirmó o canceló ("por el paciente" / "por ti"), la nota "El
+  paciente pidió otra hora" e "Invalidar enlace del paciente" (solo cita vigente).
 - Las rutas autenticadas son hijas de `app/layouts/PanelLayout.vue`; el sidebar
   (`PanelSidebar.vue`) muestra la clínica, el usuario, su rol y **Cerrar sesión**.
 - **Roles:** el backend emite solo `ADMINISTRADOR` y `PROFESIONAL`, que el front traduce a
@@ -89,16 +91,19 @@ src/
 ├── app/          # Arranque y configuración global: router (+ guard y cerrarSesion), providers
 │                 # (Pinia, router, handler del 401), layouts del panel, estilos raíz
 ├── pages/        # Composición de pantallas: login, dashboard, agenda, solicitudes,
-│                 # recordatorios, agendar-cita (pública), no-encontrada (404)
+│                 # recordatorios, agendar-cita (pública), cita-paciente (pública, /cita),
+│                 # no-encontrada (404)
 ├── features/     # Casos de uso (ui + model + api):
 │   ├── auth/                      # login
 │   ├── dashboard/                 # widgets del Resumen
 │   ├── agenda/                    # agenda semanal + lista
 │   ├── crear-cita/                # modal "Nueva cita" y flujo público del paciente
-│   ├── gestionar-cita/            # voucher: reagendar, cancelar, confirmar, asistencia, contacto
-│   ├── bandeja-solicitudes/       # aceptar / rechazar solicitudes
+│   ├── gestionar-cita/            # voucher: reagendar, cancelar, confirmar, asistencia, contacto,
+│   │                              # quién confirmó/canceló, "pidió otra hora", invalidar enlace
+│   ├── bandeja-solicitudes/       # aceptar / rechazar solicitudes (nuevas y de otra hora)
 │   ├── compartir-enlace-agenda/   # copiar el enlace /agendar-cita/:tenantSlug
-│   └── configurar-recordatorios/  # configuración de recordatorios por correo
+│   ├── configurar-recordatorios/  # configuración de recordatorios por correo
+│   └── responder-cita/            # página del paciente /cita#<token>: confirmar, cancelar, pedir otra hora
 ├── entities/     # Entidades de negocio: session, appointment, recordatorio, solicitud
 └── shared/       # api (httpClient, errores de validación), config (bloques horarios, zona horaria),
                   # lib (authToken, fecha, rut), ui (componentes Base*)
@@ -124,6 +129,8 @@ tienen `CLAUDE.md` propio: su contrato y sus decisiones están en `context/Featu
   **producción**. Build `npm run build`, publish directory `dist/`.
 - `public/_redirects` (`/*  /index.html  200`) es el fallback de la SPA: sin él, recargar una ruta que no
   sea `/` da 404.
+- `public/_headers` (Fase 3): `/cita` con `Referrer-Policy: no-referrer` y `X-Robots-Tag: noindex`. La
+  página del paciente no carga recursos de terceros (ni fuentes, ni analítica): no agregues ninguno.
 - **`VITE_API_URL`**: URL del backend **incluido el prefijo `/api`**. Vite la incrusta al compilar, así que
   en Netlify va como variable de entorno **de cada sitio** (apuntando al backend de Railway de ese
   entorno). En local va en `.env` (plantilla en `.env.example`: `http://localhost:3000/api`). Sin ella el

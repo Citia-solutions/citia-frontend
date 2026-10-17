@@ -24,6 +24,10 @@ src/pages/
 ├── agendar-cita/
 │   └── ui/
 │       └── AgendarCitaPage.vue  # Vista pública por secciones (flujo + stepper)
+├── cita-paciente/
+│   └── ui/
+│       └── CitaPacientePage.vue # Pública /cita#<token> (Fase 3): lee el token del fragmento, lo borra
+│                                # de la URL (router.replace) y compone features/responder-cita
 └── no-encontrada/
     └── ui/
         └── NoEncontradaPage.vue # 404: ruta pedida + enlace al Resumen (con sesión) o al login (sin ella)
@@ -35,6 +39,7 @@ src/pages/
 |----------------|-------------------|---------------|------------------------------------------|
 | `/login`       | `LoginPage`       | No            | Redirige a `/` si ya está autenticado; respeta `?redirect=` (solo rutas internas) |
 | `/agendar-cita/:tenantSlug` | `AgendarCitaPage` | No | Pública, split-screen 78/22, sin layout |
+| `/cita` (`#<token>`) | `CitaPacientePage` | No | Ruta `citaPaciente`. Pública, sin layout, móvil primero. El token va en el **fragmento**: la página lo lee de `route.hash`, lo pasa en memoria al feature y lo borra con `router.replace({ hash: '' })` (no con un `replaceState` a mano: vue-router lo reescribiría). Sin token → "enlace no válido" sin llamar a la API. **Vigila `route.hash`**: un fragmento nuevo con la página abierta (otro enlace en la misma pestaña, sin recarga) se trata igual que al abrir y remonta el feature con `:key` (descarta todo lo anterior; solo GET) |
 | `/`            | `DashboardPage`   | Sí            | Hija de `PanelLayout`; redirige a `/login?redirect=/` si no auth |
 | `/agenda`      | `AgendaPage`      | Sí            | Hija de `PanelLayout` |
 | `/solicitudes` | `SolicitudesPage` | Sí            | Hija de `PanelLayout` |

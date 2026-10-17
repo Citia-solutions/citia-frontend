@@ -1,0 +1,10 @@
+# Cabeceras de Netlify (se copian tal cual a dist/ al compilar).
+#
+# /cita es la página del paciente (Fase 3). El enlace del recordatorio lleva el
+# token en el fragmento (/cita#<token>), que el navegador nunca manda al servidor
+# ni pone en el Referer; aun así la página no debe filtrar su URL a otro sitio
+# (no-referrer) y no tiene nada que indexar (noindex). La API responde lo suyo
+# con sus propias cabeceras (Cache-Control: no-store, Referrer-Policy).
+/cita
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow

@@ -5,8 +5,13 @@
 //
 // El profesional fija la hora REAL: la del paciente es una preferencia en
 // texto libre y se muestra como referencia (y, si se puede leer, se precarga).
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+//
+// Fase 3: una solicitud de otra hora (`reagendamiento`) mueve la cita que el
+// paciente ya tiene. El modal muestra su hora actual y pide SOLO fecha y hora
+// (la cita conserva su duración y su tipo de consulta).
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
+import { capitalizar, formatearFechaLarga, horaEnClinica } from '@/shared/lib/fecha'
 import type { Solicitud } from '@/entities/solicitud'
 import { DURACION_MAXIMA_MIN } from '../model/mensajeDeError'
 import { useAceptarSolicitud } from '../model/useAceptarSolicitud'
@@ -23,8 +28,47 @@ const emit = defineEmits<{
   result: [resultado: ResultadoResolucion<SolicitudAceptada>]
 }>()
 
-const { form, errors, isSubmitting, submitError, sugerida, hoyISO, opcionesHora, reset, submit } =
-  useAceptarSolicitud()
+const {
+  form,
+  errors,
+  isSubmitting,
+  submitError,
+  sugerida,
+  esOtraHora,
+  hoyISO,
+  opcionesHora,
+  reset,
+  submit,
+} = useAceptarSolicitud()
+
+/** Hora que tiene hoy la cita de una solicitud de otra hora: 'Martes, 14 de octubre, 10:00 · 50 min'. */
+const horaActual = computed<string | null>(() => {
+  const origen = props.solicitud?.citaOrigen
+  if (!origen) return null
+  const inicio = new Date(origen.inicio)
+  if (Number.isNaN(inicio.getTime())) return null
+  return `${capitalizar(formatearFechaLarga(inicio))}, ${horaEnClinica(inicio)} · ${origen.duracionMin} min`
+})
+
+/**
+ * Identificación del paciente: 'RUT 11.111.111-1 · maria@correo.cl'. Desde la
+ * Fase 3 los dos pueden faltar (una de otra hora copia la ficha, y el alta
+ * manual permite pacientes sin RUT ni correo).
+ */
+const identificacion = computed(() => {
+  const s = props.solicitud
+  if (!s) return ''
+  return `${s.rut ? `RUT ${s.rut}` : 'Sin RUT'} · ${s.correo ?? 'Sin correo'}`
+})
+
+const textoAyuda = computed(() => {
+  if (sugerida.value) {
+    return 'La precargamos abajo. Ajústala si necesitas otra hora: la preferencia no reserva nada.'
+  }
+  return esOtraHora.value
+    ? 'Es lo que escribió el paciente: elige la nueva hora de la cita.'
+    : 'Es solo una preferencia: elige la hora real de la cita.'
+})
 
 const fechaInput = ref<HTMLInputElement | null>(null)
 let focoPrevio: HTMLElement | null = null
@@ -81,9 +125,15 @@ async function handleSubmit(): Promise<void> {
     >
       <header class="modal-header">
         <div class="modal-header__text">
-          <h2 id="aceptar-solicitud-titulo" class="modal-header__title">Aceptar solicitud</h2>
+          <h2 id="aceptar-solicitud-titulo" class="modal-header__title">
+            {{ esOtraHora ? 'Aceptar otra hora' : 'Aceptar solicitud' }}
+          </h2>
           <p class="modal-header__subtitle">
-            Se agendará una cita para {{ solicitud.nombrePaciente }}.
+            {{
+              esOtraHora
+                ? `Se moverá la cita de ${solicitud.nombrePaciente}.`
+                : `Se agendará una cita para ${solicitud.nombrePaciente}.`
+            }}
           </p>
         </div>
         <button
@@ -101,20 +151,29 @@ async function handleSubmit(): Promise<void> {
 
       <form class="modal__form" novalidate @submit.prevent="handleSubmit">
         <div class="modal__ref">
-          <span class="modal__ref-label">Preferencia del paciente</span>
-          <span class="modal__ref-value">{{ solicitud.preferenciaHoraria }}</span>
-          <span class="modal__hint">
-            {{
-              sugerida
-                ? 'La precargamos abajo. Ajústala si necesitas otra hora: la preferencia no reserva nada.'
-                : 'Es solo una preferencia: elige la hora real de la cita.'
-            }}
+          <span class="modal__ref-label">Paciente</span>
+          <span class="modal__ref-value">{{ solicitud.nombrePaciente }}</span>
+          <span class="modal__hint modal__hint--texto">{{ identificacion }}</span>
+        </div>
+
+        <div v-if="esOtraHora && horaActual" class="modal__ref">
+          <span class="modal__ref-label">Hora actual de la cita</span>
+          <span class="modal__ref-value">{{ horaActual }}</span>
+        </div>
+
+        <div class="modal__ref">
+          <span class="modal__ref-label">
+            {{ esOtraHora ? 'Lo que pide el paciente' : 'Preferencia del paciente' }}
           </span>
+          <span class="modal__ref-value modal__ref-value--texto">{{ solicitud.preferenciaHoraria }}</span>
+          <span class="modal__hint">{{ textoAyuda }}</span>
         </div>
 
         <div class="modal__row">
           <div class="modal__field">
-            <label class="modal__label" for="aceptar-fecha">Fecha de atención</label>
+            <label class="modal__label" for="aceptar-fecha">
+              {{ esOtraHora ? 'Nueva fecha' : 'Fecha de atención' }}
+            </label>
             <input
               id="aceptar-fecha"
               ref="fechaInput"
@@ -128,7 +187,9 @@ async function handleSubmit(): Promise<void> {
           </div>
 
           <div class="modal__field">
-            <label class="modal__label" for="aceptar-hora">Hora / Bloque</label>
+            <label class="modal__label" for="aceptar-hora">
+              {{ esOtraHora ? 'Nueva hora' : 'Hora / Bloque' }}
+            </label>
             <select id="aceptar-hora" v-model="form.hora" class="modal__input" :disabled="isSubmitting">
               <option value="" disabled>Selecciona una hora</option>
               <option v-for="bloque in opcionesHora" :key="bloque" :value="bloque">{{ bloque }}</option>
@@ -137,7 +198,7 @@ async function handleSubmit(): Promise<void> {
           </div>
         </div>
 
-        <div class="modal__field">
+        <div v-if="!esOtraHora" class="modal__field">
           <label class="modal__label" for="aceptar-duracion">Duración (minutos)</label>
           <input
             id="aceptar-duracion"
@@ -153,7 +214,7 @@ async function handleSubmit(): Promise<void> {
           <span v-if="errors.duracionMin" class="modal__error">{{ errors.duracionMin }}</span>
         </div>
 
-        <div class="modal__field">
+        <div v-if="!esOtraHora" class="modal__field">
           <label class="modal__label" for="aceptar-tipo">Tipo de consulta</label>
           <textarea
             id="aceptar-tipo"
@@ -166,7 +227,12 @@ async function handleSubmit(): Promise<void> {
           <span v-else class="modal__hint">Precargado con el motivo que escribió el paciente.</span>
         </div>
 
-        <p class="modal__note">
+        <p v-if="esOtraHora" class="modal__note">
+          La cita se moverá a esta hora con su misma duración y quedará <strong>pendiente</strong> de
+          confirmación. Sus recordatorios se reprograman para la nueva hora; el paciente no recibe un
+          aviso aparte del cambio.
+        </p>
+        <p v-else class="modal__note">
           La cita quedará <strong>pendiente</strong> de confirmación. Si el RUT ya es paciente de tu
           organización, se reutiliza su ficha.
         </p>
@@ -183,7 +249,9 @@ async function handleSubmit(): Promise<void> {
           >
             Volver
           </BaseButton>
-          <BaseButton type="submit" :block="false" :loading="isSubmitting">Aceptar y agendar</BaseButton>
+          <BaseButton type="submit" :block="false" :loading="isSubmitting">
+            {{ esOtraHora ? 'Mover la cita' : 'Aceptar y agendar' }}
+          </BaseButton>
         </div>
       </form>
     </div>
@@ -286,6 +354,14 @@ async function handleSubmit(): Promise<void> {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-text);
+}
+/* Texto libre del paciente (otra hora) o un correo largo: puede no tener espacios. */
+.modal__hint--texto {
+  overflow-wrap: anywhere;
+}
+.modal__ref-value--texto {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 .modal__row {
   display: grid;

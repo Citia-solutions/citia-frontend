@@ -9,6 +9,8 @@ y §d (*enlace para compartir la URL pública*)
 [ADR-09](../../../citia-backend/context/Decisions/ADR-09.md) §3, §10, §11
 **Features:** `src/features/bandeja-solicitudes/`, `src/features/compartir-enlace-agenda/` ·
 **Entidad:** `src/entities/solicitud/` · **Ruta:** `/solicitudes`
+**Fase 3 (2026-10-14):** solicitudes de otra hora (`tipo: 'reagendamiento'`) y estado `descartada` —
+ver [Cambios de la Fase 3](#cambios-de-la-fase-3--solicitudes-de-otra-hora-2026-10-14).
 
 ---
 
@@ -106,11 +108,30 @@ cuando la bandeja carga "Recibidas", informa su largo y se evita la segunda peti
 
 ---
 
+## Cambios de la Fase 3 — solicitudes de otra hora (2026-10-14)
+
+Rama `feature/fase3-respuesta-paciente`. Detalle en
+[responder-cita-paciente](responder-cita-paciente.md#bandeja-featuresbandeja-solicitudes).
+
+- **Dos tipos de solicitud.** `nueva` (el enlace de agenda, como hasta ahora) y `reagendamiento`: un
+  paciente con hora pide otra desde el enlace de su recordatorio (`/cita`). `SolicitudBandejaDto` suma
+  `tipo`, `citaOrigenId` y `citaOrigen: { inicio, duracionMin, estado } | null` (se toleran ausentes →
+  `nueva`). `rut` y `correo` pueden ser null (*"Sin RUT"*, *"Sin correo"*) y `motivo` puede llegar `''`
+  (no se muestra).
+- **En la lista:** badge *"Pide otra hora"* y *"Su hora actual: <fecha>, <hora> · <duración> · <estado>"*.
+- **Aceptar una de otra hora mueve la cita original** (mismo id, vuelve a `pendiente`, recordatorios
+  reprogramados): el modal pide **solo fecha y hora** y envía `{ inicio }`. Para una `nueva` no cambia
+  nada. La respuesta tiene la misma forma `{ solicitud, cita }`.
+- **Estado `descartada`** (terminal, lo pone el sistema cuando la cita original se cancela o se cierra
+  con la solicitud aún abierta): pestaña *Descartadas* y *"Descartada: <fecha> · La cita original se
+  canceló o se cerró antes de que alguien respondiera."*
+- La píldora del sidebar cuenta las `recibida` de los dos tipos.
+
 ## Pendientes
 
 | Qué | Nota |
 |-----|------|
-| **Prueba manual contra el backend real** | Aceptar (con y sin choque), rechazar, 409 con dos pestañas, 404, sesión sin `tenantSlug`. |
+| **Prueba manual contra el backend real** | Aceptar (con y sin choque), rechazar, 409 con dos pestañas, 404, sesión sin `tenantSlug`. Fase 3: aceptar y rechazar una de otra hora; ver una descartada tras cancelar la cita. |
 | Ver la cita desde una solicitud aceptada | `citaId` viene, pero el voucher necesita la fila; se ofrece "Ver en la agenda" en su lugar. |
 | Paginación | El backend la agregará si hace falta (tope 100). |
 | Contador sin listar | No hay endpoint de conteo; se cuenta la lista. |

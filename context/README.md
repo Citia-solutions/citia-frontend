@@ -44,12 +44,18 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   mientras guarda ([crear-cita](Features/crear-cita.md)), calendario público por meses
   ([agendar-cita-paciente](Features/agendar-cita-paciente.md)) y horas en la zona fija de Chile. Cerró
   DTF-07.
+- **Fase 3 — US-04 + US-02.07, respuesta del paciente** (2026-10-14,
+  `feature/fase3-respuesta-paciente`): [responder-cita-paciente](Features/responder-cita-paciente.md) —
+  página pública `/cita#<token>` (confirmar, cancelar, pedir otra hora), y en el panel quién confirmó o
+  canceló, la nota "pidió otra hora" e invalidar el enlace (voucher), y las solicitudes de otra hora y
+  el estado `descartada` (bandeja).
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
   - **Subtareas de US-02** (gestión de citas; archivos `02.NN-*`, no son historias propias):
     - [`02.07-paciente-reagenda-cancela.md`](us/02.07-paciente-reagenda-cancela.md) — el paciente
-      cancela o pide cambiar la hora desde un enlace. ⛔ Bloqueada por backend (ADR-10) y por el canal.
+      confirma, cancela o pide otra hora desde el enlace de su recordatorio. ✅ Implementada (v1, Fase 3)
+      → [responder-cita-paciente](Features/responder-cita-paciente.md).
     - [`02.08-voucher-cita.md`](us/02.08-voucher-cita.md) — voucher de la cita para el profesional,
       con reagendar y cancelar. ✅ Implementada → [gestionar-cita](Features/gestionar-cita.md).
     - [`02.09-dashboard-refleja-cambios.md`](us/02.09-dashboard-refleja-cambios.md) — conectar la
@@ -90,9 +96,11 @@ Chile** (`America/Santiago`, espejo de `APP_TZ`), aunque el navegador esté en o
 **Con datos de prueba:** nada. Ni el dashboard, ni el sidebar, ni el topbar tienen datos fijos
 ([DTF-03](Deudas/DTF-03.md), cerrada).
 
-**Planificado:** la vista del paciente ([US-02.07](us/02.07-paciente-reagenda-cancela.md)), bloqueada
-hasta que se acepte `ADR-10` (propuesto) en el backend y se responda cómo le llega el enlace al
-paciente (Q11).
+**Fase 3, verificado solo con respuestas simuladas** (backend en paralelo): **página del paciente**
+`/cita#<token>` (confirmar, cancelar, pedir otra hora; token en el fragmento y solo en memoria;
+`public/_headers` con `no-referrer`) · en el voucher, **quién confirmó / canceló**, **"El paciente pidió
+otra hora"** e **invalidar enlace** · en la bandeja, **"Pide otra hora"** (aceptar solo con fecha y
+hora) y **Descartadas** — ver [responder-cita-paciente](Features/responder-cita-paciente.md).
 
 **Arquitectura:** Feature-Sliced Design. La regla que no se rompe es la dirección de las capas:
 `pages → features → entities → shared`, nunca al revés.

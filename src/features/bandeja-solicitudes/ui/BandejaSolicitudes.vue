@@ -6,16 +6,24 @@
 // puede resolver la misma solicitud mientras esta pestaña está abierta. Por eso
 // tras cualquier acción —o ante un 404/409— se vuelve a pedir la lista en vez
 // de quitar la fila a mano.
+//
+// Fase 3: llegan también las solicitudes de otra hora (`tipo: 'reagendamiento'`)
+// que el paciente deja desde el enlace de su recordatorio. Se marcan con
+// "Pide otra hora" y la hora que tiene hoy su cita; aceptarlas mueve esa cita.
+// El sistema descarta las que quedan sin responder si la cita se cancela o se
+// cierra: pestaña "Descartadas".
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import BaseBadge from '@/shared/ui/BaseBadge.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseCard from '@/shared/ui/BaseCard.vue'
 import { capitalizar, formatearFechaLarga, horaEnClinica } from '@/shared/lib/fecha'
 import {
   AvisoSolapamiento,
+  STATUS_LABEL,
   solapamientosDe,
   type AgendaAppointment,
 } from '@/entities/appointment'
-import type { EstadoSolicitud, Solicitud } from '@/entities/solicitud'
+import type { CitaOrigen, EstadoSolicitud, Solicitud } from '@/entities/solicitud'
 import { invalidaBandeja } from '../model/mensajeDeError'
 import { useBandeja } from '../model/useBandeja'
 import type { ResultadoResolucion, SolicitudAceptada } from '../model/types'
@@ -34,12 +42,22 @@ const PESTANAS: { estado: EstadoSolicitud; etiqueta: string }[] = [
   { estado: 'recibida', etiqueta: 'Recibidas' },
   { estado: 'aceptada', etiqueta: 'Aceptadas' },
   { estado: 'rechazada', etiqueta: 'Rechazadas' },
+  { estado: 'descartada', etiqueta: 'Descartadas' },
 ]
 
 const VACIO: Record<EstadoSolicitud, string> = {
   recibida: 'No hay solicitudes esperando respuesta.',
   aceptada: 'Todavía no se ha aceptado ninguna solicitud.',
   rechazada: 'No hay solicitudes rechazadas.',
+  descartada: 'No hay solicitudes descartadas.',
+}
+
+/** Estado de una solicitud ya resuelta, como se lee en el historial. */
+const ETIQUETA_ESTADO: Record<EstadoSolicitud, string> = {
+  recibida: 'Recibida',
+  aceptada: 'Aceptada',
+  rechazada: 'Rechazada',
+  descartada: 'Descartada',
 }
 
 const { estado, solicitudes, loading, loaded, error, reload, cambiarEstado, reloadIfStale } =
@@ -99,16 +117,31 @@ function hrefTelefono(telefono: string): string {
   return `tel:${telefono.replace(/[^\d+]/g, '')}`
 }
 
+/**
+ * Hora que tiene hoy la cita de una solicitud de otra hora:
+ * 'Martes, 14 de octubre, 10:00 · 50 min · Confirmada'.
+ */
+function horaActual(origen: CitaOrigen): string {
+  const inicio = new Date(origen.inicio)
+  if (Number.isNaN(inicio.getTime())) return ''
+  return `${momento(origen.inicio)} · ${origen.duracionMin} min · ${STATUS_LABEL[origen.estado]}`
+}
+
 function alAceptar(resultado: ResultadoResolucion<SolicitudAceptada>): void {
   aceptarAbierto.value = false
   if (resultado.ok) {
     const { solicitud, cita } = resultado.valor
     const inicio = new Date(cita.inicio)
+    const cuando = `${formatearFechaLarga(inicio)} a las ${horaEnClinica(inicio)}`
+    // El tipo de la fila abierta, por si la respuesta no lo trajera.
+    const eraOtraHora =
+      solicitud.tipo === 'reagendamiento' || seleccionada.value?.tipo === 'reagendamiento'
     aviso.value = {
       tipo: 'exito',
       texto:
-        `Solicitud de ${solicitud.nombrePaciente} aceptada: cita agendada para el ` +
-        `${formatearFechaLarga(inicio)} a las ${horaEnClinica(inicio)}, pendiente de confirmación.`,
+        eraOtraHora
+          ? `Cita de ${solicitud.nombrePaciente} movida al ${cuando}, pendiente de confirmación.`
+          : `Solicitud de ${solicitud.nombrePaciente} aceptada: cita agendada para el ${cuando}, pendiente de confirmación.`,
       solapamientos: solapamientosDe(cita.avisos),
       verAgenda: true,
     }
@@ -228,16 +261,24 @@ onBeforeUnmount(() => {
             <div class="bandeja__item-head">
               <div class="bandeja__who">
                 <span class="bandeja__name">{{ s.nombrePaciente }}</span>
-                <span class="bandeja__rut">RUT {{ s.rut }}</span>
+                <span class="bandeja__rut">{{ s.rut ? `RUT ${s.rut}` : 'Sin RUT' }}</span>
+                <BaseBadge v-if="s.tipo === 'reagendamiento'" variant="info">Pide otra hora</BaseBadge>
               </div>
               <span class="bandeja__received">Recibida: {{ momento(s.recibidaEn) }}</span>
             </div>
 
-            <p class="bandeja__motivo">“{{ s.motivo }}”</p>
+            <p v-if="s.tipo === 'reagendamiento' && s.citaOrigen" class="bandeja__origen">
+              <span class="bandeja__origen-label">
+                {{ s.estado === 'recibida' ? 'Su hora actual:' : 'Su cita:' }}
+              </span>
+              {{ horaActual(s.citaOrigen) }}
+            </p>
+
+            <p v-if="s.motivo" class="bandeja__motivo">“{{ s.motivo }}”</p>
 
             <dl class="bandeja__facts">
               <div class="bandeja__fact">
-                <dt>Prefiere</dt>
+                <dt>{{ s.tipo === 'reagendamiento' ? 'Pide' : 'Prefiere' }}</dt>
                 <dd>{{ s.preferenciaHoraria }}</dd>
               </div>
               <div class="bandeja__fact">
@@ -245,6 +286,7 @@ onBeforeUnmount(() => {
                 <dd class="bandeja__contact">
                   <a class="bandeja__contact-link" :href="hrefTelefono(s.telefono)">{{ s.telefono }}</a>
                   <a v-if="s.correo" class="bandeja__contact-link" :href="`mailto:${s.correo}`">{{ s.correo }}</a>
+                  <span v-else class="bandeja__muted">Sin correo</span>
                   <span v-if="s.consentimiento" class="bandeja__muted">· acepta recordatorios</span>
                 </dd>
               </div>
@@ -256,8 +298,11 @@ onBeforeUnmount(() => {
               </BaseButton>
               <BaseButton :block="false" @click="abrirAceptar(s)">Aceptar</BaseButton>
             </div>
-            <p v-else-if="s.resueltaEn" class="bandeja__resolved">
-              {{ s.estado === 'aceptada' ? 'Aceptada' : 'Rechazada' }}: {{ momento(s.resueltaEn) }}
+            <p v-else class="bandeja__resolved">
+              {{ ETIQUETA_ESTADO[s.estado] }}<template v-if="s.resueltaEn">: {{ momento(s.resueltaEn) }}</template>
+              <template v-if="s.estado === 'descartada'">
+                · La cita original se canceló o se cerró antes de que alguien respondiera.
+              </template>
             </p>
           </li>
         </ul>
@@ -416,6 +461,15 @@ onBeforeUnmount(() => {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
+.bandeja__origen {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+.bandeja__origen-label {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
 .bandeja__motivo {
   margin: 0;
   padding: 0.5rem 0.75rem;
@@ -447,6 +501,8 @@ onBeforeUnmount(() => {
   color: var(--color-text);
   min-width: 0;
   overflow-wrap: anywhere;
+  /* La preferencia de otra hora es texto libre del paciente: respeta sus saltos de línea. */
+  white-space: pre-line;
 }
 .bandeja__contact {
   display: flex;
@@ -580,6 +636,13 @@ onBeforeUnmount(() => {
   }
   .bandeja__aviso {
     flex-direction: column;
+  }
+}
+/* Cuatro pestañas no caben en una fila en un teléfono angosto: 2 × 2. */
+@media (max-width: 420px) {
+  .bandeja__tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

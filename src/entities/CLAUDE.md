@@ -75,6 +75,9 @@ interface AuthUser {
     topbar y la tarjeta "Citas hoy"; no dupliques esos cálculos.
   - `useAgendaAppointments.setRange(desde, hasta, { forzar })`: sin `forzar` no repite un rango ya
     cargado; la agenda pasa `forzar: true` al montarse (2026-10-05).
+  - Fase 3: `AppointmentDetail.confirmedBy` / `cancelledBy` (`AppointmentActor = 'paciente' |
+    'profesional' | 'sistema'`), de `confirmadaPor` / `canceladaPor` de `GET /citas/:id`; `null` si no
+    vienen (campos opcionales del DTO).
 - `recordatorio/` — recordatorios por correo (US-03): tipos (`EstadoRecordatorio`, `MotivoRecordatorio`),
   `getRecordatoriosDeCita` (`/citas/:id/recordatorios`), `getConfiguracionRecordatorios` +
   `ConfiguracionRecordatoriosDto` (`GET /recordatorios/configuracion`, aquí desde el 2026-10-05 porque lo
@@ -85,6 +88,11 @@ interface AuthUser {
   `useSolicitudesRecibidas` (píldora del sidebar y tarjeta "Solicitudes por responder" del dashboard:
   `total`, `loading`, `error`; un `refresh()` con otro en curso espera ese en vez de pedir de nuevo).
   Nombra en español, como el backend.
+  - Fase 3: `TipoSolicitud` (`nueva` | `reagendamiento`, ausente → `nueva`), `citaOrigenId`,
+    `CitaOrigen` (`{ inicio, duracionMin, estado }`), estado `descartada`; `rut` y `correo` pueden ser
+    null y `motivo` queda `''` si no hay. `getSolicitudes(estado, { citaOrigenId })` y
+    `getSolicitudOtraHoraAbierta(citaId)` (la usa el voucher; filtra también en el front por tipo y cita).
+    `EstadoCitaOrigen` repite los estados de `appointment` porque un slice de entidades no importa de otro.
 
 ## Reglas
 

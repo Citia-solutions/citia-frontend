@@ -5,6 +5,7 @@ export type {
   AgendaAppointment,
   AppointmentStatus,
   AppointmentAction,
+  AppointmentActor,
   AppointmentDetail,
   AppointmentPatient,
 } from './model/types'

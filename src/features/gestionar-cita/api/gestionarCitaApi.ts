@@ -59,3 +59,14 @@ export function actualizarContactoPaciente(
 ): Promise<PacienteActualizado> {
   return http.patch<PacienteActualizado>(`/pacientes/${encodeURIComponent(pacienteId)}`, payload)
 }
+
+/**
+ * POST /citas/:id/enlace/invalidar — Fase 3. Revoca el enlace de la cita que va
+ * en los recordatorios (`/cita#<token>`): el de los correos ya enviados deja de
+ * servir y, si quedan recordatorios por salir, llevarán uno nuevo. 204 sin
+ * cuerpo; idempotente (sin enlace activo también es 204). 404 si la cita no es
+ * de la organización.
+ */
+export async function invalidarEnlacePaciente(citaId: string): Promise<void> {
+  await http.post<unknown>(`/citas/${encodeURIComponent(citaId)}/enlace/invalidar`)
+}

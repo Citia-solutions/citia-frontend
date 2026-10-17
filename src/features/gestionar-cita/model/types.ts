@@ -50,6 +50,14 @@ export type ResultadoAccion =
   | { ok: true; cita: CitaActualizada }
   | { ok: false; status: number | null; mensaje: string }
 
+/**
+ * Resultado de invalidar el enlace del paciente (Fase 3). `POST
+ * /citas/:id/enlace/invalidar` responde 204 sin cuerpo: no hay cita que devolver.
+ */
+export type ResultadoInvalidarEnlace =
+  | { ok: true }
+  | { ok: false; status: number | null; mensaje: string }
+
 // ---------------------------------------------------------------------------
 // Contacto del paciente (PATCH /pacientes/:id, Fase 2 — ADR-13 §14)
 // ---------------------------------------------------------------------------
