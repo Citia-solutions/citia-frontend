@@ -8,9 +8,11 @@
 // clic. Sin token, ni siquiera llama a la API.
 //
 // Sin recursos de terceros: ni fuentes, ni analítica, ni imágenes externas
-// (los íconos son SVG en línea). Así el `Referer` y el token no salen de aquí.
+// (los íconos son SVG en línea y el logo, un PNG del propio sitio). Así el
+// `Referer` y el token no salen de aquí.
 import { nextTick, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
+import BaseLogo from '@/shared/ui/BaseLogo.vue'
 import { useRespuestaCita } from '../model/useRespuestaCita'
 import ResumenHora from './ResumenHora.vue'
 import CancelarHoraForm from './CancelarHoraForm.vue'
@@ -60,14 +62,7 @@ onMounted(() => void cargar())
 <template>
   <div class="respuesta">
     <header class="respuesta__marca">
-      <span class="respuesta__logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
-          <rect x="3" y="5" width="18" height="16" rx="2" />
-          <path d="M16 3v4M8 3v4M3 11h18" />
-          <path d="m9 15 2 2 4-4" />
-        </svg>
-      </span>
-      <span class="respuesta__marca-nombre">Citia</span>
+      <BaseLogo :alto="34" />
     </header>
 
     <main class="respuesta__main">
@@ -164,21 +159,6 @@ onMounted(() => void cargar())
 .respuesta__marca {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-}
-.respuesta__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.16);
-}
-.respuesta__marca-nombre {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
 }
 .respuesta__main {
   flex: 1;

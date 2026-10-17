@@ -40,13 +40,21 @@ src/shared/
 │                         # UTC, solo para formatear), partesDeFecha, aFechaISO, diasDelMes,
 │                         # sumarDias, diferenciaDias, diaDeLaSemana, inicioDeSemana (lunes), …
 │   └── rut.ts            # Validación y formato del RUT (DTF-05)
+├── assets/
+│   └── marca/            # logotipo-negativo.png (588×120) e isotipo-negativo.png (132×96):
+│                         # recortes del kit de marca; solo los usa ui/BaseLogo.vue
 └── ui/
     ├── BaseButton.vue    # Props: variant('primary'|'outline'), loading, block
     ├── BaseInput.vue     # Props: modelValue, label, type, error, hint?; slot: icon
     │                     # (label/hint/error quedan asociados al input con useId)
     ├── BaseCheckbox.vue  # Props: modelValue, label
+    ├── BaseLogo.vue      # Logo de citiahealth en negativo (blanco), para fondo oscuro o azul.
+    │                     # Props: variante('logotipo'|'isotipo'), alto (px). PNG en assets/marca/
     └── BaseSwitch.vue    # Interruptor (role="switch"). Props: modelValue, label, description?, disabled
 ```
+
+Los favicons (`public/favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png` y
+`favicon.ico`) salen del ícono de app del kit de marca; se enlazan en `index.html`.
 
 ## Reglas Críticas
 
