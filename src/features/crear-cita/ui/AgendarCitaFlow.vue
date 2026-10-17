@@ -4,6 +4,7 @@
 // móvil, en horizontal. Vive en `features/crear-cita` porque reusa su modelo.
 import { computed, markRaw, onUnmounted, ref, watch, type Component } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
+import BaseLogo from '@/shared/ui/BaseLogo.vue'
 import { useAgendarCita } from '../model/useAgendarCita'
 import { PASOS, validarPaso, type FlujoCitaPaso } from '../model/flujoCitaModel'
 import IdentificacionStep from './steps/IdentificacionStep.vue'
@@ -91,14 +92,7 @@ function handleReiniciar(): void {
 <template>
   <div class="flow">
     <header class="flow__brand">
-      <span class="flow__logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
-          <rect x="3" y="5" width="18" height="16" rx="2" />
-          <path d="M16 3v4M8 3v4M3 11h18" />
-          <path d="m9 15 2 2 4-4" />
-        </svg>
-      </span>
-      <span class="flow__brand-name">Citia</span>
+      <BaseLogo :alto="34" />
     </header>
 
     <main class="flow__body">
@@ -206,21 +200,6 @@ function handleReiniciar(): void {
 .flow__brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-}
-.flow__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.16);
-}
-.flow__brand-name {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
 }
 .flow__body {
   flex: 1;

@@ -9,6 +9,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
+import BaseLogo from '@/shared/ui/BaseLogo.vue'
 import { roleLabel, useSessionStore } from '@/entities/session'
 import { useSolicitudesRecibidas } from '@/entities/solicitud'
 import { cerrarSesion } from '@/app/router/cerrarSesion'
@@ -28,15 +29,13 @@ function salir(): void {
 
 <template>
   <aside class="sidebar">
-    <!-- Marca -->
+    <!-- Marca: logotipo y clínica; colapsado, solo el isotipo -->
     <div class="sidebar__brand">
-      <span class="sidebar__logo" aria-hidden="true">C</span>
-      <div class="sidebar__brand-text">
-        <span class="sidebar__brand-name">Citia</span>
-        <span v-if="user?.tenantNombre" class="sidebar__brand-sub" :title="user.tenantNombre">
-          {{ user.tenantNombre }}
-        </span>
-      </div>
+      <BaseLogo class="sidebar__logotipo" :alto="30" />
+      <BaseLogo class="sidebar__isotipo" variante="isotipo" :alto="30" />
+      <span v-if="user?.tenantNombre" class="sidebar__brand-sub" :title="user.tenantNombre">
+        {{ user.tenantNombre }}
+      </span>
     </div>
 
     <!-- Navegación principal -->
@@ -126,33 +125,16 @@ function salir(): void {
 }
 .sidebar__brand {
   display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-.sidebar__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: #fff;
-  font-weight: 700;
-  font-size: 1.15rem;
-  flex-shrink: 0;
-}
-.sidebar__brand-text {
-  display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
   min-width: 0;
 }
-.sidebar__brand-name {
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--color-sidebar-text);
+.sidebar__isotipo {
+  display: none;
 }
 .sidebar__brand-sub {
+  max-width: 100%;
   font-size: 0.75rem;
   color: var(--color-sidebar-text-muted);
   overflow: hidden;
@@ -261,10 +243,17 @@ function salir(): void {
     width: 72px;
     padding: 1.25rem 0.6rem;
   }
-  .sidebar__brand-text,
+  .sidebar__logotipo,
+  .sidebar__brand-sub,
   .sidebar__item span,
   .sidebar__profile-text {
     display: none;
+  }
+  .sidebar__brand {
+    align-items: center;
+  }
+  .sidebar__isotipo {
+    display: block;
   }
   .sidebar__item {
     position: relative;
