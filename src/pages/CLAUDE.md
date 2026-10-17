@@ -7,7 +7,7 @@ src/pages/
 ├── login/
 │   └── ui/
 │       ├── LoginPage.vue    # Layout: grid 2 columnas (aside + panel); redirección post-login
-│       └── AuthAside.vue    # Panel izquierdo: logo Citia, headline y lo que Citia hace hoy
+│       └── AuthAside.vue    # Panel izquierdo: logo (BaseLogo), headline y lo que Citia hace hoy
 ├── dashboard/
 │   └── ui/
 │       ├── DashboardPage.vue    # Resumen: topbar, 4 tarjetas, citas de hoy, citas por semana, recordatorios
