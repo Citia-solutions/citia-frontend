@@ -85,12 +85,12 @@ async function confirmar(): Promise<void> {
       </h2>
       <p v-if="solicitud.tipo === 'reagendamiento'" id="rechazar-texto" class="confirm__text">
         Su cita se mantiene a la hora que tiene hoy y la solicitud pasará a
-        <strong>Rechazadas</strong>. El paciente no recibe ningún aviso desde Citia: si corresponde,
+        <strong>Rechazadas</strong>. El paciente no recibe ningún aviso desde citiahealth: si corresponde,
         contáctalo tú.
       </p>
       <p v-else id="rechazar-texto" class="confirm__text">
         No se creará ninguna cita y la solicitud pasará a <strong>Rechazadas</strong>. El paciente
-        no recibe ningún aviso desde Citia: si corresponde, contáctalo tú.
+        no recibe ningún aviso desde citiahealth: si corresponde, contáctalo tú.
       </p>
 
       <p v-if="submitError" class="confirm__error" role="alert">{{ submitError }}</p>

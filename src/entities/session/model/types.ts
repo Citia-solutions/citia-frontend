@@ -21,7 +21,7 @@ export interface AuthUser {
   tenantSlug?: string
   /**
    * Nombre visible de la organización (`usuario.tenantNombre` del login, desde
-   * 2026-10-05). Lo muestra el sidebar bajo "Citia". Opcional por la misma razón
+   * 2026-10-05). Lo muestra el sidebar bajo el logo. Opcional por la misma razón
    * que `tenantSlug`: si no viene, esa línea no se muestra.
    */
   tenantNombre?: string
