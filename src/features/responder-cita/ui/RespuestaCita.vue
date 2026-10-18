@@ -139,7 +139,7 @@ onMounted(() => void cargar())
       </section>
 
       <p class="respuesta__pie">
-        Este enlace es personal: no lo reenvíes. Citia gestiona las horas de tu profesional.
+        Este enlace es personal: no lo reenvíes. citiahealth gestiona las horas de tu profesional.
       </p>
     </main>
   </div>

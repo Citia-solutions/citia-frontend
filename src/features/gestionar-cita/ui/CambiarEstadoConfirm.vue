@@ -46,7 +46,7 @@ const textos = computed<Textos>(() => {
       return {
         titulo: `¿Marcar como confirmada la cita de ${nombre}?`,
         detalle: [
-          'Úsalo cuando el paciente te confirme que vendrá (por teléfono, en persona o por correo). Citia no le envía ningún aviso.',
+          'Úsalo cuando el paciente te confirme que vendrá (por teléfono, en persona o por correo). citiahealth no le envía ningún aviso.',
           'Sus recordatorios siguen programados igual.',
         ],
         boton: 'Sí, confirmar',

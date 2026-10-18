@@ -23,7 +23,7 @@ const destino = computed(() =>
       <p class="no-encontrada__codigo" aria-hidden="true">404</p>
       <h1 class="no-encontrada__titulo">Página no encontrada</h1>
       <p class="no-encontrada__texto">
-        La dirección <code class="no-encontrada__ruta">{{ route.path }}</code> no existe en Citia.
+        La dirección <code class="no-encontrada__ruta">{{ route.path }}</code> no existe en citiahealth.
         Revisa que esté bien escrita o vuelve a empezar.
       </p>
       <RouterLink :to="destino.to" class="no-encontrada__accion">{{ destino.texto }}</RouterLink>

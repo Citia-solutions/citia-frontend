@@ -48,7 +48,7 @@ async function handleSubmit(): Promise<void> {
     <h3 class="accion__title">¿Cancelar la cita de {{ appointment.patientName }}?</h3>
     <p class="accion__ref">{{ cuando }}. Esta acción no se puede deshacer.</p>
     <p class="accion__ref">
-      Sus recordatorios pendientes se anulan. Citia no le avisa al paciente de la cancelación.
+      Sus recordatorios pendientes se anulan. citiahealth no le avisa al paciente de la cancelación.
     </p>
 
     <div class="accion__field">

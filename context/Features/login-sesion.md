@@ -119,7 +119,7 @@ vence (1 día): el backend no tiene revocación (`DT-01` del backend).
 |-------|-----------------|
 | *"El identificador de tu clínica, p. ej. clinica-demo."* | El login es multi-tenant por slug (ADR-03 del backend): sin él el usuario no sabe qué escribir en "Clínica" |
 | *"Tus pacientes piden hora desde un enlace y tú decides si la aceptas."* (aside) | Describe la bandeja tal como es. El enlace público sigue gobernado por `ENLACE_PUBLICO_LISTO` mientras el backend no cierre `DT-18` |
-| *"Citia les recuerda la cita automáticamente, en los momentos que elijas."* (aside) | Recordatorios **por correo** de US-03; no promete WhatsApp ni cifras de ausentismo |
+| *"citiahealth les recuerda la cita automáticamente, en los momentos que elijas."* (aside) | Recordatorios **por correo** de US-03; no promete WhatsApp ni cifras de ausentismo |
 
 ---
 
