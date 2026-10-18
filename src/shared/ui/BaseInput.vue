@@ -115,6 +115,7 @@ const description = computed(() => props.error || props.hint || '')
   padding: 0;
 }
 .field__error {
+  margin: 0;
   font-size: 0.8rem;
   color: var(--color-danger);
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { LoginForm } from '@/features/auth'
+import BaseLogo from '@/shared/ui/BaseLogo.vue'
 import AuthAside from './AuthAside.vue'
 
 const router = useRouter()
@@ -39,6 +40,10 @@ function handleSuccess(): void {
 
     <main class="login__panel">
       <div class="login__card">
+        <div class="login__marca">
+          <BaseLogo tema="positivo" :alto="30" />
+        </div>
+
         <header class="login__header">
           <h2 class="login__title">Inicia sesión</h2>
           <p class="login__subtitle">Accede al panel de tu centro clínico.</p>
@@ -68,12 +73,12 @@ function handleSuccess(): void {
   max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
 }
 .login__header {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  margin-bottom: 1.5rem;
 }
 .login__title {
   font-size: 1.9rem;
@@ -86,6 +91,10 @@ function handleSuccess(): void {
   color: var(--color-text-muted);
 }
 
+.login__marca {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .login {
     grid-template-columns: 1fr;
@@ -93,6 +102,10 @@ function handleSuccess(): void {
   /* En escritorio el aside conserva su propio `display: flex` (no se pisa aquí). */
   .login__aside {
     display: none;
+  }
+  .login__marca {
+    display: block;
+    margin-bottom: 24px;
   }
 }
 </style>
