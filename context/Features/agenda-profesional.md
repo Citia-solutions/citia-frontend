@@ -106,7 +106,7 @@ Las respuestas de `POST /citas`, `PATCH /citas/:id/reagendar`, `PATCH /citas/:id
 
 - **No bloquea:** cuando se muestra, la operación ya se hizo. Copy: *"Esta cita se cruza con otra
   cita vigente del mismo profesional"* + la lista (día, hora, paciente, tipo, duración, estado) +
-  *"El cambio ya quedó guardado: Citia no impide los cruces, solo avisa."*
+  *"El cambio ya quedó guardado: citiahealth no impide los cruces, solo avisa."*
 - Componente único `AvisoSolapamiento` en `entities/appointment/ui/` (se ve igual en todos lados);
   si la lista viene vacía no pinta nada.
 - **Tolera que `avisos` falte** (backend anterior, o transiciones que no lo traen como cancelar):

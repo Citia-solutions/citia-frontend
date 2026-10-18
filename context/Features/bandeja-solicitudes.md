@@ -69,7 +69,7 @@ Modal (mismo patrón y estilo que "Nueva cita") que pide:
 ## Rechazar
 
 Confirmación simple (foco inicial en "Volver"), **sin motivo** (DT-26: no retener más dato sensible).
-Copy: *"No se creará ninguna cita … El paciente no recibe ningún aviso desde Citia: si corresponde,
+Copy: *"No se creará ninguna cita … El paciente no recibe ningún aviso desde citiahealth: si corresponde,
 contáctalo tú."* (no hay canal, RF-06).
 
 ## 404 y 409
