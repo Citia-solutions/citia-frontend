@@ -76,7 +76,7 @@ function dia(cita: AgendaAppointment): string {
     </ul>
 
     <p class="solape__foot">
-      El cambio ya quedó guardado: Citia no impide los cruces, solo avisa. Si no fue
+      El cambio ya quedó guardado: citiahealth no impide los cruces, solo avisa. Si no fue
       intencional, reagenda una de las dos.
     </p>
   </div>

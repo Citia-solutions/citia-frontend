@@ -17,7 +17,7 @@ const features = [
   },
   {
     title: 'Recordatorios por correo',
-    text: 'Citia les recuerda la cita automáticamente, en los momentos que elijas.',
+    text: 'citiahealth les recuerda la cita automáticamente, en los momentos que elijas.',
     icon: 'recordatorios',
   },
 ] as const
@@ -30,7 +30,7 @@ const features = [
     <div class="aside__pitch">
       <h1 class="aside__headline">Tu agenda clínica, en orden y al día.</h1>
       <p class="aside__subtitle">
-        Citia reúne tus citas, las solicitudes de hora de tus pacientes y los recordatorios por
+        citiahealth reúne tus citas, las solicitudes de hora de tus pacientes y los recordatorios por
         correo en un solo panel.
       </p>
     </div>

@@ -226,7 +226,7 @@ onMounted(() => void cargar())
       </div>
 
       <p class="config__privacy">
-        El correo sale a nombre de Citia, con tu nombre y el de tu organización. No incluye el tipo
+        El correo sale a nombre de citiahealth, con tu nombre y el de tu organización. No incluye el tipo
         de consulta ni datos del paciente.
       </p>
     </BaseCard>

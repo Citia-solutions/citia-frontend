@@ -135,7 +135,7 @@ Rama `feature/fase2-recordatorios`. Detalle completo en [recordatorios](recordat
 | Texto | Por qué importa |
 |-------|-----------------|
 | *"Sus recordatorios se reprograman para la nueva hora. El paciente no recibe un aviso aparte del cambio."* (reagendar) | Reagendar no le escribe al paciente: solo recibirá los recordatorios de la nueva hora. |
-| *"Sus recordatorios pendientes se anulan. Citia no le avisa al paciente de la cancelación."* (cancelar) | Con recordatorios automáticos es fácil suponer que Citia también avisa las cancelaciones. No lo hace. |
+| *"Sus recordatorios pendientes se anulan. citiahealth no le avisa al paciente de la cancelación."* (cancelar) | Con recordatorios automáticos es fácil suponer que Citia también avisa las cancelaciones. No lo hace. |
 
 `PATCH /pacientes/:id` vive en este feature porque el voucher es el único lugar del front donde se
 edita un paciente (no hay ficha de pacientes todavía). Si aparece una, la llamada pasa a una entidad
@@ -161,7 +161,7 @@ Lote 2 de la limpieza previa al release. Sección nueva entre *Recordatorios* y 
 
   | Acción | Texto |
   |--------|-------|
-  | Confirmar | *"Úsalo cuando el paciente te confirme que vendrá (por teléfono, en persona o por correo). Citia no le envía ningún aviso."* · *"Sus recordatorios siguen programados igual."* |
+  | Confirmar | *"Úsalo cuando el paciente te confirme que vendrá (por teléfono, en persona o por correo). citiahealth no le envía ningún aviso."* · *"Sus recordatorios siguen programados igual."* |
   | Asistió / No asistió | *"La cita queda cerrada como «Asistió» / «No asistió» y ya no admite cambios. Esta acción no se puede deshacer."* · *"Sus recordatorios pendientes se anulan."* |
 
   El aviso ámbar *"Esta cita todavía no empieza…"* que tuvo esta vista se quitó el mismo día: ahora a
