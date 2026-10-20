@@ -23,14 +23,21 @@
 //
 // Lote 2 de la limpieza previa al release (2026-10-05): sección
 // "Confirmación" / "Asistencia" con Confirmar (pendiente → confirmada) y
-// Asistió / No asistió (confirmada → asistio / no_asistio). Igual que
-// reagendar y cancelar, cada botón aparece SOLO si viene en
-// `accionesPermitidas`: una cita pendiente que ya pasó solo ofrece Confirmar
-// (se explica que para registrar la asistencia primero hay que confirmarla).
+// Asistió / No asistió. Igual que reagendar y cancelar, cada botón aparece
+// SOLO si viene en `accionesPermitidas`.
 //
-// Asistió / No asistió además esperan la hora de inicio (decisión del usuario,
-// 2026-10-05; el backend no lo exige): antes solo se explica desde qué hora se
-// podrá, y los botones aparecen solos al llegar esa hora (`useYaEmpezo`).
+// US-07.01 (Fase 5, ADR-14 §9): Asistió / No asistió también sobre una
+// pendiente, sin confirmarla antes (asistio directo; No asistió la deja en
+// ghosting, "Sin respuesta"). El backend exige la hora de inicio: antes no las
+// declara y responde 409 (`CitaAunNoComienzaError`). Por eso, al llegar la
+// hora con el voucher abierto (`useYaEmpezo`), se vuelve a pedir el detalle y,
+// si todavía no las trae (reloj del equipo adelantado), una vez más a los
+// ~30 s. Sobre una pendiente que ya empezó NO se ofrece Confirmar
+// (presentación: el backend lo sigue aceptando). Antes de la hora solo se
+// explica desde cuándo se podrá registrar la asistencia.
+//
+// US-07.01: Cancelar y Reagendar preguntan "¿Quién lo pidió?" (obligatoria,
+// `ui/QuienLoPidio.vue`) y la mandan como `pedidoPor`.
 //
 // Fase 3 (US-04 + US-02.07, respuesta del paciente desde el enlace del
 // recordatorio): "Confirmada por el paciente / por ti" y "Cancelada por el
@@ -53,6 +60,7 @@ import {
   isActiveStatus,
   isTerminalStatus,
   solapamientosDe,
+  STATUS_LABEL,
   type AgendaAppointment,
   type Appointment,
   type AppointmentAction,
@@ -153,7 +161,9 @@ const NOTA_TERMINAL: Partial<Record<AppointmentStatus, string>> = {
   cancelada: 'Esta cita fue cancelada.',
   asistio: 'El paciente asistió a esta cita.',
   no_asistio: 'El paciente no asistió.',
-  ghosting: 'El paciente no confirmó esta cita.',
+  // US-07.01: lo marca el profesional (No asistió sobre una pendiente) o el job
+  // de cierre G1. En los dos casos, el paciente no confirmó y no llegó.
+  ghosting: 'El paciente no confirmó ni asistió.',
 }
 
 const esTerminal = computed(() => (cita.value ? isTerminalStatus(cita.value.status) : false))
@@ -239,40 +249,104 @@ const { yaEmpezo, refrescar: refrescarAhora } = useYaEmpezo(cita, toRef(props, '
 
 const TRANSICIONES: readonly TransicionEstado[] = ['confirmar', 'asistencia', 'inasistencia']
 
-/** Transiciones de estado que el backend ofrece para esta cita (vacío hasta que llega el detalle). */
-const transicionesPermitidas = computed(() => TRANSICIONES.filter((t) => permitida(t)))
+/**
+ * La sección aparece con el detalle fresco de una cita vigente, aunque no
+ * tenga botones: una confirmada que aún no empieza solo dice desde qué hora se
+ * podrá registrar la asistencia (desde US-07.01 el backend no la declara antes).
+ */
+const mostrarEstado = computed(
+  () => detail.value !== null && !notFound.value && isActiveStatus(detail.value.status),
+)
 
 /**
- * Lo que se puede hacer AHORA: lo que declara el backend, salvo Asistió / No
- * asistió antes de la hora de inicio. Ese bloqueo es solo del front (decisión
- * del usuario, 2026-10-05): el backend sí lo acepta. Confirmar no espera.
+ * La cita ya empezó: lo dice el reloj del equipo (`yaEmpezo`) o el backend, que
+ * desde US-07.01 solo declara Asistió / No asistió desde la hora de inicio. El
+ * backend gana si el reloj del equipo va atrasado.
+ */
+const empezo = computed(() => yaEmpezo.value || permitida('asistencia') || permitida('inasistencia'))
+
+/**
+ * Lo que se puede hacer AHORA. Asistió / No asistió: lo que declara el backend
+ * (que ya exige la hora de inicio, US-07.01). Confirmar: solo mientras la cita
+ * no empieza; sobre una pendiente que ya empezó se ofrece Asistió / No asistió
+ * directo, sin fabricar una confirmación que no hubo (ADR-14 §9). Ocultarlo es
+ * presentación: el backend sigue aceptando confirmar (pregunta abierta 1 del
+ * plan de US-07.01).
  */
 function disponible(t: TransicionEstado): boolean {
-  return permitida(t) && (t === 'confirmar' || yaEmpezo.value)
+  if (!permitida(t)) return false
+  return t === 'confirmar' ? !empezo.value : true
 }
 
 /** false en una confirmada que aún no empieza: la sección queda solo con el texto. */
 const hayBotonesEstado = computed(() => TRANSICIONES.some((t) => disponible(t)))
 
-/** Título de la sección: "Confirmación" si se puede confirmar; si no, "Asistencia". */
-const tituloEstado = computed(() => (permitida('confirmar') ? 'Confirmación' : 'Asistencia'))
+/**
+ * Ya es la hora según el reloj del equipo, pero el backend todavía no declara
+ * Asistió / No asistió: el detalle se está volviendo a pedir o el reloj del
+ * equipo va adelantado respecto del servidor (riesgo 10 del plan de US-07.01).
+ */
+const esperandoAsistencia = computed(
+  () => mostrarEstado.value && yaEmpezo.value && !permitida('asistencia') && !permitida('inasistencia'),
+)
+
+/** Espera del único reintento automático cuando el backend aún no declara la asistencia. */
+const REINTENTO_ASISTENCIA_MS = 30_000
 
 /**
- * Texto de la sección. Es presentación: qué botones hay lo decide el backend
- * (más el bloqueo por hora de `disponible`).
- * Una pendiente que ya empezó solo admite Confirmar (ADR-04): se explica por
- * qué no hay Asistió / No asistió, sin ofrecer un atajo que ensuciaría el dato.
- * Una confirmada que aún no empieza no muestra botones: solo desde qué hora.
+ * Reintento de esta apertura: `sin_usar` → `programado` (a los ~30 s) →
+ * `agotado`. Agotado, si el backend sigue sin declarar la asistencia, la
+ * sección lo explica y ofrece volver a intentar a mano.
+ */
+const reintentoAsistencia = ref<'sin_usar' | 'programado' | 'agotado'>('sin_usar')
+let timerReintentoAsistencia: ReturnType<typeof setTimeout> | undefined
+
+function cancelarReintentoAsistencia(): void {
+  clearTimeout(timerReintentoAsistencia)
+  timerReintentoAsistencia = undefined
+}
+
+/**
+ * Tras cada carga del detalle: si la cita ya empezó y el backend todavía no
+ * declara Asistió / No asistió, se vuelve a pedir una sola vez a los ~30 s.
+ */
+function revisarReintentoAsistencia(): void {
+  if (!props.isOpen || !esperandoAsistencia.value || reintentoAsistencia.value !== 'sin_usar') return
+  reintentoAsistencia.value = 'programado'
+  timerReintentoAsistencia = setTimeout(() => {
+    timerReintentoAsistencia = undefined
+    reintentoAsistencia.value = 'agotado'
+    void cargarDetalle()
+  }, REINTENTO_ASISTENCIA_MS)
+}
+
+/** El reintento ya pasó y el backend sigue sin declarar la asistencia. */
+const asistenciaNoLlega = computed(
+  () => esperandoAsistencia.value && reintentoAsistencia.value === 'agotado' && !cargandoDetalle.value,
+)
+
+/** Título de la sección: "Confirmación" si se puede confirmar; si no, "Asistencia". */
+const tituloEstado = computed(() => (disponible('confirmar') ? 'Confirmación' : 'Asistencia'))
+
+/**
+ * Texto de la sección. Es presentación: qué botones hay lo decide el backend.
+ * Antes de la hora: confirmar (pendiente) o desde qué hora se podrá registrar
+ * la asistencia (confirmada). Desde la hora: si el paciente vino; sobre una
+ * pendiente se aclara que no la confirmó (US-07.01).
  */
 const textoEstado = computed(() => {
-  if (permitida('confirmar')) {
-    return yaEmpezo.value
-      ? 'Esta cita ya empezó y sigue pendiente. Para registrar si el paciente asistió, primero confírmala.'
-      : '¿El paciente confirmó que vendrá? Márcala como confirmada.'
+  if (!empezo.value) {
+    return disponible('confirmar')
+      ? '¿El paciente confirmó que vendrá? Márcala como confirmada.'
+      : `Podrás registrar la asistencia cuando llegue la hora de la cita (${cita.value?.time ?? ''}).`
   }
-  return yaEmpezo.value
-    ? '¿El paciente vino a la cita?'
-    : `Podrás registrar la asistencia cuando llegue la hora de la cita (${cita.value?.time ?? ''}).`
+  if (asistenciaNoLlega.value) {
+    return 'La cita ya empezó, pero todavía no se puede registrar la asistencia. Revisa que la hora de tu equipo esté bien.'
+  }
+  if (esperandoAsistencia.value) return 'La cita ya empezó. En un momento podrás registrar si el paciente vino.'
+  return detail.value?.status === 'pendiente'
+    ? 'La cita ya empezó y el paciente no la confirmó. ¿Vino?'
+    : '¿El paciente vino a la cita?'
 })
 
 function abrirTransicion(t: TransicionEstado): void {
@@ -293,7 +367,9 @@ function hrefTelefono(telefono: string): string {
 async function cargarDetalle(): Promise<void> {
   const id = props.appointment?.id
   refrescarAhora()
-  if (id) await loadDetalle(id)
+  if (!id) return
+  await loadDetalle(id)
+  revisarReintentoAsistencia()
 }
 
 /** Primera carga al abrir: si la fila quedó vieja, se pide recargar la lista. */
@@ -303,7 +379,23 @@ async function cargarDetalleInicial(): Promise<void> {
   refrescarAhora()
   const nuevo = await loadDetalle(fila.id)
   if (notFound.value || (nuevo && nuevo.status !== fila.status)) emit('changed')
+  revisarReintentoAsistencia()
 }
+
+/**
+ * Al llegar la hora de inicio con el voucher abierto (US-07.01): el backend
+ * solo declara Asistió / No asistió desde esa hora, así que el detalle que se
+ * pidió antes no los trae. Se vuelve a pedir solo en el paso de "no empezó" a
+ * "empezó" y con el detalle de ESTA cita ya cargado: si hay una carga en curso
+ * (la inicial, o tras una acción), al terminar ella decide si hace falta el
+ * reintento.
+ */
+watch(yaEmpezo, (empezoAhora, empezoAntes) => {
+  if (!empezoAhora || empezoAntes || !props.isOpen || cargandoDetalle.value) return
+  const d = detail.value
+  if (!d || d.id !== props.appointment?.id || !isActiveStatus(d.status)) return
+  void cargarDetalle()
+})
 
 // ---------------------------------------------------------------------------
 // Recordatorios
@@ -359,12 +451,27 @@ const EXITO_TRANSICION: Record<TransicionEstado, string> = {
   inasistencia: 'Inasistencia registrada: el paciente no asistió.',
 }
 
-/** Resultado de Confirmar / Asistió / No asistió. Mismo tratamiento que cancelar. */
+/**
+ * Mensaje de éxito. No asistió sobre una pendiente deja la cita en `ghosting`
+ * (US-07.01): lo dice el `estado` de la respuesta, que es el destino real.
+ */
+function textoExitoTransicion(t: TransicionEstado, actualizada: CitaActualizada): string {
+  if (t === 'inasistencia' && actualizada.estado === 'ghosting') {
+    return `Inasistencia registrada: el paciente no confirmó ni asistió. La cita quedó como «${STATUS_LABEL.ghosting}».`
+  }
+  return EXITO_TRANSICION[t]
+}
+
+/**
+ * Resultado de Confirmar / Asistió / No asistió. Mismo tratamiento que
+ * cancelar. Un 409 (la cita cambió, o todavía no comienza según el servidor,
+ * US-07.01) muestra su mensaje y recarga el detalle.
+ */
 async function alResultadoTransicion(resultado: ResultadoAccion, t: TransicionEstado): Promise<void> {
   enviando.value = false
   if (resultado.ok) {
     irA('detalle')
-    aviso.value = { tipo: 'exito', textos: [EXITO_TRANSICION[t]] }
+    aviso.value = { tipo: 'exito', textos: [textoExitoTransicion(t, resultado.cita)] }
     emit('changed')
     // Asistió / No asistió cierran la cita: el backend anula los recordatorios
     // programados (asíncrono). Confirmar no los toca.
@@ -527,6 +634,8 @@ watch(
       aviso.value = null
       solapamientos.value = []
       enviando.value = false
+      cancelarReintentoAsistencia()
+      reintentoAsistencia.value = 'sin_usar'
       resetDetalle()
       resetRecordatorios()
       resetSolicitudOtraHora()
@@ -539,7 +648,8 @@ watch(
       await cargarDetalleInicial()
     } else {
       document.removeEventListener('keydown', onKeydown)
-      // Cerrado no se sigue preguntando por los recordatorios.
+      // Cerrado no se sigue preguntando por los recordatorios ni por la asistencia.
+      cancelarReintentoAsistencia()
       resetRecordatorios()
       resetSolicitudOtraHora()
       // Devuelve el foco a la fila desde la que se abrió.
@@ -550,7 +660,10 @@ watch(
   { immediate: true },
 )
 
-onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown)
+  cancelarReintentoAsistencia()
+})
 </script>
 
 <template>
@@ -708,13 +821,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
           <p v-if="esTerminal" class="voucher__terminal">{{ notaTerminal }} Ya no admite cambios.</p>
 
-          <section
-            v-if="!esTerminal && !notFound && transicionesPermitidas.length > 0"
-            class="voucher__estado"
-            aria-labelledby="voucher-estado"
-          >
+          <section v-if="mostrarEstado" class="voucher__estado" aria-labelledby="voucher-estado">
             <h3 id="voucher-estado" class="voucher__section-title">{{ tituloEstado }}</h3>
-            <p class="voucher__estado-text">{{ textoEstado }}</p>
+            <p class="voucher__estado-text">
+              {{ textoEstado }}
+              <button v-if="asistenciaNoLlega" type="button" class="voucher__retry" @click="cargarDetalle">
+                Volver a intentar
+              </button>
+            </p>
             <div v-if="hayBotonesEstado" class="voucher__estado-actions">
               <BaseButton
                 v-if="disponible('confirmar')"

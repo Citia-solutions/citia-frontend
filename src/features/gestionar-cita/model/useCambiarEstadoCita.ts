@@ -9,9 +9,11 @@ import type { ResultadoAccion, TransicionEstado } from './types'
  *
  * El front no decide si la transición es legal: el botón aparece solo si
  * viene en `accionesPermitidas` y, si la cita cambió entretanto, el backend
- * responde 409 (que el voucher atiende recargando el detalle). Lo único que
- * agrega el front es CUÁNDO: Asistió / No asistió se ofrecen desde la hora de
- * inicio (`useYaEmpezo`, 2026-10-05); el backend no lo exige.
+ * responde 409 (que el voucher atiende recargando el detalle). Asistió / No
+ * asistió se ofrecen desde la hora de inicio según el reloj del equipo
+ * (`useYaEmpezo`, 2026-10-05) y, desde US-07.01, también el backend lo exige:
+ * antes de la hora responde 409 con `CitaAunNoComienzaError`, cuyo mensaje se
+ * muestra tal cual (`mensajeDeError`).
  */
 export function useCambiarEstadoCita(appointmentId: string, transicion: TransicionEstado) {
   const isSubmitting = ref(false)

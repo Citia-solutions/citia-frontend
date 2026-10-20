@@ -2,6 +2,10 @@
 // Vista "Reagendar" del voucher: reemplaza el cuerpo, no abre otro modal.
 // Es a la vez el formulario y la confirmación: muestra la hora actual, la
 // nueva, y los avisos de lo que implica mover la cita antes del botón.
+//
+// US-07.01: "¿Quién lo pidió?" es obligatoria (sin respuesta no se envía) y
+// empieza sin ninguna opción marcada. Su aviso va junto a la pregunta, aparte
+// de la validación de la fecha y la hora.
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { capitalizar, formatearFechaLarga, horaEnClinica } from '@/shared/lib/fecha'
@@ -9,6 +13,7 @@ import type { Appointment } from '@/entities/appointment'
 import { MOTIVO_MAX } from '../model/mensajeDeError'
 import { useReagendarCita } from '../model/useReagendarCita'
 import type { ResultadoAccion } from '../model/types'
+import QuienLoPidio from './QuienLoPidio.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -33,6 +38,7 @@ const {
   opcionesHora,
   nuevoInicio,
   errorValidacion,
+  errorPedidoPor,
   saleDeHoy,
   isSubmitting,
   submitError,
@@ -92,6 +98,8 @@ async function handleSubmit(): Promise<void> {
       </div>
     </div>
 
+    <QuienLoPidio v-model="form.pedidoPor" :disabled="isSubmitting" :aviso="errorPedidoPor" />
+
     <div class="accion__field">
       <label class="accion__label" for="reagendar-motivo">Motivo</label>
       <textarea
@@ -130,7 +138,12 @@ async function handleSubmit(): Promise<void> {
       <BaseButton type="button" variant="outline" :block="false" :disabled="isSubmitting" @click="emit('back')">
         Volver
       </BaseButton>
-      <BaseButton type="submit" :block="false" :loading="isSubmitting" :disabled="errorValidacion !== null">
+      <BaseButton
+        type="submit"
+        :block="false"
+        :loading="isSubmitting"
+        :disabled="errorValidacion !== null || errorPedidoPor !== null"
+      >
         Mover cita
       </BaseButton>
     </div>

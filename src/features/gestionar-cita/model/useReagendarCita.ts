@@ -3,23 +3,28 @@ import { BLOQUES_HORARIOS, errorFinDeJornada } from '@/shared/config/bloquesHora
 import { aInicioISO, esMismoDia, fechaEnClinicaISO, horaEnClinica } from '@/shared/lib/fecha'
 import type { Appointment } from '@/entities/appointment'
 import { reagendarCita } from '../api/gestionarCitaApi'
-import { mensajeDeError, MOTIVO_MAX, statusDe } from './mensajeDeError'
-import type { ReagendarCitaRequest, ResultadoAccion } from './types'
+import { mensajeDeError, MOTIVO_MAX, PEDIDO_POR_REQUERIDO, statusDe } from './mensajeDeError'
+import type { PedidoPor, ReagendarCitaRequest, ResultadoAccion } from './types'
 
 export interface ReagendarForm {
   fecha: string // 'YYYY-MM-DD'
   hora: string // 'HH:mm'
   motivo: string
+  /** "¿Quién lo pidió?" (US-07.01). null hasta que se responde: sin respuesta no se envía. */
+  pedidoPor: PedidoPor | null
 }
 
 /**
  * Caso de uso "reagendar": formulario prellenado con la fecha y hora actuales
  * de la cita, validación de futuro (el backend NO impide reagendar al pasado:
- * el front es la única barrera) y envío.
+ * el front es la única barrera), "¿Quién lo pidió?" y envío.
  *
  * Todo en la zona de la clínica, igual que `aInicioISO`: prellenado, validación
  * y envío usan la misma referencia, así que "misma hora" y "pasado" cuadran
  * aunque el navegador esté en otra zona.
+ *
+ * "¿Quién lo pidió?" (US-07.01) se valida aparte (`errorPedidoPor`): así la
+ * vista sigue mostrando la nueva hora elegida mientras esa pregunta falta.
  */
 export function useReagendarCita(appointment: Appointment) {
   const inicioActual = new Date(appointment.startsAt)
@@ -28,6 +33,7 @@ export function useReagendarCita(appointment: Appointment) {
     fecha: fechaEnClinicaISO(inicioActual),
     hora: horaEnClinica(inicioActual),
     motivo: '',
+    pedidoPor: null,
   })
 
   const isSubmitting = ref(false)
@@ -71,6 +77,11 @@ export function useReagendarCita(appointment: Appointment) {
     return null
   })
 
+  /** Aviso mientras "¿Quién lo pidió?" no tiene respuesta, o null. */
+  const errorPedidoPor = computed<string | null>(() =>
+    form.pedidoPor === null ? PEDIDO_POR_REQUERIDO : null,
+  )
+
   /** true si la nueva fecha no es hoy: la cita dejará de aparecer en la lista del día. */
   const saleDeHoy = computed(() => {
     const nuevo = nuevoInicio.value
@@ -78,7 +89,8 @@ export function useReagendarCita(appointment: Appointment) {
   })
 
   async function submit(): Promise<ResultadoAccion | null> {
-    if (errorValidacion.value || !nuevoInicio.value) return null
+    const pedidoPor = form.pedidoPor
+    if (errorValidacion.value || !nuevoInicio.value || pedidoPor === null) return null
     // El computed no se recalcula con el paso del tiempo: se revisa de nuevo
     // al enviar por si el formulario quedó abierto hasta pasada esa hora.
     if (nuevoInicio.value.getTime() <= Date.now()) {
@@ -92,6 +104,7 @@ export function useReagendarCita(appointment: Appointment) {
       const motivo = form.motivo.trim()
       const payload: ReagendarCitaRequest = {
         inicio: aInicioISO(form.fecha, form.hora),
+        pedidoPor,
         ...(motivo ? { motivo } : {}),
       }
       const cita = await reagendarCita(appointment.id, payload)
@@ -111,6 +124,7 @@ export function useReagendarCita(appointment: Appointment) {
     opcionesHora,
     nuevoInicio,
     errorValidacion,
+    errorPedidoPor,
     saleDeHoy,
     isSubmitting,
     submitError,

@@ -1,11 +1,19 @@
 import { computed, ref } from 'vue'
 import { cancelarCita } from '../api/gestionarCitaApi'
-import { mensajeDeError, MOTIVO_MAX, statusDe } from './mensajeDeError'
-import type { CancelarCitaRequest, ResultadoAccion } from './types'
+import { mensajeDeError, MOTIVO_MAX, PEDIDO_POR_REQUERIDO, statusDe } from './mensajeDeError'
+import type { CancelarCitaRequest, PedidoPor, ResultadoAccion } from './types'
 
-/** Caso de uso "cancelar": motivo opcional y envío. Cancelar es terminal. */
+/**
+ * Caso de uso "cancelar": quién lo pidió (obligatorio, US-07.01), motivo
+ * opcional y envío. Cancelar es terminal.
+ *
+ * "¿Quién lo pidió?" empieza sin respuesta (`null`) y sin ella no se envía: la
+ * API lo acepta ausente (cuenta como del profesional), pero la pantalla lo exige
+ * para que el dato no llegue vacío por descuido.
+ */
 export function useCancelarCita(appointmentId: string) {
   const motivo = ref('')
+  const pedidoPor = ref<PedidoPor | null>(null)
   const isSubmitting = ref(false)
   const submitError = ref<string | null>(null)
 
@@ -15,14 +23,23 @@ export function useCancelarCita(appointmentId: string) {
       : null,
   )
 
+  /** Aviso mientras "¿Quién lo pidió?" no tiene respuesta, o null. */
+  const errorPedidoPor = computed<string | null>(() =>
+    pedidoPor.value === null ? PEDIDO_POR_REQUERIDO : null,
+  )
+
   async function submit(): Promise<ResultadoAccion | null> {
-    if (errorValidacion.value) return null
+    const quien = pedidoPor.value
+    if (errorValidacion.value || quien === null) return null
 
     submitError.value = null
     isSubmitting.value = true
     try {
       const texto = motivo.value.trim()
-      const payload: CancelarCitaRequest = texto ? { motivo: texto } : {}
+      const payload: CancelarCitaRequest = {
+        pedidoPor: quien,
+        ...(texto ? { motivo: texto } : {}),
+      }
       const cita = await cancelarCita(appointmentId, payload)
       return { ok: true, cita }
     } catch (e) {
@@ -34,5 +51,5 @@ export function useCancelarCita(appointmentId: string) {
     }
   }
 
-  return { motivo, errorValidacion, isSubmitting, submitError, submit }
+  return { motivo, pedidoPor, errorValidacion, errorPedidoPor, isSubmitting, submitError, submit }
 }
