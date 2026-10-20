@@ -32,7 +32,10 @@ Lo que existe hoy:
   registrar asistencia / inasistencia (solo desde la hora de inicio), estado de los recordatorios de
   la cita y editar el contacto del paciente. Qué botones existen lo decide `accionesPermitidas` del
   backend. Desde la Fase 3: quién confirmó o canceló ("por el paciente" / "por ti"), la nota "El
-  paciente pidió otra hora" e "Invalidar enlace del paciente" (solo cita vigente).
+  paciente pidió otra hora" e "Invalidar enlace del paciente" (solo cita vigente). Desde US-07.01
+  (Fase 5): asistencia / inasistencia también sobre una pendiente (sin confirmar antes; la inasistencia
+  la deja "Sin respuesta"), que el backend solo permite desde la hora de inicio, y "¿Quién lo pidió?"
+  obligatoria al cancelar y reagendar (`pedidoPor`).
 - Las rutas autenticadas son hijas de `app/layouts/PanelLayout.vue`; el sidebar
   (`PanelSidebar.vue`) muestra la clínica, el usuario, su rol y **Cerrar sesión**.
 - **Roles:** el backend emite solo `ADMINISTRADOR` y `PROFESIONAL`, que el front traduce a

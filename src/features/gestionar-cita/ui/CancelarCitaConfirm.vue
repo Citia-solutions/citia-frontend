@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Vista "Cancelar" del voucher: confirmación con motivo opcional. El foco
-// inicial va a "Volver", no al botón destructivo.
+// Vista "Cancelar" del voucher: confirmación con "¿Quién lo pidió?"
+// (obligatoria, US-07.01) y motivo opcional. El foco inicial va a "Volver", no
+// al botón destructivo.
 //
 // No se promete ningún aviso al paciente: los recordatorios (RF-06, Fase 2)
 // solo recuerdan citas vigentes; cancelar anula los pendientes y NO le escribe.
@@ -11,6 +12,7 @@ import type { Appointment } from '@/entities/appointment'
 import { MOTIVO_MAX } from '../model/mensajeDeError'
 import { useCancelarCita } from '../model/useCancelarCita'
 import type { ResultadoAccion } from '../model/types'
+import QuienLoPidio from './QuienLoPidio.vue'
 
 const props = defineProps<{ appointment: Appointment }>()
 
@@ -20,9 +22,8 @@ const emit = defineEmits<{
   result: [resultado: ResultadoAccion]
 }>()
 
-const { motivo, errorValidacion, isSubmitting, submitError, submit } = useCancelarCita(
-  props.appointment.id,
-)
+const { motivo, pedidoPor, errorValidacion, errorPedidoPor, isSubmitting, submitError, submit } =
+  useCancelarCita(props.appointment.id)
 
 // `sync`: la vista se desmonta apenas llega el resultado; con el flush por
 // defecto el aviso de "terminó de enviar" podría no llegar nunca al voucher.
@@ -50,6 +51,8 @@ async function handleSubmit(): Promise<void> {
     <p class="accion__ref">
       Sus recordatorios pendientes se anulan. citiahealth no le avisa al paciente de la cancelación.
     </p>
+
+    <QuienLoPidio v-model="pedidoPor" :disabled="isSubmitting" :aviso="errorPedidoPor" />
 
     <div class="accion__field">
       <label class="accion__label" for="cancelar-motivo">Motivo</label>
@@ -80,7 +83,7 @@ async function handleSubmit(): Promise<void> {
         class="accion__danger"
         :block="false"
         :loading="isSubmitting"
-        :disabled="errorValidacion !== null"
+        :disabled="errorValidacion !== null || errorPedidoPor !== null"
       >
         Sí, cancelar cita
       </BaseButton>

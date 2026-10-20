@@ -97,9 +97,11 @@ export type FiltroEstado = 'sin_canceladas' | 'todos' | 'vigentes' | Appointment
 export const FILTRO_POR_DEFECTO: FiltroEstado = 'sin_canceladas'
 
 /**
- * Opciones del selector. `ghosting` ("Sin respuesta") no se ofrece: ningún
- * flujo produce ese estado (el job de cierre no existe, DT-11). Si alguna vez
- * llega una, se ve con "Sin canceladas" y "Todos los estados".
+ * Opciones del selector. Cada estado filtra solo ese estado, con la etiqueta de
+ * su badge: "No asistieron" es `no_asistio` (confirmó y no llegó) y "Sin
+ * respuesta" es `ghosting` (no confirmó y no llegó). `ghosting` se ofrece desde
+ * US-07.01: lo produce el profesional con "No asistió" sobre una pendiente y,
+ * cuando se prenda, el job de cierre G1 del backend (DT-11).
  */
 export const OPCIONES_FILTRO: { valor: FiltroEstado; etiqueta: string }[] = [
   { valor: 'sin_canceladas', etiqueta: 'Sin canceladas' },
@@ -109,6 +111,7 @@ export const OPCIONES_FILTRO: { valor: FiltroEstado; etiqueta: string }[] = [
   { valor: 'confirmada', etiqueta: 'Confirmadas' },
   { valor: 'asistio', etiqueta: 'Asistieron' },
   { valor: 'no_asistio', etiqueta: 'No asistieron' },
+  { valor: 'ghosting', etiqueta: 'Sin respuesta' },
   { valor: 'cancelada', etiqueta: 'Canceladas' },
 ]
 

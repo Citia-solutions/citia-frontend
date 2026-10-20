@@ -12,6 +12,11 @@ asistió** — ver [Confirmación y asistencia](#confirmación-y-asistencia-2026
 solo desde la hora de inicio (bloqueo del front, mismo día).
 **Fase 3 (2026-10-14):** quién confirmó / canceló, nota *"El paciente pidió otra hora"* e *"Invalidar
 enlace del paciente"* — ver [Cambios de la Fase 3](#cambios-de-la-fase-3--respuesta-del-paciente-2026-10-14).
+**US-07.01, Fase 5 (2026-10-19, `feature/fase5-registro-hechos`, sin commit):** Asistió / No asistió
+también sobre una **pendiente** que ya empezó (sin Confirmar), el backend exige la hora de inicio, y
+*"¿Quién lo pidió?"* obligatoria al cancelar y reagendar — ver
+[Cambios de US-07.01](#cambios-de-us-0701--registro-de-hechos-2026-10-19). Lo que esa sección corrige
+manda sobre lo que dicen las secciones anteriores.
 
 ---
 
@@ -24,8 +29,9 @@ Desde "Citas de hoy", **"Ver cita"** abre un modal tipo voucher con:
 - **Recordatorios por correo** (Fase 2): estado de cada recordatorio — ver
   [recordatorios](recordatorios.md#estado-en-el-voucher).
 - **Confirmación / Asistencia** (2026-10-05): **Confirmar cita**, **Asistió** y **No asistió**, según
-  `accionesPermitidas`.
-- **Acciones:** **Reagendar** y **Cancelar**, cada una con su vista de confirmación y motivo opcional.
+  `accionesPermitidas`. Desde US-07.01, Asistió / No asistió también sobre una pendiente que ya empezó.
+- **Acciones:** **Reagendar** y **Cancelar**, cada una con su vista de confirmación, *"¿Quién lo
+  pidió?"* (obligatoria, US-07.01) y motivo opcional.
 
 Se abre **al instante** con los datos de la fila y se completa con `GET /citas/:id`; mientras carga
 (o si falla el detalle) los botones quedan deshabilitados.
@@ -37,14 +43,15 @@ Se abre **al instante** con los datos de la fila y se completa con `GET /citas/:
 | Llamada | Uso |
 |---------|-----|
 | `GET /citas/:id` → `{ id, estado, inicio, hora, duracionMin, tipoConsulta, paciente: { id, nombre, rut, telefono, correo }, accionesPermitidas }` | pintar el voucher |
-| `PATCH /citas/:id/reagendar` — `{ inicio, motivo? }` | reagendar |
-| `PATCH /citas/:id/cancelar` — `{ motivo? }` | cancelar |
+| `PATCH /citas/:id/reagendar` — `{ inicio, motivo?, pedidoPor }` | reagendar (`pedidoPor` desde US-07.01) |
+| `PATCH /citas/:id/cancelar` — `{ motivo?, pedidoPor }` | cancelar (`pedidoPor` desde US-07.01) |
 | `PATCH /citas/:id/confirmar` (sin cuerpo) | pendiente → confirmada (2026-10-05) |
-| `PATCH /citas/:id/asistencia` (sin cuerpo) | confirmada → asistio, terminal (2026-10-05) |
-| `PATCH /citas/:id/inasistencia` (sin cuerpo) | confirmada → no_asistio, terminal (2026-10-05) |
+| `PATCH /citas/:id/asistencia` (sin cuerpo) | pendiente \| confirmada → asistio, terminal. Desde la hora de inicio; antes, 409 (US-07.01) |
+| `PATCH /citas/:id/inasistencia` (sin cuerpo) | confirmada → no_asistio · pendiente → ghosting, terminales. Desde la hora de inicio; antes, 409 (US-07.01) |
 
 `toAppointmentDetail()` en `entities/appointment/api/appointmentApi.ts` traduce el detalle al modelo
-del front. `motivo` **se omite** del cuerpo cuando va vacío.
+del front. `motivo` **se omite** del cuerpo cuando va vacío; `pedidoPor` (`'paciente' | 'profesional'`)
+va siempre: en la API es opcional, pero el front no envía sin él.
 
 ### Los botones los decide el backend
 
@@ -106,7 +113,7 @@ US-02.07, el job de cierre) muestra el mensaje, recarga el detalle y recarga la 
 
 | Qué | Nota |
 |-----|------|
-| Historial (`GET /citas/:id/historial`) | Segunda entrega, según el plan. |
+| Historial (`GET /citas/:id/historial`) | Segunda entrega, según el plan. Desde US-07.01 cada cambio trae además `pedidoPor`; el front sigue sin consumir la ruta, así que no tiene tipo propio. |
 | ~~Confirmar, asistencia, inasistencia~~ | ✅ Hechos el 2026-10-05 (ver abajo). |
 | Editar (duración, tipo) | El backend lo anuncia en `accionesPermitidas`; no se muestra todavía. |
 | ~~Aviso de solapamiento~~ | ✅ Hecho en el cierre de Fase 1 (ADR-11): tras reagendar, el voucher lista las citas con las que choca — ver [agenda-profesional](agenda-profesional.md#aviso-de-solapamiento-adr-11). |
@@ -142,6 +149,10 @@ edita un paciente (no hay ficha de pacientes todavía). Si aparece una, la llama
 `paciente`.
 
 ## Confirmación y asistencia (2026-10-05)
+
+> **Desde US-07.01 la tabla de abajo es historia:** la pendiente que ya empezó y la confirmada que aún no
+> empieza cambiaron. La tabla vigente está en
+> [Cambios de US-07.01](#cambios-de-us-0701--registro-de-hechos-2026-10-19).
 
 Lote 2 de la limpieza previa al release. Sección nueva entre *Recordatorios* y las acciones:
 
@@ -192,9 +203,10 @@ Decisión del usuario: **no se puede marcar Asistió ni No asistió antes de la 
 - **Confirmar** (pendiente → confirmada) sigue disponible en cualquier momento.
 - Qué botones existen lo sigue decidiendo `accionesPermitidas`; el front solo agrega **cuándo**
   (`disponible()` en `VoucherCita.vue`). `abrirTransicion` repite la comprobación.
-- ⚠️ **Es un bloqueo solo del frontend.** El backend acepta `PATCH /citas/:id/asistencia` e
-  `/inasistencia` antes de la hora (las guardas de `Cita` solo miran el estado) y `accionesPermitidas`
-  las declara igual. Otro cliente, o una llamada directa a la API, puede marcarlas antes.
+- ~~⚠️ **Es un bloqueo solo del frontend.**~~ Hasta US-07.01 el backend aceptaba `PATCH
+  /citas/:id/asistencia` e `/inasistencia` antes de la hora. **Desde US-07.01 el dominio exige la hora**
+  (409 `CitaAunNoComienzaError`) y `accionesPermitidas` no las declara antes: ver
+  [Cambios de US-07.01](#cambios-de-us-0701--registro-de-hechos-2026-10-19).
 - El desbloqueo ocurre en el instante `inicio` según el reloj del navegador (un instante: no depende de
   su zona); el texto muestra `hora`, de la clínica. Desde el 2026-10-06 todo lo demás del voucher (fecha
   larga, hora de término, recordatorios, "Ya no aparece en tu lista de hoy") también va en hora de Chile
@@ -211,6 +223,72 @@ Rama `feature/fase3-respuesta-paciente`. Detalle completo (contrato y copy) en
 | Nota *"El paciente pidió otra hora: <preferencia>"* con *"Responder en Solicitudes"* (`/solicitudes`), desde `GET /solicitudes?citaOrigenId=<id>&estado=recibida`. Se recarga tras cada acción; al reagendar desde el voucher el backend da la solicitud por atendida y la nota desaparece | `model/useSolicitudOtraHora.ts` + `getSolicitudOtraHoraAbierta` de `entities/solicitud` |
 | Sección *Enlace del paciente* con **Invalidar enlace del paciente** (solo cita vigente) → vista de confirmación → `POST /citas/:id/enlace/invalidar` (204) | `ui/InvalidarEnlaceConfirm.vue`, `model/useInvalidarEnlace.ts`, `invalidarEnlacePaciente()` en `api/gestionarCitaApi.ts` |
 
+## Cambios de US-07.01 — registro de hechos (2026-10-19)
+
+Rama `feature/fase5-registro-hechos` (sin commit) · plan del front en
+[`us/07.01-registro-hechos.md`](../us/07.01-registro-hechos.md) · contrato en el
+[plan del backend](../../../citia-backend/context/US/07.01-registro-hechos.md#frontend-citia-frontend-en-vue)
+· por qué, en [ADR-14 §9 y §10](../../../citia-backend/context/Decisions/ADR-14.md). Verificado solo con
+respuestas simuladas.
+
+### Asistencia sobre una pendiente y la hora de inicio en el backend
+
+El backend (US-07.01) permite **Asistió** y **No asistió** también desde `pendiente` (asistio directo;
+No asistió → `ghosting`, *"Sin respuesta"*) y **solo desde la hora de inicio**: antes no las declara en
+`accionesPermitidas` y responde 409 si se llaman. La sección queda así:
+
+| La cita está… | `accionesPermitidas` trae | La sección muestra |
+|---------------|---------------------------|--------------------|
+| `pendiente`, todavía no empieza | `confirmar` | **Confirmación** — *"¿El paciente confirmó que vendrá? Márcala como confirmada."* + **Confirmar cita** |
+| `pendiente` y **ya empezó** | `confirmar`, `asistencia`, `inasistencia` | **Asistencia** — *"La cita ya empezó y el paciente no la confirmó. ¿Vino?"* + **Asistió** / **No asistió**. **Sin Confirmar** |
+| `confirmada`, todavía no empieza | nada de esto | **Asistencia** — *"Podrás registrar la asistencia cuando llegue la hora de la cita (HH:mm)."*, sin botones |
+| `confirmada`, ya empezó | `asistencia`, `inasistencia` | **Asistencia** — *"¿El paciente vino a la cita?"* + **Asistió** / **No asistió** |
+| vigente, ya es la hora en el equipo pero el backend aún no declara la asistencia | nada de esto | *"La cita ya empezó. En un momento podrás registrar si el paciente vino."*; tras el reintento: *"La cita ya empezó, pero todavía no se puede registrar la asistencia. Revisa que la hora de tu equipo esté bien."* + **Volver a intentar** |
+| terminal | nada | Badge y nota; `ghosting`: *"El paciente no confirmó ni asistió. Ya no admite cambios."* |
+
+- **Los botones los declara el backend.** Asistió / No asistió aparecen si vienen en
+  `accionesPermitidas` (el backend ya exige la hora). "Ya empezó" es el reloj del equipo **o** el backend:
+  si el reloj del equipo va atrasado, gana el servidor.
+- **Recarga a la hora de inicio:** cuando `useYaEmpezo` pasa a "ya empezó" con el voucher abierto (y el
+  detalle de esa cita ya cargado), se vuelve a pedir `GET /citas/:id`. Si el detalle sigue sin traer la
+  asistencia (reloj del equipo adelantado), **un** reintento a los 30 s por apertura; si tampoco, el
+  texto de arriba y *Volver a intentar*. El temporizador se cancela al cerrar el voucher.
+- **Confirmar no se ofrece sobre una pendiente que ya empezó** (ADR-14 §9: no fabricar una confirmación
+  que no hubo). Es presentación: el backend lo sigue aceptando (pregunta abierta 1 del plan).
+- **No asistió sobre una pendiente** avisa en la confirmación: *"El paciente no confirmó la cita y no
+  llegó: queda cerrada como «Sin respuesta» y ya no admite cambios. Esta acción no se puede deshacer."*
+  El éxito sale del `estado` de la respuesta: *"Inasistencia registrada: el paciente no confirmó ni
+  asistió. La cita quedó como «Sin respuesta»."*
+- **409 `CitaAunNoComienzaError`** (la cita todavía no comienza para el servidor): su mensaje se muestra
+  tal cual — *"La cita todavía no comienza: la asistencia y la inasistencia se marcan desde su hora de
+  inicio"* — y el detalle se recarga, como en todo 409. Se reconoce por el comienzo del texto
+  (`model/mensajeDeError.ts`); los demás 409 siguen con el mensaje genérico.
+- **Quién confirmó:** con `pendiente → asistio`, el backend ya no cuenta una confirmación anterior a un
+  reagendamiento (decisión H9): el voucher sigue mostrando lo que mande `confirmadaPor`.
+
+### "¿Quién lo pidió?" al cancelar y reagendar
+
+| Qué | Cómo |
+|-----|------|
+| Pregunta | *"¿Quién lo pidió?"* con dos opciones: **El paciente** → `paciente`, **Decisión mía** → `profesional` |
+| Al abrir | **ninguna marcada** (un valor por defecto terminaría guardado sin que nadie lo eligiera) |
+| Obligatoria | mientras no hay respuesta se ve *"Indica quién pidió el cambio."* junto a la pregunta y el botón de enviar queda deshabilitado; el caso de uso tampoco envía sin ella |
+| Envío | `pedidoPor` en el cuerpo de `…/cancelar` y `…/reagendar` |
+| Dónde | `ui/QuienLoPidio.vue` (nuevo: radios nativos con el aspecto de los chips de Recordatorios), `ui/CancelarCitaConfirm.vue`, `ui/ReagendarCitaForm.vue`, `model/useCancelarCita.ts`, `model/useReagendarCita.ts`, `PedidoPor` en `model/types.ts` |
+
+En reagendar, la pregunta se valida aparte de la fecha y la hora (`errorPedidoPor`): la vista sigue
+mostrando *"Nueva hora: …"* mientras falta la respuesta. El dato no se muestra en ninguna pantalla
+(decisión H11): solo se guarda para la calificación de US-07.02.
+
+### Copy nuevo
+
+| Texto | Por qué importa |
+|-------|-----------------|
+| *"La cita ya empezó y el paciente no la confirmó. ¿Vino?"* | Reemplaza *"…Para registrar si el paciente asistió, primero confírmala."*: ya no hace falta confirmar antes |
+| *"…queda cerrada como «Sin respuesta»…"* (No asistió sobre una pendiente) | El estado de destino no es «No asistió»; sin el aviso, el badge sorprende |
+| *"El paciente no confirmó ni asistió."* (nota de `ghosting`) | Antes decía *"El paciente no confirmó esta cita."*, que ya no alcanza: ahora también lo marca el profesional |
+| *"Indica quién pidió el cambio."* | La pregunta es obligatoria |
+
 ## Pendientes
 
 - **Prueba manual contra el backend real** (crear, cancelar, reagendar dentro de hoy y a otro día,
@@ -219,6 +297,12 @@ Rama `feature/fase3-respuesta-paciente`. Detalle completo (contrato y copy) en
   una pendiente ya pasada, y un 409 confirmando la misma cita desde dos pestañas; con el bloqueo por
   hora: dejar abierto el voucher de una confirmada que empieza en un par de minutos y ver aparecer los
   botones contra el backend real).
+- **US-07.01, en staging** (pasos 2 y 3 de la
+  [verificación manual](../../../citia-backend/context/US/07.01-registro-hechos.md#verificación-manual-mínima)):
+  una pendiente pasada ofrece Asistió / No asistió sin Confirmar y No asistió la deja *"Sin respuesta"*;
+  una cita futura no ofrece ninguna de las dos; cancelar y reagendar no se envían sin *"¿Quién lo
+  pidió?"*. **Se despliega después del backend:** contra uno anterior, `pedidoPor` se descarta en
+  silencio y una confirmada futura volvería a mostrar Asistió / No asistió.
 
 ## Deudas técnicas asociadas
 

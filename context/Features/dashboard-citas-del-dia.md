@@ -100,7 +100,7 @@ voucher**, para que una cita se vea igual en los tres lugares. `EstadoCita` exis
 | `cancelada` | Cancelada | neutral | oculta por defecto; si se muestra, **tachada** y atenuada |
 | `asistio` | Asistió | info | atenuada, solo lectura |
 | `no_asistio` | No asistió | danger | atenuada, solo lectura |
-| `ghosting` | **Sin respuesta** | danger | ningún flujo lo produce hoy (no existe el job de cierre, DT-11) |
+| `ghosting` | **Sin respuesta** | danger | no confirmó y no llegó. Desde US-07.01 lo produce el profesional (*No asistió* sobre una pendiente, [gestionar-cita](gestionar-cita.md#cambios-de-us-0701--registro-de-hechos-2026-10-19)) y, cuando se prenda, el job de cierre G1 del backend (DT-11) |
 
 Las citas **pasadas** (`inicio + duración < ahora`) se atenúan, sin tacharse: tachar significa "cancelada".
 Desde el voucher se puede **confirmar** y **registrar la asistencia** ([gestionar-cita](gestionar-cita.md)).
