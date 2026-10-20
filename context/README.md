@@ -49,9 +49,16 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   página pública `/cita#<token>` (confirmar, cancelar, pedir otra hora), y en el panel quién confirmó o
   canceló, la nota "pidió otra hora" e invalidar el enlace (voucher), y las solicitudes de otra hora y
   el estado `descartada` (bandeja).
+- **Fase 5 — US-07.01, registro de hechos** (2026-10-19, `feature/fase5-registro-hechos`, sin commit):
+  Asistió / No asistió sobre una pendiente que ya empezó y *"¿Quién lo pidió?"* al cancelar y reagendar
+  ([gestionar-cita](Features/gestionar-cita.md#cambios-de-us-0701--registro-de-hechos-2026-10-19)), y el
+  filtro *"Sin respuesta"* ([agenda-profesional](Features/agenda-profesional.md)).
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
+  - [`07.01-registro-hechos.md`](us/07.01-registro-hechos.md) — primera subtarea de US-07 (Fase 5):
+    asistencia sobre una pendiente y "¿Quién lo pidió?". 🔶 Implementada en la rama, sin commit →
+    [gestionar-cita](Features/gestionar-cita.md), [agenda-profesional](Features/agenda-profesional.md).
   - **Subtareas de US-02** (gestión de citas; archivos `02.NN-*`, no son historias propias):
     - [`02.07-paciente-reagenda-cancela.md`](us/02.07-paciente-reagenda-cancela.md) — el paciente
       confirma, cancela o pide otra hora desde el enlace de su recordatorio. ✅ Implementada (v1, Fase 3)
@@ -101,6 +108,12 @@ Chile** (`America/Santiago`, espejo de `APP_TZ`), aunque el navegador esté en o
 `public/_headers` con `no-referrer`) · en el voucher, **quién confirmó / canceló**, **"El paciente pidió
 otra hora"** e **invalidar enlace** · en la bandeja, **"Pide otra hora"** (aceptar solo con fecha y
 hora) y **Descartadas** — ver [responder-cita-paciente](Features/responder-cita-paciente.md).
+
+**Fase 5 — US-07.01, verificado solo con respuestas simuladas** (backend en paralelo): en el voucher,
+**Asistió / No asistió sobre una pendiente** que ya empezó (sin Confirmar), recarga del detalle a la hora
+de inicio con un reintento, el 409 *"La cita todavía no comienza…"* y **"¿Quién lo pidió?"** obligatoria
+al cancelar y reagendar · en la agenda, filtro **"Sin respuesta"** — ver
+[`us/07.01-registro-hechos.md`](us/07.01-registro-hechos.md).
 
 **Arquitectura:** Feature-Sliced Design. La regla que no se rompe es la dirección de las capas:
 `pages → features → entities → shared`, nunca al revés.

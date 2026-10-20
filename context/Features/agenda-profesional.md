@@ -10,6 +10,8 @@ cierre de Fase 1 se implementa en paralelo
 **Lote 2 de la limpieza previa al release (2026-10-05):** filtro "Sin canceladas" por defecto, las
 canceladas no ocupan carril, recarga al entrar y horas 07–22 — ver
 [Cambios del lote 2](#cambios-del-lote-2-de-la-limpieza-2026-10-05).
+**US-07.01, Fase 5 (2026-10-19, `feature/fase5-registro-hechos`, sin commit):** filtro *"Sin
+respuesta"* (`ghosting`) — ver [Cambios de US-07.01](#cambios-de-us-0701-2026-10-19).
 
 ---
 
@@ -24,9 +26,10 @@ mismo endpoint:
 | **Lista** | Citas del rango agrupadas por día, con la misma fila que "Citas de hoy". | Desde / Hasta (máx. 42 días) · atajos *Próximos 7 / 30 días* |
 
 - **Filtro por estado** (las dos vistas): **Sin canceladas (por defecto)** · Todos los estados · Vigentes
-  (pendientes y confirmadas) · Pendientes · Confirmadas · Asistieron · No asistieron · Canceladas. Es del
-  cliente: el endpoint trae todos. `ghosting` ("Sin respuesta") **no se ofrece**: ningún flujo lo produce
-  (no existe el job de cierre, DT-11); si llegara una, se ve con "Sin canceladas" y "Todos los estados".
+  (pendientes y confirmadas) · Pendientes · Confirmadas · Asistieron · No asistieron · **Sin respuesta**
+  (desde US-07.01) · Canceladas. Es del cliente: el endpoint trae todos. Cada opción de estado filtra solo
+  ese estado: *No asistieron* es `no_asistio` (confirmó y no llegó) y *Sin respuesta* es `ghosting` (no
+  confirmó y no llegó).
 - **Clic en una cita → el voucher de siempre** ([gestionar-cita](gestionar-cita.md)), con reagendar y
   cancelar. Desde la agenda se abre con `listaDelDia = false`: no dice "ya no aparece en tu lista de
   hoy".
@@ -142,13 +145,22 @@ visibles y tachadas") también en la agenda.
 
 | Qué | Dónde |
 |-----|-------|
-| Filtro **"Sin canceladas"** (todo menos `cancelada`) y por defecto (`FILTRO_POR_DEFECTO`); se conservan "Canceladas" y "Todos los estados"; fuera "Sin respuesta" | `model/agenda.ts`, `model/useVistaAgenda.ts` |
+| Filtro **"Sin canceladas"** (todo menos `cancelada`) y por defecto (`FILTRO_POR_DEFECTO`); se conservan "Canceladas" y "Todos los estados"; fuera "Sin respuesta" (*volvió en US-07.01, ver abajo*) | `model/agenda.ts`, `model/useVistaAgenda.ts` |
 | Canceladas fuera del reparto de carriles, en una capa de fondo | `distribuirEnCarriles` (`model/agenda.ts`), `ui/AgendaSemanal.vue` |
 | Conteo por día de la lista: "3 citas", "3 citas · 1 cancelada" o "2 canceladas" (las ocultas por el filtro no cuentan) | `conteoDeCitas`, `ui/AgendaLista.vue` |
 | Vacío con nota: *"No hay citas en esta semana. 2 canceladas ocultas por el filtro."* (o "N citas ocultas" con otro filtro) | `notaOcultas`, `ui/AgendaSemanal.vue`, `ui/AgendaLista.vue` |
 | **Recarga siempre al entrar**: antes, volver a `/agenda` con el mismo rango no pedía nada y se veían citas viejas (p. ej. confirmadas desde el dashboard) | `setRange(desde, hasta, { forzar })` en `entities/appointment/model/useAgendaAppointments.ts`; `AgendaProfesional.vue` |
 | Grilla de 07:00 a 22:00 (bloques de 1 h con inicios 07–21) | `HORAS_JORNADA` de `shared/config/bloquesHorarios.ts` |
 | `inicioDeSemana` pasó a `shared/lib/fecha.ts` (lo usa también el dashboard); `model/agenda.ts` lo reexporta | |
+
+## Cambios de US-07.01 (2026-10-19)
+
+Rama `feature/fase5-registro-hechos` (sin commit) · plan en
+[`us/07.01-registro-hechos.md`](../us/07.01-registro-hechos.md).
+
+| Qué | Dónde |
+|-----|-------|
+| Filtro **"Sin respuesta"** (`ghosting`), entre *No asistieron* y *Canceladas*. Hasta ahora no se ofrecía porque ningún flujo producía ese estado; desde US-07.01 lo produce el profesional con *No asistió* sobre una pendiente que ya empezó ([gestionar-cita](gestionar-cita.md#cambios-de-us-0701--registro-de-hechos-2026-10-19)) y, cuando se prenda, el job de cierre G1 del backend (DT-11) | `OPCIONES_FILTRO` en `model/agenda.ts` |
 
 ## Pendientes
 
