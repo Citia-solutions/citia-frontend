@@ -86,8 +86,7 @@ const features = [
   padding: 3rem;
   min-height: 100%;
   color: #fff;
-  background: radial-gradient(circle at 70% 15%, #1e3a8a 0%, transparent 55%),
-    linear-gradient(160deg, #0f1f3d 0%, #102a52 100%);
+  background: var(--gradiente-corporativo);
   overflow: hidden;
 }
 .aside__headline {

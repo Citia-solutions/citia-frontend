@@ -1,37 +1,41 @@
 :root {
   /* Marca */
-  --color-primary: #2563eb;
-  --color-primary-strong: #1d4ed8;
-  --color-primary-soft: rgba(37, 99, 235, 0.18);
+  --color-primary: #0049b7;
+  --color-primary-strong: #003a8f;
+  --color-primary-soft: rgba(0, 73, 183, 0.18);
+  --color-turquesa: #00c6c4;
+  --color-azul-oscuro: #0b1f3b;
+  --color-azul-claro: #e6f0fa;
+  --gradiente-corporativo: linear-gradient(135deg, #0049b7 0%, #0a8cc2 50%, #00c6c4 100%);
 
   /* Superficies */
-  --color-bg: #eef2f7;
+  --color-bg: #e6f0fa;
   --color-surface: #ffffff;
   --color-surface-muted: #f1f5f9;
   --color-border: #d8dee9;
 
   /* Texto */
-  --color-text: #1e293b;
-  --color-text-muted: #64748b;
+  --color-text: #0b1f3b;
+  --color-text-muted: #4a5d75;
 
   /* Estados */
   --color-danger: #dc2626;
   --color-danger-soft: rgba(220, 38, 38, 0.08);
 
-  /* Sidebar (azul muy oscuro tipo navy) */
-  --color-sidebar: #0f172a;            /* fondo sidebar */
-  --color-sidebar-surface: #1e293b;    /* tarjetas/sección activa dentro del sidebar */
+  /* Sidebar (azul oscuro de marca) */
+  --color-sidebar: #0b1f3b;            /* fondo sidebar */
+  --color-sidebar-surface: #12294a;    /* tarjetas/sección activa dentro del sidebar */
   --color-sidebar-text: #e2e8f0;
   --color-sidebar-text-muted: #94a3b8;
-  --color-sidebar-active: rgba(37, 99, 235, 0.22);
+  --color-sidebar-active: rgba(0, 198, 196, 0.22);
 
   /* Estados (badges + feed de actividad) */
   --color-success: #16a34a;
   --color-success-soft: rgba(22, 163, 74, 0.12);
   --color-warning: #d97706;
   --color-warning-soft: rgba(217, 119, 6, 0.12);
-  --color-info: #2563eb;
-  --color-info-soft: rgba(37, 99, 235, 0.12);
+  --color-info: #0049b7;
+  --color-info-soft: rgba(0, 73, 183, 0.12);
   /* (el rojo reusa --color-danger / --color-danger-soft existentes) */
 
   /* Soporte */
