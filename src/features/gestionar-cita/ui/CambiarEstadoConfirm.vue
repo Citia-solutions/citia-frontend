@@ -1,16 +1,21 @@
 <script setup lang="ts">
 // Vista de confirmación del voucher para las transiciones sin formulario:
-// Confirmar (pendiente → confirmada), Asistió y No asistió (confirmada →
-// asistio / no_asistio, terminales). Mismo patrón que `CancelarCitaConfirm`:
-// foco inicial en "Volver", el voucher no se cierra mientras se envía y el
-// resultado se le pasa al voucher.
+// Confirmar (pendiente → confirmada), Asistió (pendiente | confirmada →
+// asistio) y No asistió (confirmada → no_asistio · pendiente → ghosting, desde
+// US-07.01). Mismo patrón que `CancelarCitaConfirm`: foco inicial en "Volver",
+// el voucher no se cierra mientras se envía y el resultado se le pasa al
+// voucher.
 //
 // Asistió / No asistió solo se llega aquí desde la hora de inicio: el voucher
-// no los ofrece antes (2026-10-05), así que ya no hay aviso de "aún no empieza".
+// no los ofrece antes (2026-10-05) y, desde US-07.01, el backend tampoco (409
+// `CitaAunNoComienzaError`, cuyo mensaje muestra esta vista si ocurre).
+//
+// No asistió sobre una pendiente aclara que la cita queda como "Sin respuesta"
+// (el paciente no confirmó y no llegó): es lo que el profesional verá después.
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { capitalizar, formatearFechaLarga } from '@/shared/lib/fecha'
-import type { Appointment } from '@/entities/appointment'
+import { STATUS_LABEL, type Appointment } from '@/entities/appointment'
 import { useCambiarEstadoCita } from '../model/useCambiarEstadoCita'
 import type { ResultadoAccion, TransicionEstado } from '../model/types'
 
@@ -64,7 +69,10 @@ const textos = computed<Textos>(() => {
       return {
         titulo: `¿Registrar que ${nombre} no asistió?`,
         detalle: [
-          'La cita queda cerrada como «No asistió» y ya no admite cambios. Esta acción no se puede deshacer.',
+          // Pendiente → ghosting (US-07.01): no confirmó y no llegó.
+          props.appointment.status === 'pendiente'
+            ? `El paciente no confirmó la cita y no llegó: queda cerrada como «${STATUS_LABEL.ghosting}» y ya no admite cambios. Esta acción no se puede deshacer.`
+            : `La cita queda cerrada como «${STATUS_LABEL.no_asistio}» y ya no admite cambios. Esta acción no se puede deshacer.`,
           'Sus recordatorios pendientes se anulan.',
         ],
         boton: 'Sí, no asistió',

@@ -8,10 +8,25 @@ import type { AppointmentAction, AppointmentStatus, AvisosCitaDto } from '@/enti
  * un botón aparece solo si el backend declara la acción.
  *
  * - `confirmar`: pendiente → confirmada.
- * - `asistencia`: confirmada → asistio (terminal).
- * - `inasistencia`: confirmada → no_asistio (terminal).
+ * - `asistencia`: pendiente | confirmada → asistio (terminal). Desde una
+ *   pendiente es directo (US-07.01): no hace falta confirmarla antes.
+ * - `inasistencia`: confirmada → no_asistio · pendiente → ghosting ("Sin
+ *   respuesta": no confirmó y no llegó). Las dos son terminales y el destino lo
+ *   decide el backend según el estado de origen (US-07.01, ADR-14 §9).
+ *
+ * Desde US-07.01 el backend exige la hora de inicio para `asistencia` e
+ * `inasistencia`: antes de esa hora no las declara y, si igual se llaman,
+ * responde 409 (`CitaAunNoComienzaError`).
  */
 export type TransicionEstado = Extract<AppointmentAction, 'confirmar' | 'asistencia' | 'inasistencia'>
+
+/**
+ * Quién pidió una cancelación o un reagendamiento (US-07.01, decisión H3): el
+ * paciente (p. ej. por teléfono) o el profesional. Queda en la bitácora de la
+ * cita para la calificación de asistencia (US-07.02), donde lo que decide el
+ * profesional no cuenta en contra del paciente.
+ */
+export type PedidoPor = 'paciente' | 'profesional'
 
 /** Cuerpo de `PATCH /citas/:id/reagendar`. */
 export interface ReagendarCitaRequest {
@@ -19,11 +34,19 @@ export interface ReagendarCitaRequest {
   inicio: string
   /** Queda en la bitácora de la cita. Se omite si está vacío. */
   motivo?: string
+  /**
+   * Obligatorio del lado del front: el voucher no envía sin la respuesta a
+   * "¿Quién lo pidió?". En la API es opcional y, sin él, cuenta como del
+   * profesional.
+   */
+  pedidoPor: PedidoPor
 }
 
 /** Cuerpo de `PATCH /citas/:id/cancelar`. */
 export interface CancelarCitaRequest {
   motivo?: string
+  /** Igual que en `ReagendarCitaRequest`: obligatorio en el front, opcional en la API. */
+  pedidoPor: PedidoPor
 }
 
 /**
@@ -36,6 +59,7 @@ export interface CitaActualizada {
   inicio: string
   duracionMin: number
   tipoConsulta: string
+  /** Estado real de destino (p. ej. `ghosting` tras `inasistencia` sobre una pendiente). */
   estado: AppointmentStatus
   pacienteId: string
   /**

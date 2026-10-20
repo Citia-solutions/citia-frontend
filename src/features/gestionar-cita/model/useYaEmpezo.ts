@@ -6,8 +6,10 @@ const MAX_ESPERA_MS = 2_147_483_647
 
 /**
  * `yaEmpezo`: true desde la hora de inicio de la cita (`hasStarted`). Pasa a
- * true sola al llegar esa hora, aunque el voucher siga abierto, para habilitar
- * Asistió / No asistió sin recargar (bloqueo antes de la hora, 2026-10-05).
+ * true sola al llegar esa hora, aunque el voucher siga abierto (bloqueo antes
+ * de la hora, 2026-10-05). Desde US-07.01 el backend solo declara Asistió / No
+ * asistió desde esa hora, así que el voucher vuelve a pedir el detalle cuando
+ * esto pasa a true; el reloj del equipo ya no basta por sí solo.
  *
  * Reloj liviano: no hay intervalo, sino un único `setTimeout` programado para
  * `inicio` mientras `activo` sea true y la cita no haya empezado. Al dispararse
