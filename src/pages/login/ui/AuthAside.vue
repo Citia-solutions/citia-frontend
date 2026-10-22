@@ -86,7 +86,7 @@ const features = [
   padding: 3rem;
   min-height: 100%;
   color: #fff;
-  background: var(--gradiente-corporativo);
+  background: var(--color-sidebar);
   overflow: hidden;
 }
 .aside__headline {
