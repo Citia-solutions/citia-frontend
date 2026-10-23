@@ -6,13 +6,14 @@
 // Solo muestra lo que funciona: Resumen, Agenda, Solicitudes y Recordatorios.
 // La píldora de Solicitudes es real: cuántas esperan respuesta. Usuario, rol y
 // clínica salen de la sesión (respuesta del login, restaurada al recargar).
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseLogo from '@/shared/ui/BaseLogo.vue'
 import { roleLabel, useSessionStore } from '@/entities/session'
 import { useSolicitudesRecibidas } from '@/entities/solicitud'
 import { cerrarSesion } from '@/app/router/cerrarSesion'
+import ConfirmarCerrarSesion from './ConfirmarCerrarSesion.vue'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -22,7 +23,14 @@ const user = computed(() => session.currentUser)
 /** Nombre para el perfil; si el backend no mandó nombre, el correo. */
 const displayName = computed(() => user.value?.name.trim() || user.value?.email || '')
 
+/** Muestra la confirmación antes de cerrar sesión. */
+const confirmarSalir = ref(false)
+
 function salir(): void {
+  confirmarSalir.value = true
+}
+
+function confirmarCierre(): void {
   cerrarSesion(router)
 }
 </script>
@@ -106,6 +114,12 @@ function salir(): void {
       </button>
     </div>
   </aside>
+
+  <ConfirmarCerrarSesion
+    :is-open="confirmarSalir"
+    @close="confirmarSalir = false"
+    @confirm="confirmarCierre"
+  />
 </template>
 
 <style scoped>

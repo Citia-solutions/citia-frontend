@@ -93,6 +93,10 @@ Verificado en el navegador: URL inventada sin sesión → 404 con "Ir a iniciar 
 
 ## Cerrar sesión
 
+El botón del sidebar abre una confirmación (`ConfirmarCerrarSesion.vue`, junto a `PanelSidebar.vue`)
+antes de cerrar: "¿Cerrar sesión?" con "Volver" y "Cerrar sesión". Solo al confirmar se ejecuta
+`cerrarSesion`.
+
 `cerrarSesion` (`app/router/cerrarSesion.ts`) limpia la sesión y navega al login con una **carga
 completa** de la página (`window.location.assign`), no con `router.push`: así no queda en memoria
 (stores de Pinia) nada del usuario anterior —citas, solicitudes— que alcance a verse si otra persona
