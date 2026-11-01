@@ -5,6 +5,7 @@ import { DashboardPage } from '@/pages/dashboard'
 import { AgendaPage } from '@/pages/agenda'
 import { SolicitudesPage } from '@/pages/solicitudes'
 import { RecordatoriosPage } from '@/pages/recordatorios'
+import { PerfilPage } from '@/pages/perfil'
 import { AgendarCitaPage } from '@/pages/agendar-cita'
 import { CitaPacientePage } from '@/pages/cita-paciente'
 import { NoEncontradaPage } from '@/pages/no-encontrada'
@@ -60,6 +61,9 @@ const routes: RouteRecordRaw[] = [
       { path: 'solicitudes', name: 'solicitudes', component: SolicitudesPage },
       // Configuración de los recordatorios por correo del profesional (US-03).
       { path: 'recordatorios', name: 'recordatorios', component: RecordatoriosPage },
+      // Mi perfil (US-10): datos, suscripción (solo administrador), contraseña y
+      // soporte. Las pestañas son estado local de la página, sin rutas hijas (F4).
+      { path: 'perfil', name: 'perfil', component: PerfilPage },
     ],
   },
   {
