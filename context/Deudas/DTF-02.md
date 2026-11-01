@@ -13,6 +13,11 @@
 > (como mucho, al vencer el token: 1 día). Si algún día hace falta refrescarlos, se pide `GET /me`
 > al backend y `restoreSession` lo usa; no hay nada que deshacer en el front.
 >
+> **Desde US-10 (2026-11-01):** el backend tiene `GET /usuarios/me`. `restoreSession` **no** lo usa (decisión F5:
+> una petición más en cada navegación no aporta); lo pide solo *Mi perfil*, al entrar y tras guardar, y con la
+> respuesta refresca nombre, clínica y slug (`updateUser`) — ver [perfil-cuenta](../Features/perfil-cuenta.md).
+> El rol sigue siendo el del login.
+>
 > Lo de abajo es el registro original.
 
 ## Qué pasa

@@ -16,8 +16,9 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 | [DTF-02](DTF-02.md) | `fetchCurrentUser()` apunta a un endpoint que no existe | 🟡 baja | cerrada (2026-10-05) | `entities/session/api/sessionApi.ts` (borrado) |
 | [DTF-04](DTF-04.md) | El modelo de sesión contempla un rol que el backend no emite | 🟡 baja | cerrada (2026-10-05) | `entities/session/model/types.ts` |
 | [DTF-05](DTF-05.md) | El algoritmo del RUT está duplicado en los dos repos | 🟡 baja | 🔵 aceptada | `shared/lib/rut.ts` |
-| [DTF-06](DTF-06.md) | Los límites del formulario público, del motivo del voucher, del rango de la agenda (42 días), de la duración (1440), de la bandeja (100), del correo del paciente (254), de la configuración de recordatorios y de los textos de la página del paciente (300, Fase 3) copian los del backend | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/`, `features/gestionar-cita/`, `entities/appointment/api/`, `features/bandeja-solicitudes/model/`, `features/configurar-recordatorios/model/`, `features/responder-cita/model/` |
+| [DTF-06](DTF-06.md) | Los límites del formulario público, del motivo del voucher, del rango de la agenda (42 días), de la duración (1440), de la bandeja (100), del correo del paciente (254), de la configuración de recordatorios, de los textos de la página del paciente (300, Fase 3) y de Mi perfil y soporte (nombre 120, especialidad 100, contraseña de 8 caracteres reales y ≤ 72 bytes UTF-8, mensaje 2000 y las 4 categorías, Fase 7) copian los del backend | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/`, `features/gestionar-cita/`, `entities/appointment/api/`, `features/bandeja-solicitudes/model/`, `features/configurar-recordatorios/model/`, `features/responder-cita/model/`, `features/editar-perfil/model/`, `features/cambiar-contrasena/model/`, `features/contactar-soporte/model/` |
 | [DTF-07](DTF-07.md) | Se asume que la zona del navegador es la de la clínica (también para las horas de los recordatorios) | 🟡 baja | cerrada (2026-10-06) | `shared/lib/fecha.ts` |
+| [DTF-08](DTF-08.md) | Los errores del backend se reconocen por su texto (no traen un código): un texto que cambia deja el error fuera de su campo | 🟡 baja | abierta (2026-11-01) | `erroresDelServidor` de `features/{editar-perfil,cambiar-contrasena,contactar-soporte,crear-cita,configurar-recordatorios}/model/`, `features/gestionar-cita/model/` |
 
 ---
 
@@ -45,10 +46,18 @@ zona para todo el sistema: clínicas fuera de Chile pedirían que la zona venga 
 implementada y no conectada): desde el lote 2 el front consume además `confirmar`, `asistencia` e
 `inasistencia`. Un rol nuevo (ver DTF-04, cerrada) depende de `DT-07` y `DT-02`.
 Todas en `citia-backend/context/Deudas/`. DTF-06 se rompe si cambia el DTO provisional de
-solicitudes del backend.
+solicitudes del backend. DTF-08 se cierra solo si el backend agrega un código a sus errores.
+
+**Fase 7 — US-10 (2026-11-01):** DTF-06 suma los límites de Mi perfil y soporte, y se ficha DTF-08 (riesgo 1
+del [plan](../us/10-perfil-cuenta.md#riesgos)), que ya pasaba en `crear-cita`, `configurar-recordatorios` y
+`gestionar-cita` — ver [perfil-cuenta](../Features/perfil-cuenta.md).
 
 **Bloqueo que no es del front:** el enlace público `/agendar-cita/:tenantSlug` está conectado pero
 **no debe compartirse** hasta que el backend cierre `DT-18` (límite de tasa en la ruta pública).
 Desde el cierre de Fase 1 el front lo **muestra** ("Copiar enlace de agenda", en `/solicitudes`)
 con una advertencia gobernada por `ENLACE_PUBLICO_LISTO = false`
 (`features/compartir-enlace-agenda/model/enlaceAgenda.ts`); al cerrar DT-18 se cambia a `true`.
+**Desactualizado:** el límite de tasa del backend (DT-18) está en producción desde la Fase 3 (2026-10-17), con
+`trust proxy`; la advertencia y la constante se revisan en un `chore` aparte (decisión F9 de
+[US-10](../us/10-perfil-cuenta.md#pendientes-fuera-de-esta-rama)); mientras, *Mi perfil* muestra la misma
+advertencia.

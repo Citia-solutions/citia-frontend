@@ -24,6 +24,7 @@ Lo que existe hoy:
 | `/agenda` | Agenda del profesional: semana + lista por rango, "Nueva cita" y voucher | Sí |
 | `/solicitudes` | Bandeja de solicitudes (aceptar / rechazar): las nuevas del enlace de agenda y, desde la Fase 3, los pedidos de otra hora del enlace del recordatorio ("Pide otra hora"; aceptar mueve la cita) y la pestaña Descartadas. Botón para copiar el enlace de agenda | Sí |
 | `/recordatorios` | Configuración de los recordatorios por correo (US-03) | Sí |
+| `/perfil` | **Mi perfil** (Fase 7, US-10): pestañas locales *Información personal* (nombre y especialidad editables; correo, rol, organización y enlace de agenda en lectura), *Suscripción* (solo el administrador) y *Seguridad* (cambio de contraseña), más el botón *Contactar soporte* | Sí |
 | `/agendar-cita/:tenantSlug` | Flujo público: el paciente pide hora sin cuenta (`POST /publico/:tenantSlug/solicitudes`) | No |
 | `/cita#<token>` | **Página del paciente** (Fase 3): desde el enlace de su recordatorio ve su hora y la confirma, la cancela o pide otra (`/publico/cita*`, token en la cabecera `X-Enlace-Cita`). El token va en el fragmento, se borra de la URL al abrir y vive solo en memoria. Sin layout | No |
 | cualquier otra | **No encontrada** (ruta comodín `/:pathMatch(.*)*`): enlace al Resumen con sesión o al login sin ella | No |
@@ -37,10 +38,14 @@ Lo que existe hoy:
   la deja "Sin respuesta"), que el backend solo permite desde la hora de inicio, y "¿Quién lo pidió?"
   obligatoria al cancelar y reagendar (`pedidoPor`).
 - Las rutas autenticadas son hijas de `app/layouts/PanelLayout.vue`; el sidebar
-  (`PanelSidebar.vue`) muestra la clínica, el usuario, su rol y **Cerrar sesión**.
+  (`PanelSidebar.vue`) muestra la clínica, la navegación, la sección **CUENTA** (*Mi perfil* y *Contactar
+  soporte*, que abre el modal de `features/contactar-soporte` en cualquier pantalla del panel), el usuario y
+  su rol —un enlace a *Mi perfil*— y **Cerrar sesión**, fuera de ese enlace.
 - **Roles:** el backend emite solo `ADMINISTRADOR` y `PROFESIONAL`, que el front traduce a
-  `UserRole = 'admin' | 'profesional'` (`entities/session/model/types.ts`). No hay más roles. Hoy el
-  front no ramifica por rol: solo muestra la etiqueta en el sidebar.
+  `UserRole = 'admin' | 'profesional'` (`entities/session/model/types.ts`). No hay más roles. El front
+  ramifica por rol en **un solo lugar**: la pestaña *Suscripción* de *Mi perfil*, solo con
+  `useSessionStore().isAdmin` (US-10). Es presentación: el permiso lo decide el backend (403). En lo demás
+  solo muestra la etiqueta del rol.
 - **Zona horaria:** todas las horas se muestran y se arman en la zona fija de Chile
   (`ZONA_HORARIA = 'America/Santiago'`, `shared/config/zonaHoraria.ts`, espejo de `APP_TZ` del backend),
   nunca en la del navegador. Las fechas y horas pasan siempre por `shared/lib/fecha.ts`: nada de
@@ -48,8 +53,9 @@ Lo que existe hoy:
 
 ### Sesión: cómo se persiste y se restaura
 
-No hay `GET /me`: la sesión se rehidrata desde el navegador. Detalle en `src/entities/CLAUDE.md` y en
-`context/Features/login-sesion.md`.
+La sesión se rehidrata desde el navegador, sin pedir nada al backend en cada navegación. El backend tiene
+`GET /usuarios/me` (US-10), pero lo pide **solo** *Mi perfil* (`features/editar-perfil`), al entrar y tras
+guardar. Detalle en `src/entities/CLAUDE.md` y en `context/Features/login-sesion.md`.
 
 - **Login** (`features/auth`): `setSession(user, token, rememberMe)` guarda el JWT en `citia.token`
   (`shared/lib/authToken`) y el `AuthUser` en `citia.user` (`entities/session/model/storedUser.ts`),
@@ -58,9 +64,15 @@ No hay `GET /me`: la sesión se rehidrata desde el navegador. Detalle en `src/en
   navegación. Acepta la sesión solo si hay token y usuario, el JWT se puede leer (se leen `sub` y `exp`
   sin verificar la firma), no venció, su `sub` es el `id` del usuario y el rol es conocido; si no,
   limpia todo y una ruta protegida manda a `/login?redirect=<ruta>`.
+- **Refrescar y cambiar el token** (US-10): `updateUser({ name, tenantSlug, tenantNombre })` reescribe el
+  usuario en memoria y en `citia.user` con la respuesta de `GET` / `PATCH /usuarios/me` (nunca toca `id`,
+  `email` ni `role`); `replaceToken(token)` guarda el token nuevo del cambio de contraseña en el mismo
+  almacenamiento. Ninguno escribe si el token guardado ya no es del usuario en memoria.
 - **401 global:** `httpClient` avisa a `onUnauthorized` cuando una petición autenticada recibe 401; el
   handler (`app/providers/index.ts`) cierra la sesión y lleva al login recordando la ruta. Las llamadas
-  públicas (el login incluido) van con `{ auth: false }` y no lo disparan.
+  públicas (el login incluido) van con `{ auth: false }` y no lo disparan. **Excepción (F7 de US-10):** si
+  hay un token guardado y no es el que viajó, el 401 es de un token viejo y no avisa (no cierra la sesión
+  nueva); sin token guardado, sí.
 - **Cerrar sesión:** `cerrarSesion(router, redirect?)` (`app/router/cerrarSesion.ts`) limpia la sesión y
   navega al login con una carga completa de la página, para no dejar en memoria datos del usuario
   anterior. Lo usan el botón del sidebar y el 401 global.
@@ -94,8 +106,8 @@ src/
 ├── app/          # Arranque y configuración global: router (+ guard y cerrarSesion), providers
 │                 # (Pinia, router, handler del 401), layouts del panel, estilos raíz
 ├── pages/        # Composición de pantallas: login, dashboard, agenda, solicitudes,
-│                 # recordatorios, agendar-cita (pública), cita-paciente (pública, /cita),
-│                 # no-encontrada (404)
+│                 # recordatorios, perfil (Mi perfil), agendar-cita (pública), cita-paciente
+│                 # (pública, /cita), no-encontrada (404)
 ├── features/     # Casos de uso (ui + model + api):
 │   ├── auth/                      # login
 │   ├── dashboard/                 # widgets del Resumen
@@ -106,7 +118,11 @@ src/
 │   ├── bandeja-solicitudes/       # aceptar / rechazar solicitudes (nuevas y de otra hora)
 │   ├── compartir-enlace-agenda/   # copiar el enlace /agendar-cita/:tenantSlug
 │   ├── configurar-recordatorios/  # configuración de recordatorios por correo
-│   └── responder-cita/            # página del paciente /cita#<token>: confirmar, cancelar, pedir otra hora
+│   ├── responder-cita/            # página del paciente /cita#<token>: confirmar, cancelar, pedir otra hora
+│   ├── editar-perfil/             # Mi perfil: GET y PATCH /usuarios/me (nombre, especialidad) y refresco de la sesión
+│   ├── ver-suscripcion/           # Mi perfil, solo administrador: GET /organizacion/suscripcion
+│   ├── cambiar-contrasena/        # Mi perfil: PUT /usuarios/me/contrasena y reemplazo del token
+│   └── contactar-soporte/         # modal "Contactar soporte" (POST /soporte/mensajes): Mi perfil y sidebar
 ├── entities/     # Entidades de negocio: session, appointment, recordatorio, solicitud
 └── shared/       # api (httpClient, errores de validación), config (bloques horarios, zona horaria),
                   # lib (authToken, fecha, rut), ui (componentes Base*)
@@ -115,7 +131,7 @@ src/
 **Regla FSD crítica:** una capa solo importa de las que están **debajo**, nunca al revés:
 `app` → `pages` → `features` → `entities` → `shared`. Un slice tampoco importa de otro slice de su
 misma capa (un feature no importa de otro feature). `app` es la capa superior: el router importa las
-páginas y `entities/session`.
+páginas y `entities/session`, y el sidebar monta `ContactarSoporteModal` de `features/contactar-soporte`.
 
 Desde fuera de un slice se importa por su `index.ts` (API pública), no por archivos internos. Hoy hay una
 excepción: `pages/agendar-cita` importa `@/features/crear-cita/model/flujoCitaModel`.
@@ -176,7 +192,7 @@ tienen `CLAUDE.md` propio: su contrato y sus decisiones están en `context/Featu
 | Agente         | Dominio                                                                    | Contexto                                      |
 |----------------|----------------------------------------------------------------------------|-----------------------------------------------|
 | `auth-agent`   | `src/features/auth/` (login y su contrato con la sesión)                   | `src/features/auth/CLAUDE.md`                 |
-| `ui-agent`     | `src/pages/`, `src/shared/ui/` y los features del panel y del flujo público: `dashboard`, `agenda`, `crear-cita`, `gestionar-cita`, `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios` | `src/pages/CLAUDE.md` + `context/Features/<feature>.md` |
+| `ui-agent`     | `src/pages/`, `src/shared/ui/` y los features del panel y del flujo público: `dashboard`, `agenda`, `crear-cita`, `gestionar-cita`, `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios`, y los de *Mi perfil*: `editar-perfil`, `ver-suscripcion`, `cambiar-contrasena`, `contactar-soporte` | `src/pages/CLAUDE.md` + `context/Features/<feature>.md` (los de *Mi perfil*, `perfil-cuenta.md`) |
 | `shared-agent` | `src/shared/` (salvo `ui/`), `src/entities/` y `src/app/` (router, guard, providers, layouts, estilos), más `public/_redirects` y `.env.example` | `src/shared/CLAUDE.md` + `src/entities/CLAUDE.md` |
 
 Cada carpeta de `src/` tiene un solo dueño. Un cambio que cruza dominios (p. ej. un campo nuevo en una

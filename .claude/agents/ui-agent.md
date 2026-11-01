@@ -9,7 +9,8 @@ Tu contexto es EXCLUSIVAMENTE:
 - `src/pages/`
 - `src/shared/ui/`
 - `src/features/` **salvo `auth/`** (que es de `auth-agent`): `dashboard`, `agenda`, `crear-cita`,
-  `gestionar-cita`, `bandeja-solicitudes`, `compartir-enlace-agenda` y `configurar-recordatorios`
+  `gestionar-cita`, `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios` y los de
+  *Mi perfil* (US-10): `editar-perfil`, `ver-suscripcion`, `cambiar-contrasena` y `contactar-soporte`
 
 ## Contexto Independiente
 
@@ -25,6 +26,7 @@ Tu contexto es EXCLUSIVAMENTE:
   | `gestionar-cita` | `context/Features/gestionar-cita.md` |
   | `bandeja-solicitudes`, `compartir-enlace-agenda` | `context/Features/bandeja-solicitudes.md` |
   | `configurar-recordatorios` | `context/Features/recordatorios.md` |
+  | `editar-perfil`, `ver-suscripcion`, `cambiar-contrasena`, `contactar-soporte` (y `pages/perfil`) | `context/Features/perfil-cuenta.md` (decisiones F1–F9 en `context/us/10-perfil-cuenta.md`) |
 
 - No modifiques archivos fuera de tu contexto. Si necesitas cambios en `src/entities/`, `src/app/`
   (rutas, guard, layouts, estilos globales) o en `src/shared/` fuera de `ui/`, repórtalo al orquestador
@@ -55,6 +57,7 @@ src/pages/
 ├── agenda/ui/           # AgendaPage
 ├── solicitudes/ui/      # SolicitudesPage
 ├── recordatorios/ui/    # RecordatoriosPage
+├── perfil/ui/           # PerfilPage (Mi perfil, US-10): pestañas locales y "Contactar soporte"
 ├── agendar-cita/ui/     # AgendarCitaPage (pública, sin layout)
 └── no-encontrada/ui/    # NoEncontradaPage (404 de la ruta comodín, pública, sin layout)
 
@@ -67,7 +70,12 @@ src/features/
 │                              # recordatorios de la cita, editar contacto
 ├── bandeja-solicitudes/       # BandejaSolicitudes, aceptar (modal) y rechazar
 ├── compartir-enlace-agenda/   # CopiarEnlaceAgenda
-└── configurar-recordatorios/  # ConfiguracionRecordatorios
+├── configurar-recordatorios/  # ConfiguracionRecordatorios
+├── editar-perfil/             # InformacionPersonal: GET y PATCH /usuarios/me; refresca la sesión (updateUser)
+├── ver-suscripcion/           # SuscripcionOrganizacion: GET /organizacion/suscripcion (solo administrador)
+├── cambiar-contrasena/        # CambiarContrasenaForm: PUT /usuarios/me/contrasena; replaceToken con el 200
+└── contactar-soporte/         # ContactarSoporteModal: POST /soporte/mensajes. Lo montan pages/perfil y
+                               # app/layouts/PanelSidebar.vue
 
 src/shared/ui/
 ├── BaseAvatar.vue    # Iniciales sobre color. Props: name, size
@@ -75,7 +83,9 @@ src/shared/ui/
 ├── BaseButton.vue    # Props: variant ('primary'|'outline'), type, loading, disabled, block (true por defecto)
 ├── BaseCard.vue      # Panel blanco; slot `header` opcional
 ├── BaseCheckbox.vue  # v-model boolean; prop label
-├── BaseInput.vue     # v-model string; props label, type, error, hint…; slot icon
+├── BaseInput.vue     # v-model string; props label, type, error, hint, disabled…; slot icon.
+│                     # inheritAttrs: false — maxlength, name, readonly, @blur… van al <input>;
+│                     # class y style, a la raíz
 └── BaseSwitch.vue    # Interruptor (role="switch"); props label, description, disabled
 ```
 
@@ -95,7 +105,14 @@ Cada feature expone su API pública en `index.ts`; las páginas importan desde a
 - Horario de atención: solo desde `shared/config/bloquesHorarios.ts`; fechas y horas solo con
   `shared/lib/fecha.ts`, que trabaja en la zona fija de Chile (`ZONA_HORARIA`; nada de `getHours()`,
   `getDate()`, `new Date(año, mes, día)` ni `Intl.DateTimeFormat` en los features); errores 400 de
-  NestJS con `mensajesDeValidacion` (`shared/api/erroresValidacion.ts`)
+  NestJS con `mensajesDeValidacion` (las listas en inglés del `ValidationPipe`, que cada feature traduce
+  por nombre de campo) y `mensajeDelBackend` (un texto en español de dominio o de límite, que se muestra tal
+  cual), los dos en `shared/api/erroresValidacion.ts`. Se reconocen por el comienzo del texto (DTF-08) y lo
+  no reconocido va al mensaje general
+- Datos del usuario de la sesión: solo `features/editar-perfil` los refresca (`updateUser`, con `GET` y
+  `PATCH /usuarios/me`) y solo `features/cambiar-contrasena` cambia el token (`replaceToken`). El rol que se
+  muestra sale de la sesión (`roleLabel`), no del perfil. La única rama por rol es la pestaña *Suscripción*
+  de `PerfilPage` (`isAdmin`)
 - No se agenda al pasado desde la UI (el backend lo permite, DT-13): el modal "Nueva cita", reagendar y
   aceptar una solicitud usan `min` = hoy en el selector y rechazan un inicio pasado con *"Elige una
   fecha y hora futuras."*; el flujo público deshabilita días y horas pasados
@@ -106,9 +123,10 @@ Cada feature expone su API pública en `index.ts`; las páginas importan desde a
   por debajo de 560px
 - Accesibilidad: atributos `aria-*`, labels asociados; en los modales, foco inicial, `Esc` cierra
   (salvo enviando) y `Tab` no sale del diálogo. Mientras se envía, ni el clic fuera ni `Esc` cierran
-  (un `cerrar()` que vuelve si `isSubmitting`). Lo cumplen el modal "Nueva cita", el voucher y los dos
-  modales de la bandeja; la trampa de `Tab` la tienen el modal "Nueva cita" y el voucher, pero todavía
-  no los de la bandeja (aceptar / rechazar)
+  (un `cerrar()` que vuelve si `isSubmitting`). Lo cumplen el modal "Nueva cita", el voucher, los dos
+  modales de la bandeja y "Contactar soporte"; la trampa de `Tab` la tienen el modal "Nueva cita", el
+  voucher y "Contactar soporte", pero todavía no los de la bandeja (aceptar / rechazar). No hay
+  `BaseModal`, `BaseTextarea` ni `BaseTabs`: se copian los patrones existentes
 
 ## Paleta (variables CSS de `src/app/styles/main.css`)
 

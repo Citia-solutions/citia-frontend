@@ -53,12 +53,22 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   Asistió / No asistió sobre una pendiente que ya empezó y *"¿Quién lo pidió?"* al cancelar y reagendar
   ([gestionar-cita](Features/gestionar-cita.md#cambios-de-us-0701--registro-de-hechos-2026-10-19)), y el
   filtro *"Sin respuesta"* ([agenda-profesional](Features/agenda-profesional.md)).
+- **Fase 7 — US-10, Mi perfil y soporte** (2026-11-01, `feature/fase7-perfil-cuenta`, sin commit):
+  [perfil-cuenta](Features/perfil-cuenta.md) — página `/perfil` (información personal, suscripción solo para
+  el administrador, cambio de contraseña) y *Contactar soporte* desde la página y el sidebar; sesión refrescable,
+  token reemplazable y el 401 de un token viejo sin cerrar la sesión
+  ([login-sesion](Features/login-sesion.md#cambios-de-us-10--mi-perfil-2026-11-01)). Fichó
+  [DTF-08](Deudas/DTF-08.md).
 - **`us/`** — planes de historias de usuario, **antes** de implementarlas. Cuando una se
   implementa, su contrato real pasa a `Features/`.
   - [`06-epic.md`](us/06-epic.md) — dashboard de citas del día (US-06).
   - [`07.01-registro-hechos.md`](us/07.01-registro-hechos.md) — primera subtarea de US-07 (Fase 5):
     asistencia sobre una pendiente y "¿Quién lo pidió?". 🔶 Implementada en la rama, sin commit →
     [gestionar-cita](Features/gestionar-cita.md), [agenda-profesional](Features/agenda-profesional.md).
+  - [`10-perfil-cuenta.md`](us/10-perfil-cuenta.md) — US-10 (Fase 7): Mi Perfil (datos, suscripción,
+    cambio de contraseña) y *Contactar soporte*. ✅ Implementada y verificada en local (build y prueba en el
+    navegador contra el backend local), sin commit en `feature/fase7-perfil-cuenta`; falta staging →
+    [perfil-cuenta](Features/perfil-cuenta.md), [login-sesion](Features/login-sesion.md).
   - **Subtareas de US-02** (gestión de citas; archivos `02.NN-*`, no son historias propias):
     - [`02.07-paciente-reagenda-cancela.md`](us/02.07-paciente-reagenda-cancela.md) — el paciente
       confirma, cancela o pide otra hora desde el enlace de su recordatorio. ✅ Implementada (v1, Fase 3)
@@ -114,6 +124,16 @@ hora) y **Descartadas** — ver [responder-cita-paciente](Features/responder-cit
 de inicio con un reintento, el 409 *"La cita todavía no comienza…"* y **"¿Quién lo pidió?"** obligatoria
 al cancelar y reagendar · en la agenda, filtro **"Sin respuesta"** — ver
 [`us/07.01-registro-hechos.md`](us/07.01-registro-hechos.md).
+
+**Fase 7 — US-10, verificado en el navegador contra el backend local** (el backend ya está en producción;
+falta staging): **Mi perfil** `/perfil` con nombre y especialidad editables, correo, rol y organización en
+lectura y el enlace de agenda · pestaña **Suscripción** solo para el administrador (*Plan piloto*) · **cambio de
+contraseña** con el token reemplazado y la sesión abierta · **Contactar soporte** desde *Mi perfil* y desde la
+sección *CUENTA* del sidebar, que además enlaza el bloque del usuario a *Mi perfil* — ver
+[perfil-cuenta](Features/perfil-cuenta.md). Sin probar: el corte con un segundo navegador, el 409 y los 429, la
+rama de un `PROFESIONAL` y una contraseña de más de 72 bytes (tampoco figuran en la prueba copiar el enlace,
+vaciar la especialidad ni abrir soporte desde *Mi perfil*). En production los mensajes a soporte quedan
+`pendiente` hasta que haya casilla (Q19 del backend).
 
 **Arquitectura:** Feature-Sliced Design. La regla que no se rompe es la dirección de las capas:
 `pages → features → entities → shared`, nunca al revés.
