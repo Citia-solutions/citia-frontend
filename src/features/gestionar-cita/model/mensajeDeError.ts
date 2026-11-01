@@ -1,4 +1,5 @@
 import { HttpError } from '@/shared/api/httpClient'
+import { mensajeDelBackend } from '@/shared/api/erroresValidacion'
 
 /**
  * Límite del motivo en el front: espejo a mano de `@MaxLength(300)` de
@@ -24,15 +25,6 @@ const AUN_NO_COMIENZA = 'La cita todavía no comienza'
 /** Status HTTP del fallo, o null si no hubo respuesta (red). */
 export function statusDe(e: unknown): number | null {
   return e instanceof HttpError ? e.status : null
-}
-
-/** `message` del cuerpo de error de NestJS cuando es un texto, o null. */
-function mensajeDelBackend(e: unknown): string | null {
-  if (!(e instanceof HttpError)) return null
-  const data = e.data
-  if (typeof data !== 'object' || data === null || !('message' in data)) return null
-  const { message } = data as { message: unknown }
-  return typeof message === 'string' ? message : null
 }
 
 /**
