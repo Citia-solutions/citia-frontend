@@ -9,7 +9,8 @@
  *  - persistent = false → sessionStorage (solo esta pestaña; se borra al cerrarla)
  *
  * Los datos del usuario NO se guardan aquí: los guarda `entities/session` junto
- * al token, con la misma regla de almacenamiento.
+ * al token, con la misma regla de almacenamiento (`isTokenPersistent()` dice
+ * cuál se eligió).
  */
 const TOKEN_KEY = 'citia.token'
 
@@ -27,6 +28,29 @@ export function setToken(token: string, persistent = false): void {
 export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY)
   sessionStorage.removeItem(TOKEN_KEY)
+}
+
+/**
+ * `true` si el token guardado está en `localStorage`, es decir, si al iniciar
+ * sesión se eligió "Mantener sesión iniciada". Sirve para volver a escribir algo
+ * de la sesión (el usuario, un token nuevo) en el mismo almacenamiento.
+ */
+export function isTokenPersistent(): boolean {
+  return localStorage.getItem(TOKEN_KEY) !== null
+}
+
+/**
+ * Cambia el token guardado por otro de la **misma** sesión (US-10: el que
+ * devuelve el cambio de contraseña), en el almacenamiento en que está hoy
+ * (`localStorage` o `sessionStorage`).
+ *
+ * Si no hay token guardado (la sesión se cerró en otra pestaña), no escribe
+ * nada: no revive una sesión cerrada. Comprobar que el token es del usuario de
+ * la sesión le toca a quien llama (`entities/session`).
+ */
+export function replaceToken(token: string): void {
+  if (getToken() === null) return
+  setToken(token, isTokenPersistent())
 }
 
 /** Lo que el front necesita leer del JWT. El backend firma `{ sub, email, tenantId, rol, exp }`. */

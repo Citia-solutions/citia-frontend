@@ -12,10 +12,19 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
 | [bandeja-solicitudes](bandeja-solicitudes.md) — cierre de Fase 1 US-02: bandeja (listar, aceptar, rechazar) + enlace de agenda | ✅ Implementado · ⚠️ solo con respuestas simuladas (backend en paralelo) | `feature/us02-cierre-fase1` · sin commit |
 | [recordatorios](recordatorios.md) — Fase 2, US-03: configuración `/recordatorios` + estado de los recordatorios en el voucher | ✅ Implementado · ⚠️ solo con respuestas simuladas | `feature/fase2-recordatorios` · sin commit |
 | [crear-cita](crear-cita.md) — modal "Nueva cita" del profesional; Fase 2: correo obligatorio · lote 2: bloques 07:00–21:00, la cita termina a más tardar a las 22:00 | ✅ Implementado y conectado · ⚠️ el cambio de Fase 2 sin prueba contra el backend | `feature/fase2-recordatorios` · lote 2 en `feature/frontend-prerelease`, sin commit |
-| [login-sesion](login-sesion.md) — login, sesión persistente (F5 / otra pestaña), 401 global, cerrar sesión y sidebar con datos reales | ✅ Implementado · ⚠️ lo nuevo verificado solo con respuestas simuladas | `feature/frontend-prerelease` · `a39dbdc` |
+| [login-sesion](login-sesion.md) — login, sesión persistente (F5 / otra pestaña), 401 global, cerrar sesión y sidebar con datos reales · US-10: sesión refrescable (`updateUser`), token reemplazable (`replaceToken`), `isAdmin` y el 401 de un token viejo (F7) | ✅ Implementado · ⚠️ lo del lote 1 verificado solo con respuestas simuladas · lo de US-10, en el navegador contra el backend local | `feature/frontend-prerelease` · `a39dbdc` · US-10 en `feature/fase7-perfil-cuenta`, sin commit |
+| [perfil-cuenta](perfil-cuenta.md) — Fase 7, US-10: página *Mi perfil* `/perfil` (información personal, suscripción solo para el administrador, cambio de contraseña) y *Contactar soporte* desde la página y el sidebar | ✅ Implementado · verificado en el navegador contra el backend local · ⚠️ sin verificación en staging | `feature/fase7-perfil-cuenta` · sin commit |
 | [responder-cita-paciente](responder-cita-paciente.md) — Fase 3, US-04 + US-02.07 v1: página pública `/cita#<token>` (confirmar, cancelar, pedir otra hora) · voucher: quién confirmó/canceló, "pidió otra hora", invalidar enlace · bandeja: "Pide otra hora", aceptar solo con fecha y hora, `descartada` | ✅ Implementado · ⚠️ solo con respuestas simuladas (backend en paralelo) | `feature/fase3-respuesta-paciente` · sin commit |
 
 ## Notas
+
+- **Fase 7 — US-10, Mi perfil y soporte (2026-11-01, `feature/fase7-perfil-cuenta`, sin commit):** plan en
+  [`us/10-perfil-cuenta.md`](../us/10-perfil-cuenta.md). Página nueva [perfil-cuenta](perfil-cuenta.md) con cuatro
+  features (`editar-perfil`, `ver-suscripcion`, `cambiar-contrasena`, `contactar-soporte`), sección *CUENTA* en
+  el sidebar y el bloque del usuario como enlace. La sesión se refresca con `GET /usuarios/me` al entrar a *Mi
+  perfil*, el token se reemplaza tras cambiar la contraseña y un 401 de un token viejo no cierra la sesión
+  ([login-sesion](login-sesion.md#cambios-de-us-10--mi-perfil-2026-11-01)). Probado en el navegador contra el
+  backend local (el backend de US-10 ya está en producción); falta staging.
 
 - **Fase 5 — US-07.01, registro de hechos (2026-10-19, `feature/fase5-registro-hechos`, sin commit):**
   plan en [`us/07.01-registro-hechos.md`](../us/07.01-registro-hechos.md). En el voucher

@@ -19,6 +19,9 @@ src/shared/
 │                         # autenticada (lo registra app/providers; ver abajo)
 │   └── erroresValidacion.ts # mensajesDeValidacion(e): string[] de un 400 de NestJS
 │                            # ({ message: string[] | string }); no traduce nada
+│                            # mensajeDelBackend(e): el `message` cuando es UN texto (cualquier
+│                            # status) o null: los errores de dominio y de límite, en español,
+│                            # se muestran tal cual; las listas del ValidationPipe (inglés), no
 ├── config/
 │   └── bloquesHorarios.ts # Horario de atención: PRIMER_BLOQUE ('07:00'), ULTIMO_BLOQUE ('21:00'),
 │                          # DURACION_BLOQUE_MIN (60) → BLOQUES_HORARIOS, FIN_DE_JORNADA ('22:00'),
@@ -32,6 +35,9 @@ src/shared/
 │                         # persistent=true → localStorage; false → sessionStorage
 │                         # readTokenClaims(token) → { sub, exp } | null (sin verificar firma)
 │                         # isTokenExpired(claims)
+│                         # isTokenPersistent(): el token está en localStorage
+│                         # replaceToken(token): lo reemplaza en el almacenamiento en que está
+│                         # (sin token guardado no escribe); US-10, cambio de contraseña
 │   └── fecha.ts          # Fechas sin librerías, SIEMPRE en la zona de la clínica (ZONA_HORARIA),
 │                         # nunca en la del navegador. Instantes: aInicioISO(fecha, hora) (seguro
 │                         # ante el cambio de horario), esInicioPasado, fechaEnClinicaISO,
@@ -45,8 +51,10 @@ src/shared/
 │                         # recortes del kit de marca; solo los usa ui/BaseLogo.vue
 └── ui/
     ├── BaseButton.vue    # Props: variant('primary'|'outline'), loading, block
-    ├── BaseInput.vue     # Props: modelValue, label, type, error, hint?; slot: icon
-    │                     # (label/hint/error quedan asociados al input con useId)
+    ├── BaseInput.vue     # Props: modelValue, label, type, error, hint?, disabled; slot: icon
+    │                     # (label/hint/error quedan asociados al input con useId).
+    │                     # inheritAttrs: false — los demás atributos (maxlength, readonly,
+    │                     # inputmode, name, @blur…) van al <input>; class y style, a la raíz
     ├── BaseCheckbox.vue  # Props: modelValue, label
     ├── BaseLogo.vue      # Logo de citiahealth en negativo (blanco), para fondo oscuro o azul.
     │                     # Props: variante('logotipo'|'isotipo'), alto (px). PNG en assets/marca/
@@ -67,7 +75,14 @@ Los favicons (`public/favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon
   ahí un 401 es "credenciales inválidas"
 - **401 global:** una petición con `auth` (por defecto) que recibe 401 llama al handler de
   `onUnauthorized` y después lanza el `HttpError` como siempre. El handler vive en `app/providers`
-  (cierra la sesión y lleva a `/login?redirect=<ruta>`); shared no conoce la sesión ni el router
+  (cierra la sesión y lleva a `/login?redirect=<ruta>`); shared no conoce la sesión ni el router.
+  **Excepción (US-10, F7):** si hay **otro** token guardado (`getToken()`) distinto del que viajó en la
+  petición —otra pestaña inició sesión, o el cambio de contraseña lo reemplazó mientras la petición
+  iba—, el 401 es de un token viejo: se lanza el `HttpError` **sin** avisar, para no cerrar la sesión
+  nueva. Sin token guardado (otra pestaña cerró la sesión) sí se avisa.
+- **Errores del backend, dos formas:** los 400 del `ValidationPipe` traen `message: string[]` en
+  inglés (se leen con `mensajesDeValidacion` y cada feature los traduce por nombre de campo); los de
+  dominio y el 429 traen `message: string` en español (`mensajeDelBackend`, se muestran tal cual)
 - Cambios en `HttpError` o en la firma de `request<T>()` requieren verificar todos los módulos
 - **Fechas y horas solo con `lib/fecha.ts`.** Dos clases de dato que no se mezclan: **instantes**
   (`Date`, ISO del backend), que se muestran y se arman en `ZONA_HORARIA`; y **días** 'YYYY-MM-DD', que

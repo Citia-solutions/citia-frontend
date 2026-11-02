@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref, useAttrs, useId } from 'vue'
+
+// Los atributos que no son props (`maxlength`, `readonly`, `inputmode`, `name`,
+// `required`, `@blur`…) van al `<input>`, no al `<div>` raíz; `class` y `style`
+// siguen en la raíz, para que quien lo usa pueda ubicarlo en su layout.
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -10,11 +15,23 @@ const props = withDefaults(
     error?: string
     /** Texto de ayuda bajo el campo. Se oculta mientras hay un error (el error ya orienta). */
     hint?: string
+    /** Deshabilita el campo y el botón de mostrar la contraseña; el control se ve atenuado. */
+    disabled?: boolean
   }>(),
-  { type: 'text' },
+  { type: 'text', disabled: false },
 )
 
 const model = defineModel<string>({ default: '' })
+
+// `useAttrs()` no es reactivo: se reparte en cada render (funciones, no computed).
+const attrs = useAttrs()
+const RAIZ = ['class', 'style']
+function atributosDeRaiz(): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(attrs).filter(([clave]) => RAIZ.includes(clave)))
+}
+function atributosDelInput(): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(attrs).filter(([clave]) => !RAIZ.includes(clave)))
+}
 
 // Para inputs de tipo password agregamos el toggle del ojito.
 const isPassword = computed(() => props.type === 'password')
@@ -30,18 +47,24 @@ const description = computed(() => props.error || props.hint || '')
 </script>
 
 <template>
-  <div class="field">
+  <div class="field" v-bind="atributosDeRaiz()">
     <label v-if="label" class="field__label" :for="inputId">{{ label }}</label>
-    <div class="field__control" :class="{ 'field__control--error': error }">
+    <div
+      class="field__control"
+      :class="{ 'field__control--error': error, 'field__control--disabled': disabled }"
+    >
       <span v-if="$slots.icon" class="field__icon">
         <slot name="icon" />
       </span>
+      <!-- `v-bind` primero: lo que sigue (id, type, aria-*) manda sobre un atributo igual -->
       <input
+        v-bind="atributosDelInput()"
         :id="inputId"
         v-model="model"
         :type="currentType"
         :placeholder="placeholder"
         :autocomplete="autocomplete"
+        :disabled="disabled"
         :aria-invalid="error ? 'true' : undefined"
         :aria-describedby="description ? descriptionId : undefined"
         class="field__input"
@@ -50,6 +73,7 @@ const description = computed(() => props.error || props.hint || '')
         v-if="isPassword"
         type="button"
         class="field__toggle"
+        :disabled="disabled"
         :aria-label="revealed ? 'Ocultar contraseña' : 'Mostrar contraseña'"
         @click="revealed = !revealed"
       >
@@ -93,6 +117,13 @@ const description = computed(() => props.error || props.hint || '')
 .field__control--error {
   border-color: var(--color-danger);
 }
+.field__control--disabled {
+  background: var(--color-surface-muted);
+}
+.field__control--disabled .field__input {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
 .field__icon {
   display: flex;
   color: var(--color-text-muted);
@@ -113,6 +144,9 @@ const description = computed(() => props.error || props.hint || '')
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 0;
+}
+.field__toggle:disabled {
+  cursor: not-allowed;
 }
 .field__error {
   margin: 0;

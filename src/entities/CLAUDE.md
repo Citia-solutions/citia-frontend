@@ -18,8 +18,10 @@ src/entities/
     └── index.ts             # Barrel: useSessionStore, roleLabel, AuthUser, Session, UserRole
 ```
 
-No hay `api/`: el backend no tiene `GET /me` (DTF-02, cerrada). La sesión se rehidrata desde el
-almacenamiento del navegador.
+No hay `api/`: la sesión se rehidrata desde el almacenamiento del navegador, sin pedir nada al backend
+en cada navegación. Desde US-10 (Fase 7) el backend tiene `GET /usuarios/me`, pero lo pide **solo la
+página Mi Perfil** (al entrar y tras un `PATCH` 200), que con la respuesta refresca la sesión con
+`updateUser`; la llamada vive en su feature, no aquí.
 
 ## Store: useSessionStore()
 
@@ -27,12 +29,26 @@ almacenamiento del navegador.
 // Estado
 currentUser: Ref<AuthUser | null>
 isAuthenticated: ComputedRef<boolean>  // currentUser != null (ni null ni undefined, DTF-01)
+isAdmin: ComputedRef<boolean>          // currentUser?.role === 'admin' (US-10)
 
 // Acciones
 setSession(user: AuthUser, token: string, persistent: boolean): void  // lanza si falta user o token
 clearSession(): void
 restoreSession(): boolean  // rehidrata desde el almacenamiento; si no sirve, limpia y da false
+updateUser(cambios: Pick<AuthUser, 'name' | 'tenantSlug' | 'tenantNombre'>): void  // US-10
+replaceToken(token: string): void  // US-10; lanza si el `sub` no es el usuario de la sesión
 ```
+
+- `updateUser` refresca `name`, `tenantSlug` y `tenantNombre` en memoria **y** en `citia.user`, en el
+  almacenamiento del token (`isTokenPersistent()`): las dos cosas, porque `restoreSession` corre en cada
+  navegación. Nunca toca `id`, `email` ni `role`. Sin sesión no hace nada; `tenantSlug` / `tenantNombre`
+  ausentes no cambian. Arma el usuario con la misma forma que `loadUser`.
+- `replaceToken` cambia el JWT por uno nuevo del mismo usuario (el del cambio de contraseña), en el
+  almacenamiento en que está; no reescribe `citia.user`.
+- Las dos **no escriben** si el token guardado ya no es del usuario en memoria (otra pestaña cerró la
+  sesión o entró con otra cuenta): la próxima navegación recoge lo que haya guardado.
+- **Roles en la UI:** desde US-10 el front ramifica por rol en un solo lugar: la pestaña *Suscripción*
+  de Mi Perfil, solo con `isAdmin`. Es presentación: el permiso lo decide el backend (403).
 
 ## Persistencia de la sesión
 
@@ -42,6 +58,8 @@ restoreSession(): boolean  // rehidrata desde el almacenamiento; si no sirve, li
 | `citia.user` | `AuthUser` en JSON (`model/storedUser.ts`) | El mismo almacenamiento que el token |
 
 - `setSession` escribe los dos (limpiando antes ambos almacenamientos) y actualiza `currentUser`.
+  `updateUser` reescribe solo `citia.user` y `replaceToken` solo `citia.token`, cada uno en el
+  almacenamiento en que ya está la sesión.
 - `restoreSession` lo llama el **guard del router en cada navegación** (`app/router/index.ts`): en la
   primera (F5, pestaña nueva) restaura la sesión; en las siguientes recoge un token vencido o un cambio
   hecho en otra pestaña. Limpia todo si falta el token o el usuario, si el JWT no se puede leer o ya
@@ -62,6 +80,7 @@ interface AuthUser {
   tenantSlug?: string   // del login (cierre de Fase 1); arma el enlace /agendar-cita/:tenantSlug
   tenantNombre?: string // del login (2026-10-05); nombre de la clínica en el sidebar
 }
+// `name`, `tenantSlug` y `tenantNombre` también los refresca `updateUser` (US-10, `GET /usuarios/me`).
 ```
 
 ## Otros slices

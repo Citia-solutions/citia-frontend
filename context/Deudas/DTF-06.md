@@ -46,6 +46,23 @@ Railway, el front queda diciendo otra cosa hasta que se actualice a mano. Si eso
 |-------------------|-------|---------------------|
 | `LIMITE_TEXTO` — `features/responder-cita/model/formularios.ts` | 300 | `preferencia` (1..300) y `motivo` (≤ 300) de `POST /publico/cita/cancelar` y `/otra-hora` |
 
+**Fase 7 — US-10, Mi perfil y soporte (2026-11-01):** seis copias más, de `usuario` y `soporte` del backend
+([perfil-cuenta](../Features/perfil-cuenta.md)). Cada constante lleva en su comentario la del backend que copia:
+
+| Constante (front) | Valor | Cómo se cuenta | Espejo de (backend) |
+|-------------------|-------|----------------|---------------------|
+| `NOMBRE_MAX` — `features/editar-perfil/model/perfilSchema.ts` | 120 | `.length` tras recortar | `LARGO_MAXIMO_NOMBRE` (`usuario/domain/usuario.entity.ts`), `@MaxLength` de `nombreCompleto` en `ActualizarPerfilDto` |
+| `ESPECIALIDAD_MAX` — mismo archivo | 100 | `.length` tras recortar | `LARGO_MAXIMO_ESPECIALIDAD` (mismo archivo), `@MaxLength` de `especialidad` |
+| `CONTRASENA_MIN_CARACTERES` — `features/cambiar-contrasena/model/contrasenaSchema.ts` | 8 | caracteres **reales** (`Array.from(texto).length`: un emoji es uno), sin recortar | `LARGO_MINIMO_CONTRASENA` (`usuario/domain/contrasena.ts`) |
+| `CONTRASENA_MAX_BYTES` — mismo archivo | 72 | **bytes UTF-8** (`new TextEncoder().encode(texto).length`), sin recortar | `BYTES_MAXIMOS_CONTRASENA` (mismo archivo; bcrypt ignora lo que pasa de 72 bytes). El DTO no lo comprueba: el tope es del dominio |
+| `MENSAJE_MAX` — `features/contactar-soporte/model/soporteSchema.ts` | 2000 | `.length` tras recortar los extremos | `LARGO_MAXIMO_MENSAJE_SOPORTE` (`soporte/domain/limites-soporte.ts`), `@MaxLength` de `CrearMensajeSoporteDto` |
+| `CATEGORIAS` — mismo archivo | `problema`, `consulta`, `sugerencia`, `otro` | — | `enum CategoriaSoporte` (`soporte/domain/mensaje-soporte.entity.ts`). Una categoría nueva en el backend no aparece en el modal hasta copiarla aquí (y en `CategoriaSoporte` de `model/types.ts`) |
+
+La contraseña es la única copia que **no cuenta como `.length`**: si el backend cambiara la forma de contar
+(caracteres o bytes), el front dejaría pasar o cortaría contraseñas que el servidor trata distinto. El texto del
+error del tope (*"…como máximo 72 bytes (72 letras sin tildes; menos si lleva tildes, ñ o emojis)"*) también está
+copiado, para mostrarlo antes de enviar.
+
 ## Por qué existe la copia
 
 Sin ella, pasarse de un largo devolvía un `400` genérico y el paciente no sabía qué campo corregir.
@@ -66,7 +83,8 @@ El DTO está marcado como **provisional** en el backend. Si se ajustan los campo
   genérico — vuelve el problema original;
 - **si lo sube**, el front corta al paciente antes de lo necesario.
 
-Al tocar `crear-solicitud.dto.ts`, actualizar `LIMITES` en el mismo cambio.
+Al tocar `crear-solicitud.dto.ts`, actualizar `LIMITES` en el mismo cambio. Igual con las constantes de
+`usuario` y `soporte` (Fase 7): las de la tabla de arriba.
 
 ## Cuándo revisar
 

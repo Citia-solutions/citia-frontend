@@ -9,8 +9,9 @@ Analiza la solicitud `$ARGUMENTS` y ejecuta este flujo:
     `lib` (authToken, fecha, rut), `ui` (componentes `Base*`)
   - `entities/` — `session`, `appointment`, `recordatorio`, `solicitud`
   - `features/` — `auth`, `dashboard`, `agenda`, `crear-cita`, `gestionar-cita`,
-    `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios`
-  - `pages/` — `login`, `dashboard`, `agenda`, `solicitudes`, `recordatorios`, `agendar-cita`,
+    `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios`, y los de Mi perfil:
+    `editar-perfil`, `ver-suscripcion`, `cambiar-contrasena`, `contactar-soporte`
+  - `pages/` — `login`, `dashboard`, `agenda`, `solicitudes`, `recordatorios`, `perfil`, `agendar-cita`,
     `no-encontrada`
   - `app/` — router (guard, `cerrarSesion`), providers (Pinia, router, 401 global), layouts del
     panel, estilos globales
@@ -31,7 +32,7 @@ Presenta al usuario:
   |--------|---------|
   | `shared-agent` | `src/shared/` (salvo `ui/`), `src/entities/`, `src/app/`, `public/_redirects`, `.env.example` |
   | `auth-agent` | `src/features/auth/` |
-  | `ui-agent` | `src/pages/`, `src/shared/ui/` y los features `dashboard`, `agenda`, `crear-cita`, `gestionar-cita`, `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios` |
+  | `ui-agent` | `src/pages/`, `src/shared/ui/` y los features `dashboard`, `agenda`, `crear-cita`, `gestionar-cita`, `bandeja-solicitudes`, `compartir-enlace-agenda`, `configurar-recordatorios`, `editar-perfil`, `ver-suscripcion`, `cambiar-contrasena`, `contactar-soporte` |
 
 - Orden de ejecución: en un cambio que cruza dominios, primero `shared-agent` y después `auth-agent`
   o `ui-agent` (que pueden ir en paralelo si no se tocan entre sí).

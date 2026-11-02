@@ -6,8 +6,10 @@ import type { AuthUser } from './types'
  * almacenamiento** (misma regla que `shared/lib/authToken`): con "Mantener
  * sesión iniciada" van a `localStorage`, si no a `sessionStorage`.
  *
- * Existe porque el backend no tiene `GET /me`: el usuario de la respuesta del
- * login es lo único que hay para rehidratar la sesión al recargar.
+ * Es lo que rehidrata la sesión al recargar, sin pedir nada al backend: se
+ * escribe con el usuario de la respuesta del login (`setSession`) y, desde
+ * US-10, se refresca con `GET` / `PATCH /usuarios/me` al entrar a Mi Perfil o
+ * al guardarlo (`updateUser` del store).
  */
 const USER_KEY = 'citia.user'
 

@@ -34,7 +34,9 @@ let unauthorizedHandler: UnauthorizedHandler | null = null
  * pestaña). Lo registra `app` al arrancar: shared no conoce la sesión ni el router.
  *
  * Las llamadas con `{ auth: false }` nunca lo disparan: en el login un 401
- * significa "credenciales inválidas" y lo maneja quien llamó.
+ * significa "credenciales inválidas" y lo maneja quien llamó. Tampoco un 401
+ * de una petición cuyo token ya no es el guardado (carrera entre pestañas o
+ * token reemplazado mientras viajaba): ese 401 no habla de la sesión actual.
  * El `HttpError` se lanza igual, después de avisar.
  */
 export function onUnauthorized(handler: UnauthorizedHandler | null): void {
@@ -59,7 +61,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data: unknown = isJson ? await res.json() : await res.text()
 
   if (!res.ok) {
-    if (res.status === 401 && auth) unauthorizedHandler?.()
+    // Si el token guardado es otro, el 401 es de un token viejo y la sesión que
+    // hay ahora es otra (otra pestaña inició sesión, o el cambio de contraseña
+    // lo reemplazó, US-10): no se avisa, solo se lanza. Sin token guardado
+    // (otra pestaña cerró la sesión) sí se avisa, para volver al login.
+    const guardado = getToken()
+    if (res.status === 401 && auth && (guardado === null || guardado === token)) {
+      unauthorizedHandler?.()
+    }
     throw new HttpError(res.status, data)
   }
 

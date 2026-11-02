@@ -5,14 +5,22 @@
 //
 // Solo muestra lo que funciona: Resumen, Agenda, Solicitudes y Recordatorios.
 // La píldora de Solicitudes es real: cuántas esperan respuesta. Usuario, rol y
-// clínica salen de la sesión (respuesta del login, restaurada al recargar).
-import { computed } from 'vue'
+// clínica salen de la sesión (respuesta del login, restaurada al recargar, y
+// refrescada por Mi Perfil: el nombre cambia sin recargar).
+//
+// US-10: a Mi Perfil se llega por el ítem "Mi perfil" de la sección Cuenta y
+// por el bloque avatar + nombre + rol, que es un enlace; "Cerrar sesión" queda
+// fuera del enlace (F1). "Contactar soporte" abre el modal de
+// `features/contactar-soporte` desde cualquier pantalla del panel (F2).
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseAvatar from '@/shared/ui/BaseAvatar.vue'
 import BaseLogo from '@/shared/ui/BaseLogo.vue'
 import { roleLabel, useSessionStore } from '@/entities/session'
 import { useSolicitudesRecibidas } from '@/entities/solicitud'
+import { ContactarSoporteModal } from '@/features/contactar-soporte'
 import { cerrarSesion } from '@/app/router/cerrarSesion'
+import ConfirmarCerrarSesion from './ConfirmarCerrarSesion.vue'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -22,9 +30,19 @@ const user = computed(() => session.currentUser)
 /** Nombre para el perfil; si el backend no mandó nombre, el correo. */
 const displayName = computed(() => user.value?.name.trim() || user.value?.email || '')
 
+/** Muestra la confirmación antes de cerrar sesión. */
+const confirmarSalir = ref(false)
+
 function salir(): void {
+  confirmarSalir.value = true
+}
+
+function confirmarCierre(): void {
   cerrarSesion(router)
 }
+
+/** Modal "Contactar soporte" (F2). */
+const soporteAbierto = ref(false)
 </script>
 
 <template>
@@ -82,15 +100,55 @@ function salir(): void {
         </svg>
         <span>Recordatorios</span>
       </RouterLink>
+
+      <span class="sidebar__label sidebar__label--section">CUENTA</span>
+
+      <RouterLink
+        :to="{ name: 'perfil' }"
+        class="sidebar__item"
+        active-class="sidebar__item--active"
+        title="Mi perfil"
+        aria-label="Mi perfil"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21a8 8 0 0 1 16 0" />
+        </svg>
+        <span>Mi perfil</span>
+      </RouterLink>
+
+      <button
+        type="button"
+        class="sidebar__item sidebar__item--button"
+        title="Contactar soporte"
+        aria-label="Contactar soporte"
+        aria-haspopup="dialog"
+        @click="soporteAbierto = true"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </svg>
+        <span>Contactar soporte</span>
+      </button>
     </nav>
 
-    <!-- Perfil + cerrar sesión -->
+    <!-- Perfil (enlace a Mi perfil) + cerrar sesión, fuera del enlace -->
     <div v-if="user" class="sidebar__profile">
-      <BaseAvatar :name="displayName" :size="38" />
-      <div class="sidebar__profile-text">
-        <span class="sidebar__profile-name" :title="displayName">{{ displayName }}</span>
-        <span class="sidebar__profile-role">{{ roleLabel(user.role) }}</span>
-      </div>
+      <RouterLink
+        :to="{ name: 'perfil' }"
+        class="sidebar__profile-link"
+        active-class="sidebar__profile-link--active"
+        :title="`Mi perfil: ${displayName}`"
+      >
+        <span class="sidebar__sr">Mi perfil:</span>
+        <BaseAvatar :name="displayName" :size="38" />
+        <span class="sidebar__profile-text">
+          <span class="sidebar__profile-name">{{ displayName }}</span>
+          <span class="sidebar__profile-role">{{ roleLabel(user.role) }}</span>
+        </span>
+      </RouterLink>
       <button
         type="button"
         class="sidebar__logout"
@@ -106,6 +164,14 @@ function salir(): void {
       </button>
     </div>
   </aside>
+
+  <ConfirmarCerrarSesion
+    :is-open="confirmarSalir"
+    @close="confirmarSalir = false"
+    @confirm="confirmarCierre"
+  />
+
+  <ContactarSoporteModal :is-open="soporteAbierto" @close="soporteAbierto = false" />
 </template>
 
 <style scoped>
@@ -238,6 +304,54 @@ function salir(): void {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+/* US-10: sección Cuenta (Mi perfil y Contactar soporte). */
+.sidebar__label--section {
+  margin-top: 0.9rem;
+}
+/* "Contactar soporte" abre un modal: es un botón con el aspecto de un ítem. */
+.sidebar__item--button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar__item--button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+/* El bloque avatar + nombre + rol es un enlace a Mi perfil (F1). */
+.sidebar__profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem;
+  margin: -0.35rem;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.sidebar__profile-link:hover,
+.sidebar__profile-link--active {
+  background: var(--color-sidebar-surface);
+}
+.sidebar__profile-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.sidebar__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 @media (max-width: 860px) {
   .sidebar {
     width: 72px;
@@ -272,6 +386,14 @@ function salir(): void {
   /* Colapsado: avatar arriba y "Cerrar sesión" debajo, centrados. */
   .sidebar__profile {
     flex-direction: column;
+  }
+  .sidebar__profile-link {
+    flex: none;
+    justify-content: center;
+    margin: 0;
+  }
+  .sidebar__item--button {
+    text-align: center;
   }
 }
 </style>

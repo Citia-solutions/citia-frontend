@@ -35,21 +35,26 @@ src/shared/
 ├── api/
 │   ├── httpClient.ts       # request<T>(), http.get/post/put/patch/delete(); Bearer automático,
 │   │                       # { auth: false } lo omite; HttpError(status, data);
-│   │                       # onUnauthorized(handler) ante 401 de una petición autenticada;
+│   │                       # onUnauthorized(handler) ante 401 de una petición autenticada,
+│   │                       # salvo si el token guardado ya es otro (F7 de US-10);
 │   │                       # base URL = VITE_API_URL ?? '/api'
-│   └── erroresValidacion.ts # mensajesDeValidacion(e): mensajes de un 400 de NestJS
+│   └── erroresValidacion.ts # mensajesDeValidacion(e): mensajes de un 400 de NestJS;
+│                            # mensajeDelBackend(e): el `message` cuando es un texto (cualquier status)
 ├── config/
 │   ├── bloquesHorarios.ts  # Horario de atención (07:00–21:00, bloques de 60 min, fin 22:00)
 │   └── zonaHoraria.ts      # ZONA_HORARIA = 'America/Santiago' (espejo de APP_TZ) y LOCALE_FECHAS
 ├── lib/
-│   ├── authToken.ts        # get/set/removeToken (citia.token), readTokenClaims, isTokenExpired
+│   ├── authToken.ts        # get/set/removeToken (citia.token), readTokenClaims, isTokenExpired,
+│   │                       # isTokenPersistent, replaceToken (US-10)
 │   ├── fecha.ts            # Fechas sin librerías, siempre en ZONA_HORARIA (nunca la del navegador)
 │   └── rut.ts              # Validación y formato del RUT
 └── ui/                     # Componentes Base* (gestionados por ui-agent)
 
 src/entities/
-├── session/        # Sin api/ (no hay GET /me)
-│   └── model/      # store.ts (useSessionStore), storedUser.ts (citia.user), role.ts, types.ts
+├── session/        # Sin api/: no pide nada al backend en cada navegación (GET /usuarios/me vive
+│   │               # en features/editar-perfil, que refresca la sesión con updateUser)
+│   └── model/      # store.ts (useSessionStore: isAdmin, setSession, restoreSession, updateUser,
+│                   # replaceToken…), storedUser.ts (citia.user), role.ts, types.ts
 ├── appointment/    # api/appointmentApi.ts (/citas/hoy, /citas?desde&hasta, /citas/:id),
 │                   # model/ (types, status, useTodayAppointments, useAgendaAppointments),
 │                   # ui/ (AppointmentStatusBadge, AvisoSolapamiento)
@@ -61,14 +66,18 @@ src/entities/
 src/app/
 ├── App.vue                 # Solo <RouterView />
 ├── router/
-│   ├── index.ts            # Rutas (+ comodín → NoEncontradaPage) + guard global
-│   │                       # (restoreSession en cada navegación); RouteMeta tipado
+│   ├── index.ts            # Rutas (panel: /, agenda, solicitudes, recordatorios, perfil; + comodín →
+│   │                       # NoEncontradaPage) + guard global (restoreSession en cada navegación);
+│   │                       # RouteMeta tipado
 │   └── cerrarSesion.ts     # cerrarSesion(router, redirect?): limpia y recarga en /login
 ├── providers/
 │   └── index.ts            # Pinia, router y el handler de onUnauthorized (401 global)
 ├── layouts/
 │   ├── PanelLayout.vue     # Sidebar + <RouterView /> de las rutas autenticadas
-│   └── PanelSidebar.vue    # Navegación, clínica, usuario, rol y "Cerrar sesión"
+│   ├── PanelSidebar.vue    # Navegación, clínica, sección CUENTA (Mi perfil y "Contactar soporte", que
+│   │                       # monta ContactarSoporteModal de features/contactar-soporte), usuario y rol
+│   │                       # como enlace a Mi perfil, y "Cerrar sesión" fuera del enlace
+│   └── ConfirmarCerrarSesion.vue # Confirmación antes de cerrar sesión
 └── styles/
     └── main.css            # Variables CSS globales y reset
 ```
@@ -76,13 +85,21 @@ src/app/
 ## Patrones y Reglas
 
 - `httpClient.ts`: no añadir lógica de negocio; solo transporte HTTP genérico. No conoce la sesión ni
-  el router: el 401 se avisa por `onUnauthorized` y lo maneja `app/providers`
+  el router: el 401 se avisa por `onUnauthorized` y lo maneja `app/providers`. **Excepción (F7 de US-10):**
+  si hay un token guardado y no es el que viajó, el 401 es de un token viejo y no se avisa; sin token
+  guardado, sí
 - `authToken.ts`: no importar desde `entities/` ni `features/`; es capa base. Solo el token: los datos
   del usuario los persiste `entities/session/model/storedUser.ts`, en el mismo almacenamiento
 - `session/store.ts` es la fuente de verdad en memoria; el almacenamiento (`citia.token` +
   `citia.user`, en `localStorage` o `sessionStorage` según "Mantener sesión iniciada") es lo que
   sobrevive a un F5. `restoreSession()` mantiene uno al día con el otro: si falta algo, el JWT no se
   lee o venció, el `sub` no es el `id` del usuario o el rol no es válido, limpia todo
+- `updateUser` (nombre, slug y nombre de la clínica; nunca `id`, `email` ni `role`) y `replaceToken`
+  (lanza si el `sub` no es el usuario de la sesión) escriben en el almacenamiento en que ya está la sesión
+  (`isTokenPersistent()`), y **no escriben** si el token guardado ya no es del usuario en memoria. Los usan
+  `features/editar-perfil` y `features/cambiar-contrasena` (US-10)
+- `isAdmin` solo decide qué se **muestra** (la pestaña *Suscripción* de Mi perfil); el permiso lo decide el
+  backend
 - `UserRole = 'admin' | 'profesional'` (los dos que emite el backend). Un rol nuevo se agrega en
   `types.ts`, en `ROLE_LABELS` (`role.ts`) y en la traducción de `features/auth/api/authApi.ts` (de
   `auth-agent`): coordínalo con el orquestador
