@@ -1,5 +1,7 @@
 import { ref } from 'vue'
+import { VERSION_TERMINOS_PACIENTE } from '@/shared/config/terminosPaciente'
 import {
+  aceptarTerminos as aceptarTerminosApi,
   cancelarHora,
   confirmarHora,
   obtenerVistaCita,
@@ -7,8 +9,8 @@ import {
 } from '../api/respuestaCitaApi'
 import { MENSAJE_NO_DISPONIBLE, mensajeDeError, statusDe } from './mensajeDeError'
 import type {
-  AccionPaciente,
   CancelarHoraRequest,
+  EnvioPaciente,
   PedirOtraHoraRequest,
   VistaCitaPacienteDto,
 } from './types'
@@ -37,6 +39,7 @@ const EXITO_CANCELAR = [
   'Este enlace ya no sirve para hacer más cambios. Si necesitas una hora nueva, contacta a tu profesional.',
 ]
 const EXITO_OTRA_HORA = ['Recibimos tu pedido de otra hora.']
+const EXITO_TERMINOS = ['Gracias. Quedó registrada tu autorización.']
 
 /**
  * Caso de uso de la página `/cita#<token>`: cargar la hora del paciente y
@@ -46,7 +49,8 @@ const EXITO_OTRA_HORA = ['Recibimos tu pedido de otra hora.']
  *   `localStorage`, `sessionStorage` ni en un store: la URL limpia ya no lo
  *   tiene, así que recargar la página lleva a "enlace no válido".
  * - **Cargar nunca ejecuta una acción**: `cargar` solo hace el GET. Cada POST
- *   lo dispara un clic (`confirmar`, `cancelar`, `pedirOtraHora`).
+ *   lo dispara un clic (`confirmar`, `cancelar`, `pedirOtraHora` y, desde la
+ *   tarjeta de los términos, `aceptarTerminos`, US-11).
  * - Cada acción exitosa devuelve la vista nueva, que reemplaza a la anterior
  *   (no se vuelve a pedir).
  * - 404 en cualquier momento → pantalla de enlace no válido. 409 → se recarga
@@ -60,15 +64,21 @@ export function useRespuestaCita(token: string | null) {
   const aviso = ref<AvisoRespuesta | null>(null)
   /** Mensaje de la pantalla `error`. */
   const errorCarga = ref<string | null>(null)
-  /** Acción en curso (una a la vez); null si no se está enviando nada. */
-  const enviando = ref<AccionPaciente | null>(null)
-  /** Fallo de la última acción que no cambió de pantalla (429, red, 400, 5xx). */
+  /** Envío en curso (uno a la vez, «Acepto» incluido); null si no se está enviando nada. */
+  const enviando = ref<EnvioPaciente | null>(null)
+  /** Fallo del último envío que no cambió de pantalla (429, red, 400, 5xx). */
   const errorAccion = ref<string | null>(null)
+  /**
+   * De qué envío es `errorAccion`: el de «Acepto» se muestra en la tarjeta de los
+   * términos, no junto a los botones de la hora.
+   */
+  const errorDe = ref<EnvioPaciente | null>(null)
 
   function marcarInvalido(): void {
     cita.value = null
     aviso.value = null
     errorAccion.value = null
+    errorDe.value = null
     pantalla.value = 'resumen'
     estado.value = 'invalido'
   }
@@ -108,13 +118,14 @@ export function useRespuestaCita(token: string | null) {
   }
 
   async function ejecutar(
-    accion: AccionPaciente,
+    accion: EnvioPaciente,
     llamada: (enlace: string) => Promise<VistaCitaPacienteDto>,
     exito: string[],
   ): Promise<boolean> {
     if (!token || enviando.value) return false
     enviando.value = accion
     errorAccion.value = null
+    errorDe.value = null
     try {
       cita.value = await llamada(token)
       pantalla.value = 'resumen'
@@ -130,6 +141,7 @@ export function useRespuestaCita(token: string | null) {
         await recargar(token)
       } else {
         errorAccion.value = mensajeDeError(e)
+        errorDe.value = accion
       }
       return false
     } finally {
@@ -159,11 +171,26 @@ export function useRespuestaCita(token: string | null) {
     return ejecutar('pedirOtraHora', (enlace) => pedirOtraHoraApi(enlace, payload), EXITO_OTRA_HORA)
   }
 
+  /**
+   * «Acepto» de la tarjeta de los términos (US-11): solo con un clic, nunca al
+   * cargar. Envía la versión que enlaza la tarjeta; la vista que vuelve trae
+   * `terminosPendientes: false` y la tarjeta desaparece. No bloquea nada: las
+   * acciones sobre la hora no dependen de esto.
+   */
+  function aceptarTerminos(): Promise<boolean> {
+    return ejecutar(
+      'aceptarTerminos',
+      (enlace) => aceptarTerminosApi(enlace, { terminosVersion: VERSION_TERMINOS_PACIENTE }),
+      EXITO_TERMINOS,
+    )
+  }
+
   /** Cambia de pantalla (no mientras se envía). Limpia el aviso y el error anteriores. */
   function irA(destino: Pantalla): void {
     if (enviando.value) return
     aviso.value = null
     errorAccion.value = null
+    errorDe.value = null
     pantalla.value = destino
   }
 
@@ -175,10 +202,12 @@ export function useRespuestaCita(token: string | null) {
     errorCarga,
     enviando,
     errorAccion,
+    errorDe,
     cargar,
     confirmar,
     cancelar,
     pedirOtraHora,
+    aceptarTerminos,
     irA,
   }
 }
