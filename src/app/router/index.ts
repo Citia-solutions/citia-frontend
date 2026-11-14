@@ -9,6 +9,8 @@ import { PerfilPage } from '@/pages/perfil'
 import { AgendarCitaPage } from '@/pages/agendar-cita'
 import { CitaPacientePage } from '@/pages/cita-paciente'
 import { NoEncontradaPage } from '@/pages/no-encontrada'
+import { TerminosPage } from '@/pages/terminos'
+import { RUTA_TERMINOS } from '@/shared/config/terminosPaciente'
 import PanelLayout from '@/app/layouts/PanelLayout.vue'
 
 declare module 'vue-router' {
@@ -47,6 +49,14 @@ const routes: RouteRecordRaw[] = [
     path: '/cita',
     name: 'citaPaciente',
     component: CitaPacientePage,
+  },
+  {
+    // US-11: términos de uso y aviso de privacidad del paciente. Pública y sin
+    // layout: la abren en otra pestaña el formulario de /agendar-cita y la
+    // tarjeta de /cita, y el profesional se la da al paciente en el alta manual.
+    path: RUTA_TERMINOS,
+    name: 'terminos',
+    component: TerminosPage,
   },
   {
     // Panel del profesional: `PanelLayout` pone el sidebar y cada hija su
