@@ -12,6 +12,8 @@ Fase 3 se implementa en paralelo contra el mismo contrato
 **Feature nuevo:** `src/features/responder-cita/` · **Página:** `src/pages/cita-paciente/` · **Ruta:** `/cita`
 **Cambios en:** `features/gestionar-cita` (voucher), `features/bandeja-solicitudes`,
 `entities/appointment`, `entities/solicitud`, `public/_headers`
+**US-11 (2026-11-14):** `feature/terminos-paciente` — la tarjeta *Tus datos y Citia* con «Acepto»
+([abajo](#us-11-la-tarjeta-de-los-términos-2026-11-14))
 
 ---
 
@@ -56,6 +58,7 @@ cierra), `cache: 'no-store'` y `referrerPolicy: 'no-referrer'`.
 | `POST /publico/cita/confirmar` | — | 200 vista | clic en *Confirmar mi hora* |
 | `POST /publico/cita/cancelar` | `{ motivo? }` | 200 vista (`cancelada`, sin acciones) | clic en *Sí, cancelar mi hora* |
 | `POST /publico/cita/otra-hora` | `{ preferencia, motivo? }` | 201 vista (con `solicitudOtraHora`) | clic en *Enviar pedido* |
+| `POST /publico/cita/aceptar-terminos` (US-11) | `{ terminosVersion }` | 200 vista (`terminosPendientes: false`) | clic en *Acepto* de la tarjeta de los términos |
 
 ```ts
 VistaCitaPacienteDto = {
@@ -67,6 +70,7 @@ VistaCitaPacienteDto = {
   organizacion: string
   accionesPermitidas: Array<'confirmar' | 'cancelar' | 'pedirOtraHora'>
   solicitudOtraHora: { preferencia: string; solicitadaEn: string } | null
+  terminosPendientes?: boolean // US-11; opcional: el backend anterior no lo manda
 }
 ```
 
@@ -134,6 +138,32 @@ origen, así que no afecta).
 
 ---
 
+## US-11: la tarjeta de los términos (2026-11-14)
+
+Plan: [`us/11-terminos-paciente.md`](../us/11-terminos-paciente.md) · contrato:
+[`citia-backend/context/US/11-terminos-paciente.md`](../../../citia-backend/context/US/11-terminos-paciente.md) (D4 y §8 de ADR-16).
+
+| Regla | Cómo se cumple |
+|-------|----------------|
+| Aparece solo si el paciente no aceptó él mismo una versión vigente | `ResumenHora` monta `TarjetaTerminos` solo con `cita.terminosPendientes === true` **y la hora vigente**. El campo es opcional: con el backend de hoy no viene y la tarjeta no aparece. Tras cancelar, la vista puede traer todavía `true`, pero el enlace ya no sirve («Acepto» daría el 404) |
+| Va **sobre** las acciones y **no bloquea** | Entre el resumen (y sus avisos) y la guía + los botones. Las acciones siguen habilitadas sin aceptar; solo se deshabilitan mientras hay un envío en curso (uno a la vez, como siempre: también «Acepto» espera a una acción) |
+| «Acepto» solo con un clic | `aceptarTerminos()` de `useRespuestaCita`, por `ejecutar`; nunca al cargar. Envía `{ terminosVersion: VERSION_TERMINOS_PACIENTE }` |
+| Enlace a `/terminos` en otra pestaña | `target="_blank"`, `rel="noopener noreferrer"`: el token vive solo en memoria y salir en la misma pestaña deja la página sin enlace |
+| Al aceptar | La vista nueva trae `false` y la tarjeta desaparece; aviso *«Gracias. Quedó registrada tu autorización.»* y el foco vuelve al título de la hora |
+
+**Texto** (el del plan): *Tus datos y Citia* · *«{profesional}, de {organizacion}, usa Citia para agendar tus horas y
+enviarte recordatorios por correo. Lee los [Términos de uso y el aviso de privacidad]. Al presionar «Acepto»
+autorizas a {profesional}, y a Citia como su proveedor, a usar tus datos, incluido el motivo de tu consulta, para
+gestionar tus horas y enviarte recordatorios por correo.»* · *«Puedes confirmar, cancelar o pedir otra hora aunque no
+aceptes ahora. Si no estás de acuerdo, escríbele a tu profesional.»* Si profesional y organización se llaman igual
+(sin mayúsculas ni espacios de más), *«{profesional} usa Citia…»*. Sin «No acepto»: el retiro es escribirle al
+profesional.
+
+**Errores de «Acepto»** (en la tarjeta, no junto a los botones de la hora): 404 → "enlace no válido", como
+siempre; 429, red y 5xx → los textos de siempre; **400 del mensaje fijo** de la versión → *«Los términos se
+actualizaron. Abre de nuevo el enlace de tu correo.»* (recargar `/cita` no sirve: el token ya no está en la URL).
+«Acepto» gasta del mismo cubo de 5 por hora por enlace que las otras acciones.
+
 ## Voucher (`features/gestionar-cita`)
 
 | Qué | Detalle |
@@ -166,11 +196,13 @@ src/features/responder-cita/
 ├── model/
 │   ├── types.ts                 # VistaCitaPacienteDto, AccionPaciente, cuerpos
 │   ├── tokenEnlace.ts           # tokenDesdeFragmento (charset base64url)
-│   ├── useRespuestaCita.ts      # estados (cargando/lista/invalido/error), pantallas, acciones, 404/409
-│   ├── mensajeDeError.ts        # 429, red, 400, 5xx
+│   ├── useRespuestaCita.ts      # estados (cargando/lista/invalido/error), pantallas, acciones, 404/409,
+│   │                            # aceptarTerminos (US-11)
+│   ├── mensajeDeError.ts        # 429, red, 400 (y el de la versión de los términos), 5xx
 │   ├── formularios.ts           # LIMITE_TEXTO = 300 (DTF-06), validaciones
 │   └── presentacion.ts          # estado en idioma del paciente, fecha con año, rango
-└── ui/  RespuestaCita.vue · ResumenHora.vue · CancelarHoraForm.vue · PedirOtraHoraForm.vue
+└── ui/  RespuestaCita.vue · ResumenHora.vue · CancelarHoraForm.vue · PedirOtraHoraForm.vue ·
+         TarjetaTerminos.vue (US-11)
 src/features/gestionar-cita/     # + useSolicitudOtraHora, useInvalidarEnlace, InvalidarEnlaceConfirm.vue
 src/features/bandeja-solicitudes/ # + AceptarReagendamientoRequest, modal y lista por tipo, pestaña Descartadas
 src/entities/appointment/        # + AppointmentActor, confirmedBy / cancelledBy

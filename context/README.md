@@ -65,6 +65,11 @@ decisiones de arquitectura y de dominio se documentan una sola vez, del lado del
   - [`07.01-registro-hechos.md`](us/07.01-registro-hechos.md) — primera subtarea de US-07 (Fase 5):
     asistencia sobre una pendiente y "¿Quién lo pidió?". 🔶 Implementada en la rama, sin commit →
     [gestionar-cita](Features/gestionar-cita.md), [agenda-profesional](Features/agenda-profesional.md).
+  - [`11-terminos-paciente.md`](us/11-terminos-paciente.md) — US-11 (cumplimiento): página `/terminos`, casillas
+    con los términos en el formulario público y en *Nueva cita*, tarjeta con «Acepto» en `/cita` y la versión en la
+    bandeja. 🔶 Implementada en `feature/terminos-paciente`, sin revisión en el navegador →
+    [agendar-cita-paciente](Features/agendar-cita-paciente.md), [crear-cita](Features/crear-cita.md),
+    [responder-cita-paciente](Features/responder-cita-paciente.md), [bandeja-solicitudes](Features/bandeja-solicitudes.md).
   - [`10-perfil-cuenta.md`](us/10-perfil-cuenta.md) — US-10 (Fase 7): Mi Perfil (datos, suscripción,
     cambio de contraseña) y *Contactar soporte*. ✅ Implementada y verificada en local (build y prueba en el
     navegador contra el backend local), sin commit en `feature/fase7-perfil-cuenta`; falta staging →

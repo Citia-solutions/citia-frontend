@@ -59,6 +59,8 @@ src/pages/
 ├── recordatorios/ui/    # RecordatoriosPage
 ├── perfil/ui/           # PerfilPage (Mi perfil, US-10): pestañas locales y "Contactar soporte"
 ├── agendar-cita/ui/     # AgendarCitaPage (pública, sin layout)
+├── terminos/ui/         # TerminosPage (pública, sin layout ni API, US-11): el texto de los términos del
+│                        # paciente, idéntico al del plan del backend
 └── no-encontrada/ui/    # NoEncontradaPage (404 de la ruta comodín, pública, sin layout)
 
 src/features/
@@ -82,7 +84,7 @@ src/shared/ui/
 ├── BaseBadge.vue     # Props: variant ('success'|'warning'|'info'|'danger'|'neutral')
 ├── BaseButton.vue    # Props: variant ('primary'|'outline'), type, loading, disabled, block (true por defecto)
 ├── BaseCard.vue      # Panel blanco; slot `header` opcional
-├── BaseCheckbox.vue  # v-model boolean; prop label
+├── BaseCheckbox.vue  # v-model boolean; prop label o slot por defecto (etiqueta con un enlace, US-11)
 ├── BaseInput.vue     # v-model string; props label, type, error, hint, disabled…; slot icon.
 │                     # inheritAttrs: false — maxlength, name, readonly, @blur… van al <input>;
 │                     # class y style, a la raíz
