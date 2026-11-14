@@ -159,7 +159,7 @@ export function validarPaso(values: FlujoCitaForm, paso: FlujoCitaPaso): FlujoCi
         errors.motivo = `El motivo no puede superar los ${LIMITES.motivo} caracteres.`
       }
       if (!values.consentimiento) {
-        errors.consentimiento = 'Se necesita tu autorización para contactarte.'
+        errors.consentimiento = 'Para enviar la solicitud tienes que aceptar los términos.'
       }
       break
   }

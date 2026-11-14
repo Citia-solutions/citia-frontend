@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue'
 import { HttpError } from '@/shared/api/httpClient'
+import { esVersionTerminosNoVigente } from '@/shared/config/terminosPaciente'
 import { enviarSolicitud } from '../api/agendarCitaApi'
 import { FORM_VACIO, PASOS, validarPaso, type FlujoCitaForm } from './flujoCitaModel'
 import type { FlujoCitaErrors, FlujoCitaPaso } from './flujoCitaModel'
@@ -9,6 +10,11 @@ import { toSolicitudRequest } from './toSolicitudRequest'
 function mensajeDeError(e: unknown): string {
   if (!(e instanceof HttpError)) {
     return 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.'
+  }
+  // US-11: la versión de los términos que mostró esta pestaña ya no recibe
+  // aceptaciones (se publicó otra mientras estaba abierta). Recargar trae la nueva.
+  if (esVersionTerminosNoVigente(e)) {
+    return 'Los términos se actualizaron. Recarga la página para ver la versión vigente.'
   }
   // 400 = datos rechazados (p. ej. el RUT no pasa el dígito verificador).
   if (e.status === 400) {

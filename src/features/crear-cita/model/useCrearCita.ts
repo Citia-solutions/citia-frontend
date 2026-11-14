@@ -1,6 +1,7 @@
 import { reactive, ref } from 'vue'
 import { HttpError } from '@/shared/api/httpClient'
 import { mensajesDeValidacion } from '@/shared/api/erroresValidacion'
+import { esVersionTerminosNoVigente } from '@/shared/config/terminosPaciente'
 import { fechaEnClinicaISO } from '@/shared/lib/fecha'
 import { crearCita } from '../api/crearCitaApi'
 import { erroresDelServidor, validateNuevaCita } from './crearCitaSchema'
@@ -78,6 +79,12 @@ export function useCrearCita(onSuccess: (cita: CitaCreada) => void) {
       const cita = await crearCita(toCrearCitaRequest(form))
       onSuccess(cita)
     } catch (e) {
+      // US-11: la versión de los términos que nombra este modal ya no recibe
+      // aceptaciones (se publicó otra con el panel abierto). Recargar la trae.
+      if (esVersionTerminosNoVigente(e)) {
+        submitError.value = 'Los términos se actualizaron. Recarga la página.'
+        return
+      }
       // Un 400 que nombra campos (p. ej. `paciente.correo must be an email`)
       // se muestra en el campo culpable, no solo como error general.
       const porCampo = erroresDelServidor(mensajesDeValidacion(e))
