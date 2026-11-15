@@ -19,6 +19,7 @@ identificadores de los dos repos no se confundan al hablar de ellos.
 | [DTF-06](DTF-06.md) | Los límites del formulario público, del motivo del voucher, del rango de la agenda (42 días), de la duración (1440), de la bandeja (100), del correo del paciente (254), de la configuración de recordatorios, de los textos de la página del paciente (300, Fase 3) y de Mi perfil y soporte (nombre 120, especialidad 100, contraseña de 8 caracteres reales y ≤ 72 bytes UTF-8, mensaje 2000 y las 4 categorías, Fase 7) copian los del backend | 🟡 baja | 🔵 aceptada | `features/crear-cita/model/`, `features/gestionar-cita/`, `entities/appointment/api/`, `features/bandeja-solicitudes/model/`, `features/configurar-recordatorios/model/`, `features/responder-cita/model/`, `features/editar-perfil/model/`, `features/cambiar-contrasena/model/`, `features/contactar-soporte/model/` |
 | [DTF-07](DTF-07.md) | Se asume que la zona del navegador es la de la clínica (también para las horas de los recordatorios) | 🟡 baja | cerrada (2026-10-06) | `shared/lib/fecha.ts` |
 | [DTF-08](DTF-08.md) | Los errores del backend se reconocen por su texto (no traen un código): un texto que cambia deja el error fuera de su campo | 🟡 baja | abierta (2026-11-01) | `erroresDelServidor` de `features/{editar-perfil,cambiar-contrasena,contactar-soporte,crear-cita,configurar-recordatorios}/model/`, `features/gestionar-cita/model/` |
+| [DTF-09](DTF-09.md) | El texto de `/terminos` vive en el front y en la copia congelada del backend, y nada los compara solo (el repo no tiene suite de tests): editarlo sin cambiar la versión invalida la prueba | 🟡 baja | abierta (2026-11-14, en la rama de US-11) | `pages/terminos/ui/TerminosPage.vue`, `features/crear-cita/ui/`, `features/responder-cita/ui/TarjetaTerminos.vue` |
 
 ---
 
@@ -51,6 +52,12 @@ solicitudes del backend. DTF-08 se cierra solo si el backend agrega un código a
 **Fase 7 — US-10 (2026-11-01):** DTF-06 suma los límites de Mi perfil y soporte, y se ficha DTF-08 (riesgo 1
 del [plan](../us/10-perfil-cuenta.md#riesgos)), que ya pasaba en `crear-cita`, `configurar-recordatorios` y
 `gestionar-cita` — ver [perfil-cuenta](../Features/perfil-cuenta.md).
+
+**US-11 — términos del paciente (2026-11-14):** se ficha DTF-09. El texto de `/terminos` y los textos cortos (casilla,
+tarjeta de `/cita`, alta manual) viven aquí, y su copia congelada en `citia-backend/context/Cumplimiento/`. La
+comparación entre los dos se hizo con un script local no versionado — ver [US-11](../us/11-terminos-paciente.md). En
+el backend, US-11 dejó además `DT-62` (el retiro no se registra) y `DT-63` (el profesional no ve si el paciente
+aceptó).
 
 **Bloqueo que no es del front:** el enlace público `/agendar-cita/:tenantSlug` está conectado pero
 **no debe compartirse** hasta que el backend cierre `DT-18` (límite de tasa en la ruta pública).

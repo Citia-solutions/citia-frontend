@@ -6,10 +6,16 @@
 // Mientras se guarda no se puede cerrar: ni la X, ni "Cancelar", ni un clic
 // fuera, ni `Esc` (mismo criterio que el voucher y los modales de la bandeja).
 // Si se cerrara, la cita podría quedar creada sin que el profesional lo vea.
+//
+// US-11: antes de la casilla, el texto que el profesional le lee o le envía al
+// paciente, con la dirección de `/terminos` de este mismo sitio (en staging, la
+// de staging). La casilla dice que el paciente autorizó; crear la cita registra
+// esa aceptación a nombre del profesional (canal `profesional`).
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
 import { BLOQUES_HORARIOS } from '@/shared/config/bloquesHorarios'
+import { RUTA_TERMINOS } from '@/shared/config/terminosPaciente'
 import { CORREO_MAX } from '../model/crearCitaSchema'
 import { useCrearCita } from '../model/useCrearCita'
 import type { CitaCreada } from '../model/types'
@@ -24,6 +30,9 @@ const emit = defineEmits<{
 // Duraciones habituales de una consulta. Si más adelante se configuran por
 // organización, este arreglo es el único punto a cambiar.
 const DURACIONES = [15, 30, 45, 60, 90]
+
+/** Dirección completa de `/terminos` en este sitio, para leérsela o enviársela al paciente. */
+const urlTerminos = `${window.location.origin}${RUTA_TERMINOS}`
 
 const { form, errors, submitError, isSubmitting, hoyISO, reset, submit } = useCrearCita((cita) => {
   emit('created', cita)
@@ -234,14 +243,34 @@ function handleSubmit(): void {
           <span v-if="errors.motivo" class="modal__error">{{ errors.motivo }}</span>
         </div>
 
-        <div class="modal__field">
+        <div class="modal__autorizacion">
+          <p class="modal__autorizacion-intro">
+            Antes de marcar la casilla, léele o envíale esto al paciente:
+          </p>
+          <blockquote class="modal__autorizacion-texto">
+            «Para agendar tus horas y enviarte recordatorios por correo uso Citia, un sistema de
+            agenda. Ahí quedan tu nombre, RUT, teléfono, correo y los datos de tus horas, incluido
+            el motivo de la consulta. No se usan para otra cosa ni se comparten con otras clínicas.
+            Los términos completos están en
+            <a
+              class="modal__autorizacion-enlace"
+              :href="urlTerminos"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ urlTerminos }}</a
+            >. ¿Me autorizas?»
+          </blockquote>
           <BaseCheckbox
             v-model="form.consentimiento"
-            label="El paciente autoriza recibir recordatorios y avisos de sus citas."
+            label="El paciente me autorizó después de leerle o enviarle este texto."
           />
           <span v-if="errors.consentimiento" class="modal__error">
             {{ errors.consentimiento }}
           </span>
+          <p class="modal__autorizacion-ayuda">
+            Si no te autoriza, no lo registres en Citia. El paciente también podrá aceptar los
+            términos él mismo desde el enlace de su recordatorio.
+          </p>
         </div>
 
         <p v-if="submitError" class="modal__submit-error" role="alert">{{ submitError }}</p>
@@ -384,6 +413,41 @@ function handleSubmit(): void {
 .modal__hint {
   font-size: 0.75rem;
   color: var(--color-text-muted, #64748b);
+}
+.modal__autorizacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.modal__autorizacion-intro {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.modal__autorizacion-texto {
+  margin: 0;
+  padding: 0.1rem 0 0.1rem 0.75rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  border-left: 3px solid var(--color-primary);
+  overflow-wrap: anywhere;
+}
+.modal__autorizacion-enlace {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.modal__autorizacion-ayuda {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 .modal__submit-error {
   font-size: 0.85rem;

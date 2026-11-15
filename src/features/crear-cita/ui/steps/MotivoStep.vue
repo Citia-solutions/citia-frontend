@@ -1,7 +1,10 @@
 <script setup lang="ts">
-// Sección 4: Motivo. Descripción de la consulta + consentimiento de contacto.
+// Sección 4: Motivo. Descripción de la consulta + autorización del paciente
+// (US-11): la casilla enlaza a `/terminos`, que abre en OTRA pestaña para que el
+// paciente no pierda lo que lleva escrito. Marcarla envía `terminosVersion`.
 // El motivo avisa al salir del campo (blur); el consentimiento al marcarse.
 import BaseCheckbox from '@/shared/ui/BaseCheckbox.vue'
+import { RUTA_TERMINOS } from '@/shared/config/terminosPaciente'
 import { computed } from 'vue'
 import { useErroresVisibles } from '../../model/useErroresVisibles'
 import { LIMITES, type FlujoCitaErrors, type FlujoCitaForm } from '../../model/flujoCitaModel'
@@ -47,11 +50,14 @@ const caracteresMotivo = computed(() => props.form.motivo.length)
     </div>
 
     <div class="step__consent">
-      <BaseCheckbox
-        v-model="form.consentimiento"
-        label="Autorizo que me contacten para confirmar y recordar mi cita."
-        @change="marcarTocado('consentimiento')"
-      />
+      <BaseCheckbox v-model="form.consentimiento" @change="marcarTocado('consentimiento')">
+        He leído los
+        <a class="step__link" :href="RUTA_TERMINOS" target="_blank" rel="noopener noreferrer"
+          >Términos de uso y el aviso de privacidad</a
+        >
+        y autorizo a mi profesional, y a Citia como su proveedor, a usar mis datos, incluido el
+        motivo de mi consulta, para gestionar mis horas y enviarme recordatorios por correo.
+      </BaseCheckbox>
       <span v-if="errorConsentimiento" class="step__error" role="alert">{{ errorConsentimiento }}</span>
       <span v-else-if="errors.consentimiento" class="step__error">{{ errors.consentimiento }}</span>
     </div>
@@ -121,6 +127,20 @@ const caracteresMotivo = computed(() => props.form.motivo.length)
 }
 .step__consent :deep(.check__box) {
   background: #fff;
+}
+.step__link {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.step__link:hover {
+  color: #e0ecff;
+}
+.step__link:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 .step__error {
   font-size: 0.8rem;

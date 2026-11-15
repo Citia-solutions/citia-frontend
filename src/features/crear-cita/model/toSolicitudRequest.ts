@@ -1,3 +1,4 @@
+import { VERSION_TERMINOS_PACIENTE } from '@/shared/config/terminosPaciente'
 import { fechaCalendario, formatearFechaLarga } from '@/shared/lib/fecha'
 import { normalizarRut } from '@/shared/lib/rut'
 import type { FlujoCitaForm } from './flujoCitaModel'
@@ -11,6 +12,12 @@ export interface SolicitudRequest {
   motivo: string
   preferenciaHoraria: string
   consentimiento: boolean
+  /**
+   * US-11: versión de los términos que mostró la casilla (`/terminos`). Viaja
+   * siempre: el backend anterior a US-11 la descarta (`whitelist` sin
+   * `forbidNonWhitelisted`) y el nuevo la exige.
+   */
+  terminosVersion: string
 }
 
 export interface SolicitudRecibida {
@@ -46,6 +53,9 @@ export function aPreferenciaHoraria(fecha: string, hora: string): string {
  * Dos ajustes de forma:
  *  - el diseño separa nombre y apellidos; el backend guarda un solo campo;
  *  - día + hora se combinan en `preferenciaHoraria` (ver arriba).
+ *
+ * Y suma `terminosVersion` (US-11), que no está en el formulario: es la versión
+ * de `/terminos` que enlaza la casilla.
  */
 export function toSolicitudRequest(form: FlujoCitaForm): SolicitudRequest {
   return {
@@ -56,5 +66,6 @@ export function toSolicitudRequest(form: FlujoCitaForm): SolicitudRequest {
     motivo: form.motivo.trim(),
     preferenciaHoraria: aPreferenciaHoraria(form.fecha, form.hora),
     consentimiento: form.consentimiento,
+    terminosVersion: VERSION_TERMINOS_PACIENTE,
   }
 }

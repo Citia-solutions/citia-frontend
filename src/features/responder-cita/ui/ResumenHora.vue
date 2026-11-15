@@ -5,25 +5,41 @@
 //
 // Muestra lo mínimo (decisión S2): fecha, hora, duración, estado, profesional y
 // organización. Nunca el nombre del paciente ni el tipo de consulta.
+//
+// US-11: la tarjeta de los términos va **sobre** las acciones, solo con
+// `terminosPendientes === true` (con el backend anterior a US-11 el campo no
+// viene y no aparece) y con la hora vigente. No deshabilita nada: las acciones
+// siguen disponibles.
 import { computed } from 'vue'
 import BaseBadge from '@/shared/ui/BaseBadge.vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import { ESTADO_PACIENTE, fechaDeLaHora, rangoDeLaHora, sinPuntoFinal } from '../model/presentacion'
 import type { AvisoRespuesta } from '../model/useRespuestaCita'
-import type { AccionPaciente, VistaCitaPacienteDto } from '../model/types'
+import type { AccionPaciente, EnvioPaciente, VistaCitaPacienteDto } from '../model/types'
+import TarjetaTerminos from './TarjetaTerminos.vue'
 
 const props = defineProps<{
   cita: VistaCitaPacienteDto
   aviso: AvisoRespuesta | null
-  enviando: AccionPaciente | null
+  enviando: EnvioPaciente | null
   errorAccion: string | null
+  /** De qué envío es `errorAccion` (el de «Acepto» va en la tarjeta). */
+  errorDe: EnvioPaciente | null
 }>()
 
 const emit = defineEmits<{
   confirmar: []
   cancelar: []
   otraHora: []
+  aceptarTerminos: []
 }>()
+
+const errorTerminos = computed(() =>
+  props.errorDe === 'aceptarTerminos' ? props.errorAccion : null,
+)
+const errorDeLaHora = computed(() =>
+  props.errorDe === 'aceptarTerminos' ? null : props.errorAccion,
+)
 
 const estado = computed(() => ESTADO_PACIENTE[props.cita.estado])
 const fecha = computed(() => fechaDeLaHora(props.cita.inicio))
@@ -37,6 +53,14 @@ const hayAcciones = computed(() => props.cita.accionesPermitidas.length > 0)
 
 /** La hora sigue en pie (`pendiente` / `confirmada`). */
 const vigente = computed(() => props.cita.estado === 'pendiente' || props.cita.estado === 'confirmada')
+
+/**
+ * Tarjeta de los términos: solo con `terminosPendientes === true` (ausente —backend
+ * anterior a US-11— o `false`, no hay) y con la hora vigente. Tras cancelar, la
+ * respuesta puede traer todavía `true`, pero el enlace ya no sirve: «Acepto» daría
+ * el 404 de "enlace no válido".
+ */
+const pideTerminos = computed(() => props.cita.terminosPendientes === true && vigente.value)
 
 /**
  * Lo que el paciente pidió, si tiene una solicitud de otra hora abierta. Solo
@@ -106,9 +130,19 @@ const guia = computed<string | null>(() => {
       <p class="resumen__otra-hora-nota">Mientras tanto, tu hora actual se mantiene.</p>
     </div>
 
+    <TarjetaTerminos
+      v-if="pideTerminos"
+      :profesional="cita.profesional"
+      :organizacion="cita.organizacion"
+      :aceptando="enviando === 'aceptarTerminos'"
+      :ocupado="enviando !== null"
+      :error="errorTerminos"
+      @aceptar="emit('aceptarTerminos')"
+    />
+
     <p v-if="guia" class="resumen__guia">{{ guia }}</p>
 
-    <p v-if="errorAccion" class="resumen__error" role="alert">{{ errorAccion }}</p>
+    <p v-if="errorDeLaHora" class="resumen__error" role="alert">{{ errorDeLaHora }}</p>
 
     <div v-if="hayAcciones" class="resumen__acciones">
       <BaseButton

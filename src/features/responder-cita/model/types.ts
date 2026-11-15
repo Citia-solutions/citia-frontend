@@ -18,6 +18,13 @@ import type { AppointmentStatus } from '@/entities/appointment'
  */
 export type AccionPaciente = 'confirmar' | 'cancelar' | 'pedirOtraHora'
 
+/**
+ * Lo que puede estar enviándose desde la página: una acción sobre la hora o la
+ * aceptación de los términos (US-11). Aceptar NO es una acción sobre la cita: no
+ * viene en `accionesPermitidas` y no depende del estado.
+ */
+export type EnvioPaciente = AccionPaciente | 'aceptarTerminos'
+
 /** La solicitud de otra hora que el paciente ya dejó (a lo más una abierta por cita). */
 export interface SolicitudOtraHoraDto {
   /** Lo que escribió el paciente. */
@@ -47,6 +54,19 @@ export interface VistaCitaPacienteDto {
   organizacion: string
   accionesPermitidas: AccionPaciente[]
   solicitudOtraHora: SolicitudOtraHoraDto | null
+  /**
+   * US-11: `true` si el paciente todavía no aceptó él mismo (en el formulario
+   * público o en esta página) una versión vigente de los términos; entonces se
+   * muestra la tarjeta con «Acepto». **Opcional:** el backend anterior a US-11 no
+   * lo manda, y sin él la tarjeta no aparece (solo se muestra con `=== true`).
+   */
+  terminosPendientes?: boolean
+}
+
+/** Cuerpo de `POST /publico/cita/aceptar-terminos` (US-11). */
+export interface AceptarTerminosRequest {
+  /** La versión de `/terminos` que enlaza la tarjeta (`VERSION_TERMINOS_PACIENTE`). */
+  terminosVersion: string
 }
 
 /** Cuerpo de `POST /publico/cita/cancelar`. `motivo` se omite si está vacío. */

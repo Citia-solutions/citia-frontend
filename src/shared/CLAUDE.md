@@ -30,6 +30,11 @@ src/shared/
 │                          # público y agenda. Para cambiar el horario se tocan solo las 3 constantes
 │   └── zonaHoraria.ts     # ZONA_HORARIA ('America/Santiago', espejo de APP_TZ del backend) y
 │                          # LOCALE_FECHAS ('es-CL'). Solo la lee lib/fecha.ts (DTF-07, cerrada)
+│   └── terminosPaciente.ts # US-11: VERSION_TERMINOS_PACIENTE ('1.0', espejo del catálogo del
+│                          # backend), FECHA_TERMINOS_PACIENTE (se actualiza al día del release a
+│                          # production), RUTA_TERMINOS ('/terminos'), MENSAJE_VERSION_TERMINOS_NO_VIGENTE
+│                          # (espejo exacto del 400 del backend) y esVersionTerminosNoVigente(e), que lo
+│                          # busca contenido en `message` (texto o lista). Si cambia el backend, cambia aquí
 ├── lib/
 │   └── authToken.ts      # getToken(), setToken(token, persistent), removeToken()
 │                         # persistent=true → localStorage; false → sessionStorage
@@ -55,7 +60,9 @@ src/shared/
     │                     # (label/hint/error quedan asociados al input con useId).
     │                     # inheritAttrs: false — los demás atributos (maxlength, readonly,
     │                     # inputmode, name, @blur…) van al <input>; class y style, a la raíz
-    ├── BaseCheckbox.vue  # Props: modelValue, label
+    ├── BaseCheckbox.vue  # Props: modelValue, label; slot por defecto para una etiqueta con marcado
+    │                     # (US-11: el enlace a /terminos). Un clic en un enlace de la etiqueta no
+    │                     # marca la casilla (lo resuelve el <label> del navegador)
     ├── BaseLogo.vue      # Logo de citiahealth en negativo (blanco), para fondo oscuro o azul.
     │                     # Props: variante('logotipo'|'isotipo'), alto (px). PNG en assets/marca/
     └── BaseSwitch.vue    # Interruptor (role="switch"). Props: modelValue, label, description?, disabled

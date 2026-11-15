@@ -5,6 +5,8 @@
 **Commits:** `e18c34c` (flujo multi-paso), `1980990` (envío real como preferencia)
 **Detalles menores (2026-10-06):** `chore/frontend-detalles-menores` — calendario con navegación entre
 meses, sin días ni horas pasados, "hoy" de Chile ([abajo](#el-calendario-del-paso-horario-2026-10-06))
+**US-11 (2026-11-14):** `feature/terminos-paciente` — la casilla enlaza a `/terminos` y el cuerpo suma
+`terminosVersion` ([abajo](#us-11-la-casilla-de-los-términos-2026-11-14))
 **Backend:** [`citia-backend/context/Features/us02-gestion-citas.md`](../../../citia-backend/context/Features/us02-gestion-citas.md)
 
 ---
@@ -24,7 +26,7 @@ entra la solicitud.
 
 Cuatro pasos, con validación por sección para no bloquear el avance con errores de secciones
 futuras: **identificación** (RUT, nombre, apellidos) → **contacto** (teléfono, correo) → **horario**
-(día y hora) → **motivo** (texto + consentimiento).
+(día y hora) → **motivo** (texto + la casilla de los términos, US-11).
 
 ---
 
@@ -91,6 +93,7 @@ ignoraba (no hay guard), pero una llamada anónima no debe cargar credenciales.
 | `nombre` + `apellidos` | `nombrePaciente` | el diseño los separa, el backend guarda uno |
 | `fecha` + `hora` | `preferenciaHoraria` | `'viernes, 18 de septiembre a las 10:00'` |
 | `rut` | `rut` | normalizado a forma canónica |
+| — | `terminosVersion` | `VERSION_TERMINOS_PACIENTE` ('1.0', US-11): la versión de `/terminos` que enlaza la casilla |
 
 El día se formatea con `fechaCalendario` (mediodía UTC de ese día, que en Chile sigue siendo el mismo
 día) y en la zona de la clínica. Pasar `'2026-09-18'` a `new Date()` lo interpretaría como medianoche
@@ -106,7 +109,8 @@ organizaciones existen y qué RUT es paciente de qué profesional.
 certeza"*. La pantalla final dice exactamente eso.
 
 Lo único que devuelve `400` es un RUT mal escrito o que no pasa el dígito verificador, un campo faltante o un
-campo que supera su largo máximo. El front muestra un mensaje genérico para el 400, así que **las
+campo que supera su largo máximo (y, desde el backend de US-11, `consentimiento: false` o una versión de
+los términos ausente o que ya no recibe aceptaciones: ver abajo). El front muestra un mensaje genérico para el 400, así que **las
 tres causas se validan antes de enviar** (ver abajo); si aun así llega un 400, es que el front y el
 DTO se desalinearon.
 
@@ -127,6 +131,25 @@ con él. `preferenciaHoraria` (200) no se valida: la genera el front y no pasa d
 **Si el DTO cambia, `LIMITES` cambia con él** — ver [DTF-06](../Deudas/DTF-06.md).
 
 ---
+
+## US-11: la casilla de los términos (2026-11-14)
+
+Plan: [`us/11-terminos-paciente.md`](../us/11-terminos-paciente.md) · contrato:
+[`citia-backend/context/US/11-terminos-paciente.md`](../../../citia-backend/context/US/11-terminos-paciente.md).
+
+- **La casilla** del paso Motivo dice *«He leído los [Términos de uso y el aviso de privacidad] y autorizo a mi
+  profesional, y a Citia como su proveedor, a usar mis datos, incluido el motivo de mi consulta, para gestionar mis
+  horas y enviarme recordatorios por correo.»* El enlace abre `/terminos` **en otra pestaña**
+  (`target="_blank"`, `rel="noopener noreferrer"`): en la misma, el paciente perdería lo que lleva escrito. Un clic
+  en el enlace no marca la casilla (`BaseCheckbox` con su slot).
+- **Sin marcarla** no se envía: *«Para enviar la solicitud tienes que aceptar los términos.»*
+- **`terminosVersion`** viaja siempre. El backend anterior a US-11 la descarta (`whitelist` sin
+  `forbidNonWhitelisted`), así que el front sale **primero** (ADR-16 §10). El de US-11 exige `consentimiento: true`
+  y una versión que reciba aceptaciones; la guarda en la solicitud y, al aceptarla en la bandeja, registra la
+  aceptación del paciente (canal `formulario_publico`).
+- **El 400 de la versión** (mensaje fijo `MENSAJE_VERSION_TERMINOS_NO_VIGENTE`, se publicó otra versión con la
+  pestaña abierta) → *«Los términos se actualizaron. Recarga la página para ver la versión vigente.»* Sigue siendo
+  un 400 como los demás (el 202 uniforme no cambia), pero se reconoce por el texto antes del mensaje genérico.
 
 ## Validación del RUT
 

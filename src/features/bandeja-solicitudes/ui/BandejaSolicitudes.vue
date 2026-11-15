@@ -287,7 +287,7 @@ onBeforeUnmount(() => {
                   <a class="bandeja__contact-link" :href="hrefTelefono(s.telefono)">{{ s.telefono }}</a>
                   <a v-if="s.correo" class="bandeja__contact-link" :href="`mailto:${s.correo}`">{{ s.correo }}</a>
                   <span v-else class="bandeja__muted">Sin correo</span>
-                  <span v-if="s.consentimiento" class="bandeja__muted">· acepta recordatorios</span>
+                  <span v-if="s.terminosVersion" class="bandeja__muted">· aceptó los términos v{{ s.terminosVersion }}</span>
                 </dd>
               </div>
             </dl>

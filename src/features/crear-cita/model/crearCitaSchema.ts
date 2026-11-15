@@ -98,9 +98,10 @@ export function validateNuevaCita(values: NuevaCitaForm, ahora: Date = new Date(
     errors.motivo = 'Indica el motivo de la consulta.'
   }
 
+  // US-11: el backend también la exige (400 con `false`). El texto que se le
+  // lee o envía al paciente está en el modal.
   if (!values.consentimiento) {
-    errors.consentimiento =
-      'Se necesita el consentimiento del paciente para poder contactarlo.'
+    errors.consentimiento = 'Marca la casilla cuando el paciente te haya autorizado.'
   }
 
   return errors

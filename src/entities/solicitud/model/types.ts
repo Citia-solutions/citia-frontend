@@ -79,4 +79,10 @@ export interface Solicitud {
   citaOrigenId: string | null
   /** Hora actual de esa cita; null en una `nueva` (o si el backend no la manda). */
   citaOrigen: CitaOrigen | null
+  /**
+   * US-11: versión de los términos que el paciente aceptó al enviar el formulario
+   * público ('1.0'). null en las de otra hora, en las anteriores a US-11 y con un
+   * backend que no la manda.
+   */
+  terminosVersion: string | null
 }

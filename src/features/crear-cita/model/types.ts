@@ -18,7 +18,10 @@ export interface NuevaCitaForm {
   hora: string // 'HH:mm'
   duracionMin: number
   motivo: string
-  /** Consentimiento del paciente para recibir mensajes. Requisito legal. */
+  /**
+   * El paciente autorizó después de que el profesional le leyó o envió el texto
+   * del alta manual (US-11). Requisito legal: el backend responde 400 sin él.
+   */
   consentimiento: boolean
 }
 
@@ -47,7 +50,14 @@ export interface PacienteEnCitaRequest {
    * vacío: nunca reemplaza uno distinto.
    */
   correo: string
+  /** Debe ser `true` (US-11: el backend responde 400 con `false`). */
   consentimiento: boolean
+  /**
+   * US-11: versión de los términos (`/terminos`) que nombra el texto del alta
+   * manual. Viaja siempre: el backend anterior a US-11 la descarta y el nuevo
+   * la exige (con ella registra la aceptación de canal `profesional`).
+   */
+  terminosVersion: string
 }
 
 export interface CrearCitaRequest {

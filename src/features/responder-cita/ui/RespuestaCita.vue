@@ -10,6 +10,9 @@
 // Sin recursos de terceros: ni fuentes, ni analítica, ni imágenes externas
 // (los íconos son SVG en línea y el logo, un PNG del propio sitio). Así el
 // `Referer` y el token no salen de aquí.
+//
+// US-11: si la vista trae `terminosPendientes: true`, el resumen muestra la
+// tarjeta de los términos con «Acepto» (solo con un clic, nunca al cargar).
 import { nextTick, onMounted, ref, watch } from 'vue'
 import BaseButton from '@/shared/ui/BaseButton.vue'
 import BaseLogo from '@/shared/ui/BaseLogo.vue'
@@ -31,10 +34,12 @@ const {
   errorCarga,
   enviando,
   errorAccion,
+  errorDe,
   cargar,
   confirmar,
   cancelar,
   pedirOtraHora,
+  aceptarTerminos,
   irA,
 } = useRespuestaCita(props.token)
 
@@ -55,6 +60,14 @@ watch(pantalla, () => void enfocarTitulo())
 watch(estado, (nuevo, anterior) => {
   if (anterior !== 'cargando' && nuevo !== 'cargando') void enfocarTitulo()
 })
+
+/**
+ * «Acepto»: con éxito, la tarjeta (y su botón, que tenía el foco) desaparece y el
+ * aviso «Gracias…» aparece arriba; el foco vuelve al título de la hora.
+ */
+async function onAceptarTerminos(): Promise<void> {
+  if (await aceptarTerminos()) void enfocarTitulo()
+}
 
 onMounted(() => void cargar())
 </script>
@@ -115,9 +128,11 @@ onMounted(() => void cargar())
             :aviso="aviso"
             :enviando="enviando"
             :error-accion="errorAccion"
+            :error-de="errorDe"
             @confirmar="confirmar"
             @cancelar="irA('cancelar')"
             @otra-hora="irA('otraHora')"
+            @aceptar-terminos="onAceptarTerminos"
           />
           <CancelarHoraForm
             v-else-if="pantalla === 'cancelar'"

@@ -33,6 +33,10 @@ src/pages/
 │   └── ui/
 │       └── CitaPacientePage.vue # Pública /cita#<token> (Fase 3): lee el token del fragmento, lo borra
 │                                # de la URL (router.replace) y compone features/responder-cita
+├── terminos/
+│   └── ui/
+│       └── TerminosPage.vue     # Pública /terminos (US-11): texto de la versión vigente de los términos
+│                                # del paciente, idéntico al del plan del backend; sin API ni layout
 └── no-encontrada/
     └── ui/
         └── NoEncontradaPage.vue # 404: ruta pedida + enlace al Resumen (con sesión) o al login (sin ella)
@@ -44,6 +48,7 @@ src/pages/
 |----------------|-------------------|---------------|------------------------------------------|
 | `/login`       | `LoginPage`       | No            | Redirige a `/` si ya está autenticado; respeta `?redirect=` (solo rutas internas) |
 | `/agendar-cita/:tenantSlug` | `AgendarCitaPage` | No | Pública, split-screen 78/22, sin layout |
+| `/terminos`    | `TerminosPage`    | No            | Ruta `terminos` (US-11), path `RUTA_TERMINOS` de `shared/config/terminosPaciente.ts`. Pública, sin layout, sin llamadas a la API y sin recursos de terceros (el logo es un PNG del sitio). Ver [Términos del paciente](#términos-del-paciente-terminos) |
 | `/cita` (`#<token>`) | `CitaPacientePage` | No | Ruta `citaPaciente`. Pública, sin layout, móvil primero. El token va en el **fragmento**: la página lo lee de `route.hash`, lo pasa en memoria al feature y lo borra con `router.replace({ hash: '' })` (no con un `replaceState` a mano: vue-router lo reescribiría). Sin token → "enlace no válido" sin llamar a la API. **Vigila `route.hash`**: un fragmento nuevo con la página abierta (otro enlace en la misma pestaña, sin recarga) se trata igual que al abrir y remonta el feature con `:key` (descarta todo lo anterior; solo GET) |
 | `/`            | `DashboardPage`   | Sí            | Hija de `PanelLayout`; redirige a `/login?redirect=/` si no auth |
 | `/agenda`      | `AgendaPage`      | Sí            | Hija de `PanelLayout` |
@@ -80,6 +85,19 @@ ese enlace.
   sidebar monta otra instancia del mismo modal (ids únicos con `useId`).
 - Los cuatro features no se conocen entre sí: la página no les pasa datos de uno a otro.
 
+## Términos del paciente (`/terminos`)
+
+`TerminosPage` (US-11, plan [`context/us/11-terminos-paciente.md`](../../context/us/11-terminos-paciente.md)) es solo
+texto: la versión 1.0 de los términos de uso y aviso de privacidad del paciente, **palabra por palabra** la del plan
+del backend (`citia-backend/context/US/11-terminos-paciente.md` § El texto que se publica), con la versión y la fecha
+de `shared/config/terminosPaciente.ts`.
+
+- **No se edita el texto suelto.** Cambiar una palabra es publicar una versión nueva: texto,
+  `VERSION_TERMINOS_PACIENTE` y `FECHA_TERMINOS_PACIENTE` juntos, y antes el catálogo del backend (ADR-16 §2).
+- **Genérica** («tu profesional»): no sabe de qué organización viene quien la lee. No lee la sesión ni la ruta.
+- Se abre **en otra pestaña** desde la casilla del formulario público y desde la tarjeta de `/cita` (ahí el token
+  vive solo en memoria); el modal *Nueva cita* muestra su dirección completa (`window.location.origin` + ruta).
+
 ## Recargas del dashboard
 
 `DashboardPage` recarga los tres rangos de citas (`useTodayAppointments`, `useProximasCitas`,
@@ -115,4 +133,5 @@ solicitudes lo refresca `PanelLayout`; el dashboard solo pide `refreshIfStale(30
   `src/features/compartir-enlace-agenda`, por su `index.ts`
 - `src/entities/session` (leer estado; `isAdmin` en `PerfilPage`)
 - `src/shared/ui/*` (BaseButton, etc.)
+- `TerminosPage`: `src/shared/config/terminosPaciente` (versión y fecha) y `src/shared/lib/fecha`
 - `vue-router` (useRouter, useRoute)
