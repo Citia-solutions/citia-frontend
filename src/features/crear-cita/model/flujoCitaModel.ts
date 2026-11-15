@@ -5,7 +5,7 @@
 // paciente elige día y hora como PREFERENCIA en vez de fijar la cita.
 // `toSolicitudRequest` mapea esto al contrato del backend.
 import { esDiaPasado, esInicioPasado } from '@/shared/lib/fecha'
-import { esRutValido } from '@/shared/lib/rut'
+import { esRutValido, faltaGuionRut } from '@/shared/lib/rut'
 
 /** Valores del formulario por secciones. */
 export interface FlujoCitaForm {
@@ -91,9 +91,13 @@ export const LIMITES = {
  * Mensaje de error del RUT, o `undefined` si está correcto. Vive aquí para que
  * la validación del paso y el aviso "en vivo" del input compartan la misma
  * regla y el mismo texto (UI-first: el backend valida igual con módulo 11).
+ * El guion es obligatorio aquí y no en el backend: ver `shared/lib/rut.ts`.
  */
 export function errorRut(rut: string): string | undefined {
   if (!rut.trim()) return 'Ingresa tu RUT.'
+  if (faltaGuionRut(rut)) {
+    return 'Escribe tu RUT con guion y dígito verificador, por ejemplo 12.345.678-5.'
+  }
   if (!esRutValido(rut)) return 'El RUT ingresado no es válido.'
   return undefined
 }
