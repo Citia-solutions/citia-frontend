@@ -105,7 +105,7 @@ organizaciones existen y qué RUT es paciente de qué profesional.
 **Consecuencia para el front:** un `202` significa *"recibido para revisión"*, no *"guardado con
 certeza"*. La pantalla final dice exactamente eso.
 
-Lo único que devuelve `400` es un RUT que no pasa el dígito verificador, un campo faltante o un
+Lo único que devuelve `400` es un RUT mal escrito o que no pasa el dígito verificador, un campo faltante o un
 campo que supera su largo máximo. El front muestra un mensaje genérico para el 400, así que **las
 tres causas se validan antes de enviar** (ver abajo); si aun así llega un 400, es que el front y el
 DTO se desalinearon.
@@ -135,6 +135,14 @@ el paciente escribe, en vez de descubrir el error después de enviar.
 
 **El backend valida siempre**; esto es comodidad, no autoridad. Ver
 [DTF-05](../Deudas/DTF-05.md) por la duplicación, que se aceptó a conciencia.
+
+**Forma escrita (2026-11-14).** Antes del módulo 11 se revisa cómo está escrito: `12.345.678-5` y
+`12345678-5` pasan; sin guion (`123456785`) el paso muestra *"Escribe tu RUT con guion y dígito
+verificador…"*, y `17.890.123-X`, `12 345 678-5` o los puntos mal puestos, *"El RUT ingresado no es
+válido."*. Antes, normalizar borraba lo que sobraba y `17.890.123-X` se enviaba como el RUT 1.789.012-3.
+**Esta revisión solo la hace el front**, porque el RUT viaja normalizado: ver el matiz de
+[DTF-05](../Deudas/DTF-05.md). El input usa `inputmode="text"` (antes `numeric`): el teclado numérico de
+iOS no tiene guion ni K.
 
 ---
 

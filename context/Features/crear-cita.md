@@ -31,6 +31,10 @@ recarga su lista y, si la cita choca con otra, muestra el aviso de solapamiento 
   Chile** (`ZONA_HORARIA`), no del navegador ([DTF-07](../Deudas/DTF-07.md), cerrada).
 - El backend resuelve el paciente por RUT: si existe en la organización, vincula la cita al existente.
 - `rut` se omite si va vacío (el backend valida formato cuando está presente).
+- Si viene, el modal exige la forma escrita con guion (`12.345.678-5` o `12345678-5`) antes del módulo 11
+  (2026-11-14): sin guion, *"Escribe el RUT con guion y dígito verificador…"*; mal escrito
+  (`17.890.123-X`), *"El RUT no es válido…"*. Se envía normalizado, así que esta revisión solo la hace el
+  front: ver el matiz de [DTF-05](../Deudas/DTF-05.md).
 
 ---
 
