@@ -1,5 +1,6 @@
 import { http } from '@/shared/api/httpClient'
 import type {
+  AceptarTerminosRequest,
   CancelarHoraRequest,
   PedirOtraHoraRequest,
   VistaCitaPacienteDto,
@@ -14,12 +15,12 @@ import type {
 // - **`auth: false`**: la sesión del profesional, si el mismo navegador la
 //   tiene, no debe viajar a una ruta anónima (y un 401 no la cerraría).
 // - **Sin referrer** ni caché del navegador: la respuesta trae datos de la cita.
-// - **Ninguna acción es un GET**: abrir la página solo lee. Confirmar, cancelar
-//   y pedir otra hora son POST que se disparan tras un clic.
+// - **Ninguna acción es un GET**: abrir la página solo lee. Confirmar, cancelar,
+//   pedir otra hora y aceptar los términos son POST que se disparan tras un clic.
 
 const CABECERA_ENLACE = 'X-Enlace-Cita'
 
-/** Opciones comunes de las cuatro llamadas (se pasan tal cual a `httpClient`). */
+/** Opciones comunes de las cinco llamadas (se pasan tal cual a `httpClient`). */
 function opciones(token: string): Omit<RequestInit, 'body'> & { auth: false } {
   return {
     auth: false,
@@ -61,4 +62,17 @@ export function pedirOtraHora(
   payload: PedirOtraHoraRequest,
 ): Promise<VistaCitaPacienteDto> {
   return http.post<VistaCitaPacienteDto>('/publico/cita/otra-hora', payload, opciones(token))
+}
+
+/**
+ * POST /publico/cita/aceptar-terminos — `{ terminosVersion }` (US-11). 200 con la
+ * vista (`terminosPendientes: false`). Idempotente y sin 409: vale con cualquier
+ * enlace válido. 400 con el mensaje fijo si la versión ya no recibe aceptaciones.
+ * Gasta del mismo cubo (5 por hora por enlace) que las otras acciones.
+ */
+export function aceptarTerminos(
+  token: string,
+  payload: AceptarTerminosRequest,
+): Promise<VistaCitaPacienteDto> {
+  return http.post<VistaCitaPacienteDto>('/publico/cita/aceptar-terminos', payload, opciones(token))
 }

@@ -37,6 +37,12 @@ export interface SolicitudBandejaDto {
   citaOrigenId?: string | null
   /** Fase 3: `{ inicio, duracionMin, estado }` de la cita de origen, o null. */
   citaOrigen?: CitaOrigen | null
+  /**
+   * US-11 (aditivo): versión de los términos que aceptó el paciente en el
+   * formulario público. null en las de otra hora y en las anteriores a US-11; se
+   * tolera ausente (backend anterior) → null.
+   */
+  terminosVersion?: string | null
 }
 
 /**
@@ -67,6 +73,7 @@ export function toSolicitud(dto: SolicitudBandejaDto): Solicitud {
     citaId: dto.citaId ?? null,
     citaOrigenId: dto.citaOrigenId ?? null,
     citaOrigen: dto.citaOrigen ?? null,
+    terminosVersion: dto.terminosVersion ?? null,
   }
 }
 

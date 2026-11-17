@@ -1,4 +1,5 @@
 import { HttpError } from '@/shared/api/httpClient'
+import { esVersionTerminosNoVigente } from '@/shared/config/terminosPaciente'
 
 /** Status HTTP del fallo, o null si no hubo respuesta (red). */
 export function statusDe(e: unknown): number | null {
@@ -21,6 +22,12 @@ export function mensajeDeError(e: unknown): string {
     case null:
       return 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.'
     case 400:
+      // US-11: al aceptar los términos, la versión que muestra esta página ya no
+      // recibe aceptaciones. Recargar /cita no sirve (el token ya no está en la
+      // URL): hay que volver a abrir el enlace del correo.
+      if (esVersionTerminosNoVigente(e)) {
+        return 'Los términos se actualizaron. Abre de nuevo el enlace de tu correo.'
+      }
       // No debería ocurrir: el front valida lo mismo que el DTO.
       return 'No pudimos procesar tu respuesta. Revisa lo que escribiste e inténtalo de nuevo.'
     case 409:

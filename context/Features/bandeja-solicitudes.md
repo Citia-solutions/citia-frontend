@@ -11,6 +11,8 @@ y §d (*enlace para compartir la URL pública*)
 **Entidad:** `src/entities/solicitud/` · **Ruta:** `/solicitudes`
 **Fase 3 (2026-10-14):** solicitudes de otra hora (`tipo: 'reagendamiento'`) y estado `descartada` —
 ver [Cambios de la Fase 3](#cambios-de-la-fase-3--solicitudes-de-otra-hora-2026-10-14).
+**US-11 (2026-11-14):** la versión de los términos que aceptó el paciente — ver
+[US-11](#us-11--versión-de-los-términos-2026-11-14).
 
 ---
 
@@ -22,7 +24,8 @@ Cierra el circuito del [flujo público](agendar-cita-paciente.md): lo que el pac
 
 - **Pestañas** Recibidas (por defecto) · Aceptadas · Rechazadas (`GET /solicitudes?estado=`).
 - **Cada solicitud:** nombre, RUT, motivo, preferencia horaria, teléfono y correo (enlaces `tel:` /
-  `mailto:`), si acepta recordatorios, y cuándo se recibió (y se resolvió, en las otras pestañas).
+  `mailto:`), si aceptó los términos y qué versión (US-11), y cuándo se recibió (y se resolvió, en las otras
+  pestañas).
 - **Píldora en el sidebar** con las recibidas por responder.
 - **"Copiar enlace de agenda"** arriba de la bandeja, con la advertencia de DT-18.
 
@@ -126,6 +129,17 @@ Rama `feature/fase3-respuesta-paciente`. Detalle en
   con la solicitud aún abierta): pestaña *Descartadas* y *"Descartada: <fecha> · La cita original se
   canceló o se cerró antes de que alguien respondiera."*
 - La píldora del sidebar cuenta las `recibida` de los dos tipos.
+
+## US-11 — versión de los términos (2026-11-14)
+
+Plan: [`us/11-terminos-paciente.md`](../us/11-terminos-paciente.md) · contrato:
+[`citia-backend/context/US/11-terminos-paciente.md`](../../../citia-backend/context/US/11-terminos-paciente.md) (D13 de ADR-16).
+
+- `SolicitudBandejaDto` suma `terminosVersion: string | null` (aditivo; ausente con un backend anterior → `null`) y
+  `Solicitud` también (`toSolicitud`). Es `null` en las de otra hora y en las que llegaron antes de US-11.
+- En el contacto, *«· aceptó los términos v1.0»* **en lugar de** *«· acepta recordatorios»*; nada si es `null`.
+- Aceptar la solicitud no cambia en el front: el backend registra ahí la aceptación del formulario (canal
+  `formulario_publico`, con la hora del envío). El voucher no la muestra (D14).
 
 ## Pendientes
 

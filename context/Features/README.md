@@ -18,6 +18,15 @@ decisiones propias del front y sus pendientes. Misma convención que el backend.
 
 ## Notas
 
+- **US-11 — términos del paciente (2026-11-14, `feature/terminos-paciente`):** plan en
+  [`us/11-terminos-paciente.md`](../us/11-terminos-paciente.md). Página pública `/terminos` con el texto de la 1.0
+  (`pages/terminos`), casilla con los términos y `terminosVersion` en el formulario público
+  ([agendar-cita-paciente](agendar-cita-paciente.md#us-11-la-casilla-de-los-términos-2026-11-14)) y en el modal
+  *Nueva cita* ([crear-cita](crear-cita.md#us-11-la-autorización-del-paciente-2026-11-14)), tarjeta con «Acepto» en
+  `/cita` ([responder-cita-paciente](responder-cita-paciente.md#us-11-la-tarjeta-de-los-términos-2026-11-14)) y la
+  versión aceptada en la bandeja ([bandeja-solicitudes](bandeja-solicitudes.md#us-11--versión-de-los-términos-2026-11-14)).
+  Funciona con el backend de hoy y **se despliega antes que el backend**. Sin revisión en el navegador todavía.
+
 - **Fase 7 — US-10, Mi perfil y soporte (2026-11-01, `feature/fase7-perfil-cuenta`, sin commit):** plan en
   [`us/10-perfil-cuenta.md`](../us/10-perfil-cuenta.md). Página nueva [perfil-cuenta](perfil-cuenta.md) con cuatro
   features (`editar-perfil`, `ver-suscripcion`, `cambiar-contrasena`, `contactar-soporte`), sección *CUENTA* en

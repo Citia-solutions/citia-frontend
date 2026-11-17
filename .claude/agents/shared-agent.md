@@ -42,7 +42,9 @@ src/shared/
 │                            # mensajeDelBackend(e): el `message` cuando es un texto (cualquier status)
 ├── config/
 │   ├── bloquesHorarios.ts  # Horario de atención (07:00–21:00, bloques de 60 min, fin 22:00)
-│   └── zonaHoraria.ts      # ZONA_HORARIA = 'America/Santiago' (espejo de APP_TZ) y LOCALE_FECHAS
+│   ├── zonaHoraria.ts      # ZONA_HORARIA = 'America/Santiago' (espejo de APP_TZ) y LOCALE_FECHAS
+│   └── terminosPaciente.ts # US-11: versión, fecha y ruta de los términos del paciente y el mensaje del
+│                           # 400 de la versión (espejos del backend)
 ├── lib/
 │   ├── authToken.ts        # get/set/removeToken (citia.token), readTokenClaims, isTokenExpired,
 │   │                       # isTokenPersistent, replaceToken (US-10)

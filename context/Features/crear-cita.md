@@ -5,6 +5,8 @@ manual contra el backend real)
 **Rama del cambio de Fase 2:** `feature/fase2-recordatorios` (sin commit) · **detalles menores
 (2026-10-06):** `chore/frontend-detalles-menores` — sin fechas pasadas, no se cierra mientras guarda,
 hora de Chile ([abajo](#detalles-menores-2026-10-06))
+**US-11 (2026-11-14):** `feature/terminos-paciente` — texto del alta manual, casilla nueva y
+`paciente.terminosVersion` ([abajo](#us-11-la-autorización-del-paciente-2026-11-14))
 **Backend:** [`us02-gestion-citas.md`](../../../citia-backend/context/Features/us02-gestion-citas.md) ·
 [ADR-13 §14](../../../citia-backend/context/Decisions/ADR-13.md) (correo obligatorio)
 **Feature:** `src/features/crear-cita/` (`ModalNuevaCita.vue`, `useCrearCita.ts`, `crearCitaSchema.ts`,
@@ -19,18 +21,22 @@ hora de Chile ([abajo](#detalles-menores-2026-10-06))
 ## Qué hace
 
 **"+ Nueva cita"** (dashboard y agenda) abre un modal con: nombre, RUT (opcional), **correo**,
-teléfono, fecha, bloque horario, duración, motivo (viaja como `tipoConsulta`) y el consentimiento del
-paciente. Al guardar emite `created` con la cita tal como quedó en el servidor y se cierra; la página
+teléfono, fecha, bloque horario, duración, motivo (viaja como `tipoConsulta`) y, desde US-11, el texto que
+el profesional le lee o envía al paciente con la casilla de su autorización. Al guardar emite `created` con la cita tal como quedó en el servidor y se cierra; la página
 recarga su lista y, si la cita choca con otra, muestra el aviso de solapamiento (ADR-11).
 
 ## Contrato con el backend
 
-`POST /citas` — `{ inicio, duracionMin, tipoConsulta, paciente: { rut?, nombre, telefono, correo, consentimiento } }`
+`POST /citas` — `{ inicio, duracionMin, tipoConsulta, paciente: { rut?, nombre, telefono, correo, consentimiento, terminosVersion } }`
 
 - `inicio` con zona explícita (`aInicioISO`, DT-14). La fecha y el bloque elegidos se leen como **hora de
   Chile** (`ZONA_HORARIA`), no del navegador ([DTF-07](../Deudas/DTF-07.md), cerrada).
 - El backend resuelve el paciente por RUT: si existe en la organización, vincula la cita al existente.
 - `rut` se omite si va vacío (el backend valida formato cuando está presente).
+- Si viene, el modal exige la forma escrita con guion (`12.345.678-5` o `12345678-5`) antes del módulo 11
+  (2026-11-14): sin guion, *"Escribe el RUT con guion y dígito verificador…"*; mal escrito
+  (`17.890.123-X`), *"El RUT no es válido…"*. Se envía normalizado, así que esta revisión solo la hace el
+  front: ver el matiz de [DTF-05](../Deudas/DTF-05.md).
 
 ---
 
@@ -58,8 +64,10 @@ un backend viejo funciona igual: el correo ya era aceptado).
 
 ### Otros formularios que crean pacientes
 
-- **Flujo público** (`/agendar-cita/:tenantSlug`): el correo ya era obligatorio. Sin cambios.
-- **Aceptar una solicitud** (bandeja): el paciente sale de la solicitud, que trae correo. Sin cambios.
+- **Flujo público** (`/agendar-cita/:tenantSlug`): el correo ya era obligatorio. Sin cambios. (US-11 le suma la
+  casilla de los términos: [agendar-cita-paciente](agendar-cita-paciente.md#us-11-la-casilla-de-los-términos-2026-11-14).)
+- **Aceptar una solicitud** (bandeja): el paciente sale de la solicitud, que trae correo. Sin cambios. (Desde US-11 el
+  backend registra ahí la aceptación del formulario; el front no envía nada nuevo.)
 - `POST /pacientes` no tiene consumidor en el front (`DT-29`).
 
 ## Bloques horarios y fin de la jornada (2026-10-05)
@@ -100,6 +108,26 @@ Verificado en el navegador con `fetch` simulado: fecha pasada y bloque de hoy ya
 pedir nada al servidor; con un `POST /citas` demorado 4 s, el clic fuera y `Esc` no cierran el modal, que
 se cierra solo al responder; `Esc` y el clic fuera sí cierran sin envío en curso; 10:00 del 7 de octubre
 viaja como `2026-10-07T13:00:00.000Z`.
+
+## US-11: la autorización del paciente (2026-11-14)
+
+Plan: [`us/11-terminos-paciente.md`](../us/11-terminos-paciente.md) · contrato:
+[`citia-backend/context/US/11-terminos-paciente.md`](../../../citia-backend/context/US/11-terminos-paciente.md) (D6 de ADR-16).
+
+- **Antes de la casilla**, un bloque con *«Antes de marcar la casilla, léele o envíale esto al paciente:»* y el texto
+  del plan (*«Para agendar tus horas y enviarte recordatorios por correo uso Citia, un sistema de agenda. […] Los
+  términos completos están en <dirección>. ¿Me autorizas?»*). La dirección se arma con el origen del sitio
+  (`window.location.origin` + `RUTA_TERMINOS`): en staging muestra la de staging. Es un enlace que abre otra
+  pestaña.
+- **La casilla:** *«El paciente me autorizó después de leerle o enviarle este texto.»* Sin marcarla: *«Marca la casilla
+  cuando el paciente te haya autorizado.»* Ayuda fija, en cursiva: *«Si no te autoriza, no lo registres en Citia. El
+  paciente también podrá aceptar los términos él mismo desde el enlace de su recordatorio.»*
+- **`paciente.terminosVersion`** (`VERSION_TERMINOS_PACIENTE`) viaja siempre: el backend anterior a US-11 la descarta;
+  el de US-11 exige `consentimiento: true` y la versión, y registra la aceptación con el usuario de la sesión (canal
+  `profesional`).
+- **El 400 de la versión** (mensaje fijo, con el prefijo `paciente.` del `ValidationPipe`) → *«Los términos se
+  actualizaron. Recarga la página.»*, antes de traducir los demás errores por campo.
+- Sin el botón *«Copiar texto»* (opcional en el plan): el texto se puede seleccionar a mano.
 
 ## Pendientes
 

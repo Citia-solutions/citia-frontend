@@ -13,9 +13,12 @@ export {
   confirmarHora,
   cancelarHora,
   pedirOtraHora,
+  aceptarTerminos,
 } from './api/respuestaCitaApi'
 export type {
   AccionPaciente,
+  EnvioPaciente,
+  AceptarTerminosRequest,
   VistaCitaPacienteDto,
   SolicitudOtraHoraDto,
   CancelarHoraRequest,

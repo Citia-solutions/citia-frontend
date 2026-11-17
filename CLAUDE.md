@@ -25,8 +25,9 @@ Lo que existe hoy:
 | `/solicitudes` | Bandeja de solicitudes (aceptar / rechazar): las nuevas del enlace de agenda y, desde la Fase 3, los pedidos de otra hora del enlace del recordatorio ("Pide otra hora"; aceptar mueve la cita) y la pestaña Descartadas. Botón para copiar el enlace de agenda | Sí |
 | `/recordatorios` | Configuración de los recordatorios por correo (US-03) | Sí |
 | `/perfil` | **Mi perfil** (Fase 7, US-10): pestañas locales *Información personal* (nombre y especialidad editables; correo, rol, organización y enlace de agenda en lectura), *Suscripción* (solo el administrador) y *Seguridad* (cambio de contraseña), más el botón *Contactar soporte* | Sí |
-| `/agendar-cita/:tenantSlug` | Flujo público: el paciente pide hora sin cuenta (`POST /publico/:tenantSlug/solicitudes`) | No |
-| `/cita#<token>` | **Página del paciente** (Fase 3): desde el enlace de su recordatorio ve su hora y la confirma, la cancela o pide otra (`/publico/cita*`, token en la cabecera `X-Enlace-Cita`). El token va en el fragmento, se borra de la URL al abrir y vive solo en memoria. Sin layout | No |
+| `/agendar-cita/:tenantSlug` | Flujo público: el paciente pide hora sin cuenta (`POST /publico/:tenantSlug/solicitudes`). Desde US-11, la casilla enlaza a `/terminos` y envía `terminosVersion` | No |
+| `/cita#<token>` | **Página del paciente** (Fase 3): desde el enlace de su recordatorio ve su hora y la confirma, la cancela o pide otra (`/publico/cita*`, token en la cabecera `X-Enlace-Cita`). El token va en el fragmento, se borra de la URL al abrir y vive solo en memoria. Sin layout. Desde US-11, con `terminosPendientes === true`, la tarjeta *Tus datos y Citia* con «Acepto» (no bloquea las acciones) | No |
+| `/terminos` | **Términos de uso y aviso de privacidad del paciente** (US-11): el texto de la versión `VERSION_TERMINOS_PACIENTE` (`shared/config/terminosPaciente.ts`), idéntico al del plan del backend. Sin layout, sin API y sin recursos de terceros. Lo enlazan (en otra pestaña) la casilla del formulario público y la tarjeta de `/cita`, y el modal *Nueva cita* da su dirección | No |
 | cualquier otra | **No encontrada** (ruta comodín `/:pathMatch(.*)*`): enlace al Resumen con sesión o al login sin ella | No |
 
 - **Voucher de la cita** (se abre desde el Resumen y desde la agenda): reagendar, cancelar, confirmar,
@@ -107,25 +108,27 @@ src/
 │                 # (Pinia, router, handler del 401), layouts del panel, estilos raíz
 ├── pages/        # Composición de pantallas: login, dashboard, agenda, solicitudes,
 │                 # recordatorios, perfil (Mi perfil), agendar-cita (pública), cita-paciente
-│                 # (pública, /cita), no-encontrada (404)
+│                 # (pública, /cita), terminos (pública, /terminos), no-encontrada (404)
 ├── features/     # Casos de uso (ui + model + api):
 │   ├── auth/                      # login
 │   ├── dashboard/                 # widgets del Resumen
 │   ├── agenda/                    # agenda semanal + lista
-│   ├── crear-cita/                # modal "Nueva cita" y flujo público del paciente
+│   ├── crear-cita/                # modal "Nueva cita" y flujo público del paciente (con la
+│   │                              # autorización del paciente y `terminosVersion`, US-11)
 │   ├── gestionar-cita/            # voucher: reagendar, cancelar, confirmar, asistencia, contacto,
 │   │                              # quién confirmó/canceló, "pidió otra hora", invalidar enlace
 │   ├── bandeja-solicitudes/       # aceptar / rechazar solicitudes (nuevas y de otra hora)
 │   ├── compartir-enlace-agenda/   # copiar el enlace /agendar-cita/:tenantSlug
 │   ├── configurar-recordatorios/  # configuración de recordatorios por correo
 │   ├── responder-cita/            # página del paciente /cita#<token>: confirmar, cancelar, pedir otra hora
+│   │                              # y aceptar los términos (US-11)
 │   ├── editar-perfil/             # Mi perfil: GET y PATCH /usuarios/me (nombre, especialidad) y refresco de la sesión
 │   ├── ver-suscripcion/           # Mi perfil, solo administrador: GET /organizacion/suscripcion
 │   ├── cambiar-contrasena/        # Mi perfil: PUT /usuarios/me/contrasena y reemplazo del token
 │   └── contactar-soporte/         # modal "Contactar soporte" (POST /soporte/mensajes): Mi perfil y sidebar
 ├── entities/     # Entidades de negocio: session, appointment, recordatorio, solicitud
-└── shared/       # api (httpClient, errores de validación), config (bloques horarios, zona horaria),
-                  # lib (authToken, fecha, rut), ui (componentes Base*)
+└── shared/       # api (httpClient, errores de validación), config (bloques horarios, zona horaria,
+                  # términos del paciente), lib (authToken, fecha, rut), ui (componentes Base*)
 ```
 
 **Regla FSD crítica:** una capa solo importa de las que están **debajo**, nunca al revés:
@@ -149,7 +152,8 @@ tienen `CLAUDE.md` propio: su contrato y sus decisiones están en `context/Featu
 - `public/_redirects` (`/*  /index.html  200`) es el fallback de la SPA: sin él, recargar una ruta que no
   sea `/` da 404.
 - `public/_headers` (Fase 3): `/cita` con `Referrer-Policy: no-referrer` y `X-Robots-Tag: noindex`. La
-  página del paciente no carga recursos de terceros (ni fuentes, ni analítica): no agregues ninguno.
+  página del paciente no carga recursos de terceros (ni fuentes, ni analítica): no agregues ninguno. Tampoco
+  `/terminos` (US-11), que no necesita cabeceras: no lleva datos y puede indexarse.
 - **`VITE_API_URL`**: URL del backend **incluido el prefijo `/api`**. Vite la incrusta al compilar, así que
   en Netlify va como variable de entorno **de cada sitio** (apuntando al backend de Railway de ese
   entorno). En local va en `.env` (plantilla en `.env.example`: `http://localhost:3000/api`). Sin ella el

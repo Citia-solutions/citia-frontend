@@ -1,3 +1,4 @@
+import { VERSION_TERMINOS_PACIENTE } from '@/shared/config/terminosPaciente'
 import { aInicioISO } from '@/shared/lib/fecha'
 import { normalizarRut } from '@/shared/lib/rut'
 import type { CrearCitaRequest, NuevaCitaForm } from './types'
@@ -15,7 +16,9 @@ export { aInicioISO }
  *  - el `correo` viaja SIEMPRE: es obligatorio desde la Fase 2 (sin él no hay
  *    recordatorios). Se manda recortado; el backend además lo pasa a minúsculas;
  *  - el RUT, opcional, se omite si está vacío en vez de enviarse como `''`,
- *    porque el backend valida formato cuando el campo está presente.
+ *    porque el backend valida formato cuando el campo está presente;
+ *  - `paciente.terminosVersion` (US-11) no sale del formulario: es la versión
+ *    de `/terminos` que nombra el texto del alta manual.
  */
 export function toCrearCitaRequest(form: NuevaCitaForm): CrearCitaRequest {
   const rut = form.rut.trim()
@@ -30,6 +33,7 @@ export function toCrearCitaRequest(form: NuevaCitaForm): CrearCitaRequest {
       telefono: form.telefono.trim(),
       correo: form.correo.trim(),
       consentimiento: form.consentimiento,
+      terminosVersion: VERSION_TERMINOS_PACIENTE,
     },
   }
 }

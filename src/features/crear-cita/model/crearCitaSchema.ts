@@ -1,6 +1,6 @@
 import { errorFinDeJornada } from '@/shared/config/bloquesHorarios'
 import { esDiaPasado, esInicioPasado } from '@/shared/lib/fecha'
-import { esRutValido } from '@/shared/lib/rut'
+import { esRutValido, faltaGuionRut } from '@/shared/lib/rut'
 import type { NuevaCitaErrors, NuevaCitaField, NuevaCitaForm } from './types'
 
 /**
@@ -41,9 +41,12 @@ export function validateNuevaCita(values: NuevaCitaForm, ahora: Date = new Date(
   }
 
   // El RUT es opcional (hay pacientes sin documento chileno), pero si viene
-  // tiene que ser válido: es la identidad con la que se evita duplicarlo.
-  if (values.rut.trim() && !esRutValido(values.rut)) {
-    errors.rut = 'El RUT no es válido. Revisa el dígito verificador.'
+  // tiene que ser válido: es la identidad con la que se evita duplicarlo. El
+  // guion es obligatorio aquí y no en el backend: ver `shared/lib/rut.ts`.
+  if (values.rut.trim() && faltaGuionRut(values.rut)) {
+    errors.rut = 'Escribe el RUT con guion y dígito verificador, por ejemplo 12.345.678-5.'
+  } else if (values.rut.trim() && !esRutValido(values.rut)) {
+    errors.rut = 'El RUT no es válido. Revisa cómo está escrito y el dígito verificador.'
   }
 
   if (!values.telefono.trim()) {
@@ -95,9 +98,10 @@ export function validateNuevaCita(values: NuevaCitaForm, ahora: Date = new Date(
     errors.motivo = 'Indica el motivo de la consulta.'
   }
 
+  // US-11: el backend también la exige (400 con `false`). El texto que se le
+  // lee o envía al paciente está en el modal.
   if (!values.consentimiento) {
-    errors.consentimiento =
-      'Se necesita el consentimiento del paciente para poder contactarlo.'
+    errors.consentimiento = 'Marca la casilla cuando el paciente te haya autorizado.'
   }
 
   return errors

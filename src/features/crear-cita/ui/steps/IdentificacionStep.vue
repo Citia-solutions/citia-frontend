@@ -23,14 +23,16 @@ const errorApellidos = errorDe('apellidos')
       <label class="step__label" for="flujo-rut">
         Ingrese su RUT:<span class="step__required" aria-hidden="true">*</span>
       </label>
+      <!-- inputmode text, no numeric: el teclado numérico de iOS no tiene guion
+           ni K, y el RUT necesita los dos. -->
       <input
         id="flujo-rut"
         v-model="form.rut"
         class="step__input"
         :class="{ 'step__input--error': errorRut }"
         type="text"
-        inputmode="numeric"
-        placeholder="Ej: 12.345.678-9"
+        inputmode="text"
+        placeholder="Ej: 12.345.678-5"
         :aria-invalid="errorRut ? 'true' : 'false'"
         @blur="marcarTocado('rut')"
       />
