@@ -71,7 +71,7 @@ API* · [ADR-16](../../../citia-backend/context/Decisions/ADR-16.md) (el porqué
 
 | Pieza | Cambio |
 |-------|--------|
-| `shared/config/terminosPaciente.ts` (nuevo) | `VERSION_TERMINOS_PACIENTE = '1.0'`, `FECHA_TERMINOS_PACIENTE = '2026-11-15'` (**el día del release a production**; antes `'2026-11-14'`), `RUTA_TERMINOS`, `MENSAJE_VERSION_TERMINOS_NO_VIGENTE` y `esVersionTerminosNoVigente`. Si cambia el backend, cambia esto en el mismo cambio |
+| `shared/config/terminosPaciente.ts` (nuevo) | `VERSION_TERMINOS_PACIENTE = '1.0'`, `FECHA_TERMINOS_PACIENTE = '2026-11-16'` (**el día del release a production**; antes `'2026-11-15'` y `'2026-11-14'`), `RUTA_TERMINOS`, `MENSAJE_VERSION_TERMINOS_NO_VIGENTE` y `esVersionTerminosNoVigente`. Si cambia el backend, cambia esto en el mismo cambio |
 | `shared/ui/BaseCheckbox.vue` | slot por defecto para la etiqueta (la prop `label` sigue igual); la casilla se alinea con la primera línea. Un clic en un enlace de la etiqueta no marca la casilla (comportamiento del `<label>` del navegador) |
 | `pages/terminos` (nuevo) + `app/router` | ruta pública `/terminos` (`name: 'terminos'`) con el texto de la 1.0 |
 | `features/crear-cita` | casilla del formulario con el enlace (otra pestaña) y su mensaje; `terminosVersion` en los dos cuerpos; texto del alta manual, casilla y ayuda del modal; el 400 de la versión |
@@ -112,6 +112,6 @@ API* · [ADR-16](../../../citia-backend/context/Decisions/ADR-16.md) (el porqué
 | Qué | Nota |
 |-----|------|
 | Revisión en el navegador | `/terminos` (375 px y escritorio); la casilla del formulario (el enlace abre otra pestaña, no marca la casilla y lo escrito sigue); el modal *Nueva cita*; la tarjeta de `/cita` con `terminosPendientes: true` simulado (acciones habilitadas, «Acepto» la quita, 400 del mensaje fijo, 429) y sin el campo (no aparece); la bandeja con y sin `terminosVersion` |
-| `FECHA_TERMINOS_PACIENTE` | ✅ **2026-11-15**, el día del release a production (`feature/terminos-fecha-publicacion`). *Antes: «Hoy 2026-11-14: se cambia al día del release a production, en el mismo PR».* |
+| `FECHA_TERMINOS_PACIENTE` | ✅ **2026-11-16**, el día real del release a production (citia-frontend#21, 21:01). Se había puesto 2026-11-15, la fecha prevista, y la página la mostró hasta esta corrección (`fix/terminos-fecha-16`). *Antes: «✅ 2026-11-15» y, antes, «Hoy 2026-11-14: se cambia al día del release a production».* |
 | Release | Frontend **primero**; el backend al menos 30 minutos después (ADR-16 §10) |
 | *«Copiar texto»* en el alta manual | Opcional; ver arriba |
