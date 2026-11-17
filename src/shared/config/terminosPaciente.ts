@@ -21,7 +21,7 @@ export const VERSION_TERMINOS_PACIENTE = '1.0'
  * Día de publicación de la versión vigente ('YYYY-MM-DD'), que muestra
  * `/terminos`. Se actualiza al día del release a production.
  */
-export const FECHA_TERMINOS_PACIENTE = '2026-11-15'
+export const FECHA_TERMINOS_PACIENTE = '2026-11-16'
 
 /** Ruta pública del texto completo (`name: 'terminos'` en el router). */
 export const RUTA_TERMINOS = '/terminos'
